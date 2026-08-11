@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>한글 타자 연습 · 단계별 자리 연습</title>
+<meta name="description" content="손가락 자리 순서대로 자판이 늘어나는 한글 타자 연습. 자리연습부터 낱말·짧은글·긴글, 타자 게임까지.">
+<meta property="og:title" content="한글 타자 연습">
+<meta property="og:description" content="1단계 ㅁㄴㅇㄹ ㅓㅏㅣ 부터 차근차근. 그 단계 자판으로만 만든 낱말로 연습합니다.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="og.png">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/style.css?v=3">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ================= 홈 ================= -->
+  <section class="screen on" id="s-home">
+    <header class="topbar">
+      <div class="brand"><span class="dot"></span>한글 타자 연습 <small>단계별 자리 훈련</small></div>
+      <div class="spacer"></div>
+      <button class="btn ghost sm" id="btn-reset-rec">기록 지우기</button>
+    </header>
+    <div class="home-wrap">
+      <div class="hero">
+        <h1>배운 자리로만 치는 <em>진짜 단계별</em> 타자 연습</h1>
+        <p class="hero-sub">신답초등학교 AI 디지털 선도학교 여름캠프</p>
+      </div>
+      <div class="mode-grid">
+        <button class="mode-card" data-mode="place">
+          <div class="ico">⌨️</div>
+          <h3>자리 연습</h3>
+          <p>손가락 자리를 반복해서 익힙니다</p>
+          <div class="best" data-best="place"></div>
+        </button>
+        <button class="mode-card" data-mode="word">
+          <div class="ico">🔤</div>
+          <h3>낱말 연습</h3>
+          <p>배운 자리만으로 된 낱말이 나옵니다</p>
+          <div class="best" data-best="word"></div>
+        </button>
+        <button class="mode-card" data-mode="short">
+          <div class="ico">📄</div>
+          <h3>짧은 글</h3>
+          <p>한 문장씩 또박또박</p>
+          <div class="best" data-best="short"></div>
+        </button>
+        <button class="mode-card" data-mode="long">
+          <div class="ico">📖</div>
+          <h3>긴 글</h3>
+          <p>시·이야기·속담 그리고 직접 넣은 글</p>
+          <div class="best" data-best="long"></div>
+        </button>
+        <button class="mode-card" data-mode="game">
+          <div class="ico">🎮</div>
+          <h3>타자 게임</h3>
+          <p>방어전 · 달리기 · 두더지</p>
+          <div class="best" data-best="game"></div>
+        </button>
+      </div>
+      <div class="home-foot">
+        <button class="btn primary" id="btn-open-report">📋 오늘 학습 리포트 보기</button>
+        <span class="foot-note" id="today-brief"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 단계 선택 ================= -->
+  <section class="screen" id="s-level">
+    <header class="topbar">
+      <button class="btn ghost sm" data-go="home">← 처음으로</button>
+      <div class="brand" style="font-size:16px"><span class="dot"></span><span id="lv-modename">낱말 연습</span></div>
+      <div class="spacer"></div>
+    </header>
+    <div class="page">
+      <div class="page-head">
+        <h2>단계를 고르세요</h2>
+        <p>단계가 올라갈수록 쓸 수 있는 자판이 늘어납니다. 아래 단계로 다시 돌아가 반복해도 좋습니다.</p>
+      </div>
+      <div class="level-grid" id="level-grid"></div>
+    </div>
+  </section>
+
+  <!-- ================= 긴글 선택 ================= -->
+  <section class="screen" id="s-long">
+    <header class="topbar">
+      <button class="btn ghost sm" data-go="home">← 처음으로</button>
+      <div class="brand" style="font-size:16px"><span class="dot"></span>긴 글 연습</div>
+      <div class="spacer"></div>
+    </header>
+    <div class="page">
+      <div class="page-head">
+        <h2>글을 고르세요</h2>
+        <p>저작권이 만료된 시·전래 이야기·속담과 직접 쓴 글입니다. 아래에 원하는 글을 붙여넣어 연습할 수도 있습니다.</p>
+      </div>
+      <div class="text-grid" id="text-grid"></div>
+      <div class="paste-box">
+        <div class="row">
+          <span>선생님이 준비한 글을 붙여넣으면 그대로 연습 지문이 됩니다. (이 컴퓨터에만 저장됩니다)</span>
+          <button class="btn primary sm" id="btn-paste-go">이 글로 연습</button>
+        </div>
+        <textarea id="paste-area" placeholder="여기에 글을 붙여넣으세요. 줄바꿈 그대로 한 줄씩 연습합니다."></textarea>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 게임 선택 ================= -->
+  <section class="screen" id="s-gamesel">
+    <header class="topbar">
+      <button class="btn ghost sm" data-go="home">← 처음으로</button>
+      <div class="brand" style="font-size:16px"><span class="dot"></span>타자 게임</div>
+      <div class="spacer"></div>
+    </header>
+    <div class="page">
+      <div class="page-head">
+        <h2>게임을 고르세요</h2>
+        <p>세 게임 모두 고른 단계의 자판으로만 낱말이 나옵니다. 단계와 난이도가 높을수록 빨라집니다.</p>
+      </div>
+      <div class="opt-row">
+        <span class="lb">단계</span>
+        <span id="game-levels"></span>
+      </div>
+      <div class="opt-row">
+        <span class="lb">난이도</span>
+        <span id="game-diffs"></span>
+        <span class="foot-note" id="diff-tip"></span>
+      </div>
+      <div class="opt-row">
+        <span class="lb">아이템</span>
+        <span class="foot-note">방어전에서 가끔 ❄ 💥 ❤ ★ 가 붙은 낱말이 떨어집니다.
+          그 낱말을 치면 멈춤·모두 없애기·방어선 회복·점수 2배가 걸립니다.</span>
+      </div>
+      <div class="game-grid">
+        <button class="game-card" data-game="defense">
+          <div class="ico">🛡️</div>
+          <h3>낱말 방어전</h3>
+          <p>위에서 떨어지는 낱말을 쳐서 없앱니다. 방어선에 닿으면 체력이 깎이고, 시간이 갈수록 빨라집니다.</p>
+        </button>
+        <button class="game-card" data-game="race">
+          <div class="ico">🏃</div>
+          <h3>컴퓨터와 달리기</h3>
+          <p>낱말을 칠 때마다 앞으로 나갑니다. 컴퓨터가 정해진 속도로 같이 달립니다. 먼저 끝까지 가면 승리.</p>
+        </button>
+        <button class="game-card" data-game="mole">
+          <div class="ico">🕳️</div>
+          <h3>두더지 타자</h3>
+          <p>아홉 칸에서 낱말이 튀어나옵니다. 사라지기 전에 쳐서 잡으세요. 연속으로 잡으면 점수가 올라갑니다.</p>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 연습 진행 ================= -->
+  <section class="screen" id="s-play">
+    <div class="play">
+      <div class="play-head">
+        <button class="btn ghost sm" id="btn-play-exit">← 나가기</button>
+        <span class="tag" id="play-lv">2단계</span>
+        <span class="title" id="play-mode">낱말 연습</span>
+        <div class="spacer"></div>
+        <div class="stats">
+          <div class="stat"><div class="k">진행</div><div class="v" id="st-prog">0 / 0</div></div>
+          <div class="stat"><div class="k">타수</div><div class="v cpm" id="st-cpm">0</div></div>
+          <div class="stat"><div class="k">정확도</div><div class="v acc" id="st-acc">100%</div></div>
+        </div>
+      </div>
+      <div class="progress"><i id="prog-bar"></i></div>
+
+      <div class="type-area">
+        <div class="upnext" id="upnext"></div>
+        <div class="lines" id="lines" style="display:none"></div>
+        <div class="target" id="target"></div>
+        <div class="typebox" id="typebox">
+          <input type="text" id="typein" autocomplete="off" autocorrect="off"
+                 autocapitalize="off" spellcheck="false" lang="ko">
+          <div class="hintline" id="hintline">한글 자판(한/영 키)으로 바꾸고 입력하세요</div>
+        </div>
+      </div>
+
+      <div class="kb-wrap">
+        <div class="kb" id="kb"></div>
+        <div class="finger-hint" id="finger-hint"><span class="chip"></span><span>준비</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 결과 ================= -->
+  <section class="screen" id="s-result">
+    <header class="topbar">
+      <button class="btn ghost sm" data-go="home">← 처음으로</button>
+      <div class="brand" style="font-size:16px"><span class="dot"></span>연습 결과</div>
+      <div class="spacer"></div>
+    </header>
+    <div class="result-wrap">
+      <h2 id="res-title">잘했어요!</h2>
+      <div class="newrec" id="res-newrec" style="display:none">🏆 <span>최고 기록을 세웠어요!</span></div>
+      <div class="result-grid">
+        <div class="rcard b"><div class="k">분당 타수</div><div class="v" id="res-cpm">0</div><div class="sub">타/분</div></div>
+        <div class="rcard a"><div class="k">정확도</div><div class="v" id="res-acc">0%</div><div class="sub" id="res-err">오타 0개</div></div>
+        <div class="rcard c"><div class="k">걸린 시간</div><div class="v" id="res-time">0초</div><div class="sub" id="res-count">0개</div></div>
+        <div class="rcard"><div class="k">내 최고 기록</div><div class="v" id="res-best">0</div><div class="sub">타/분</div></div>
+      </div>
+      <div class="btnrow">
+        <button class="btn primary" id="res-again">다시 하기</button>
+        <button class="btn" id="res-next">다음 단계</button>
+        <button class="btn ghost" data-go="home">처음으로</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 학습 리포트 ================= -->
+  <section class="screen" id="s-report">
+    <header class="topbar">
+      <button class="btn ghost sm" data-go="home">← 처음으로</button>
+      <div class="brand" style="font-size:16px"><span class="dot"></span>오늘 학습 리포트</div>
+      <div class="spacer"></div>
+      <label class="btn sm" for="pdf-upload">📂 어제 리포트 불러오기</label>
+      <input type="file" id="pdf-upload" accept="application/pdf" hidden>
+      <button class="btn sm" id="btn-goals">⚙ 통과 기준</button>
+      <button class="btn primary sm" id="btn-pdf">⬇ PDF 내려받기</button>
+    </header>
+
+    <div class="report-scroll">
+      <div class="report" id="report-body"></div>
+    </div>
+  </section>
+
+  <!-- ================= 통과 기준 설정 ================= -->
+  <div class="modal" id="modal-goals" hidden>
+    <div class="modal-box">
+      <h3>통과 기준 (선생님용)</h3>
+      <p class="modal-sub">여기서 정한 값으로 리포트의 통과 여부가 정해집니다.</p>
+      <div class="goal-row">
+        <label>하루 연습 시간</label>
+        <input type="number" id="g-min" min="1" max="120"> <span>분 이상</span>
+      </div>
+      <div class="goal-row">
+        <label>정확도</label>
+        <input type="number" id="g-acc" min="50" max="100"> <span>% 이상</span>
+      </div>
+      <div class="goal-row">
+        <label>단계별 목표 타수</label>
+        <span class="dimtext">아래 칸은 1단계부터 7단계까지입니다</span>
+      </div>
+      <div class="goal-cpm" id="g-cpm-row"></div>
+      <div class="modal-btns">
+        <button class="btn" id="g-reset">기본값으로</button>
+        <button class="btn primary" id="g-save">저장</button>
+        <button class="btn ghost" id="g-close">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 게임 진행 ================= -->
+  <section class="screen" id="s-game">
+    <div class="play">
+      <div class="play-head">
+        <button class="btn ghost sm" id="btn-game-exit">← 나가기</button>
+        <span class="tag v" id="game-lv">2단계</span>
+        <span class="title" id="game-title">낱말 방어전</span>
+        <div class="spacer"></div>
+        <div class="stats">
+          <div class="stat"><div class="k">점수</div><div class="v cpm" id="g-score">0</div></div>
+          <div class="stat"><div class="k">연속</div><div class="v" id="g-combo">0</div></div>
+          <div class="stat"><div class="k">타수</div><div class="v acc" id="g-cpm">0</div></div>
+        </div>
+      </div>
+      <div class="progress"><i id="g-prog"></i></div>
+      <div class="stage" id="stage"><div class="grid-bg"></div></div>
+      <div class="gameinput">
+        <input type="text" id="gamein" autocomplete="off" autocorrect="off"
+               autocapitalize="off" spellcheck="false" lang="ko" placeholder="낱말을 치고 엔터">
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/hangul.js?v=3"></script>
+<script src="js/data.js?v=3"></script>
+<script src="js/keyboard.js?v=3"></script>
+<script src="js/app.js?v=3"></script>
+<script src="js/games.js?v=3"></script>
+<script src="js/report.js?v=3"></script>
+<script src="js/report-io.js?v=3"></script>
+<!-- jsPDF·pdf.js·한글 폰트는 리포트에서 필요할 때만 불러온다 (js/report-io.js) -->
+</body>
+</html>
