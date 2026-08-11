@@ -686,6 +686,116 @@ input, textarea { font-family: inherit; }
 .hole.pop { animation: pop .25s ease-out; }
 @keyframes pop { 50% { background: rgba(62,224,192,.22); } }
 
+/* =========================================================
+   한글 조립
+   ========================================================= */
+.falling.jamo {
+  font-size: clamp(22px, 3.6vh, 34px);
+  font-weight: 900; padding: 6px 18px;
+  border-color: var(--violet);
+  box-shadow: 0 0 20px -6px var(--violet);
+}
+.buildwrap {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  padding: 14px clamp(16px, 3vw, 34px) 18px;
+  display: flex; flex-direction: column; gap: 10px; align-items: center;
+}
+.bhint { font-size: clamp(13px, 2vh, 17px); color: var(--dim); font-weight: 600; }
+.bhint b { color: var(--accent); font-size: 1.25em; }
+.bshelf {
+  display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
+  min-height: clamp(40px, 6vh, 56px); align-items: center;
+  width: 100%; padding: 8px 14px; border-radius: 12px;
+  background: rgba(10, 14, 21, .6); border: 1px dashed var(--line);
+}
+.btile {
+  width: clamp(34px, 5vh, 46px); height: clamp(34px, 5vh, 46px);
+  border-radius: 9px; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(160deg, var(--panel2), var(--panel));
+  border: 1px solid var(--violet);
+  font-size: clamp(17px, 2.6vh, 23px); font-weight: 800; color: var(--violet);
+}
+.bcap { font-size: 12.5px; color: var(--dim2); font-weight: 700; }
+.bcap b { color: var(--text); }
+
+/* =========================================================
+   마법사 주문
+   ========================================================= */
+.spellwrap {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; justify-content: space-between;
+  padding: clamp(12px, 2.4vh, 24px) clamp(16px, 3vw, 40px);
+  gap: 10px;
+}
+.boss { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.boss .bico { font-size: clamp(38px, 7vh, 66px); line-height: 1; }
+.belem { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.belem span {
+  color: var(--ec); font-weight: 900; font-size: clamp(15px, 2.4vh, 20px);
+}
+.belem em { font-style: normal; font-size: 12.5px; color: var(--dim); font-weight: 700; }
+.bhp {
+  width: min(420px, 60vw); height: 15px; border-radius: 999px;
+  background: var(--panel2); border: 1px solid var(--line);
+  position: relative; overflow: hidden;
+}
+.bhp i {
+  display: block; height: 100%;
+  background: linear-gradient(90deg, #c0392b, var(--warn));
+  transition: width .25s;
+}
+.bhp span {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 10.5px; font-weight: 800; color: #fff; text-shadow: 0 1px 2px #000;
+}
+.myhp { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.myhp > span { font-size: 12px; color: var(--dim2); font-weight: 700; }
+.myhp .bhp i { background: linear-gradient(90deg, var(--ok), var(--accent)); }
+
+.spells { display: flex; gap: clamp(8px, 1.6vw, 18px); justify-content: center; }
+.spell {
+  flex: 1; max-width: 260px;
+  padding: clamp(10px, 1.8vh, 18px) 14px; border-radius: 12px;
+  background: rgba(20, 28, 43, .9);
+  border: 1px solid var(--line);
+  display: flex; flex-direction: column; gap: 6px; align-items: center;
+}
+.spell.weak { border-color: var(--ec); box-shadow: 0 0 22px -8px var(--ec); }
+.spell.lock { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(62,224,192,.3); }
+.spell .se { font-size: 12px; font-weight: 800; color: var(--ec); }
+.spell .sw { font-size: clamp(18px, 3vh, 28px); font-weight: 800; }
+.spell .sw .hit { color: var(--accent); }
+
+/* =========================================================
+   끝말잇기
+   ========================================================= */
+.chainwrap {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; justify-content: center;
+  padding: clamp(14px, 2.4vh, 26px) clamp(16px, 3vw, 40px); gap: 12px;
+}
+.clog {
+  flex: 1; min-height: 0; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 8px; justify-content: flex-end;
+}
+.cline { display: flex; align-items: center; gap: 10px; }
+.cline.me { flex-direction: row-reverse; }
+.cline .cw { font-size: clamp(18px, 2.6vh, 24px); }
+.cline .ct {
+  padding: 8px 18px; border-radius: 999px;
+  font-size: clamp(17px, 2.8vh, 26px); font-weight: 800;
+  background: var(--panel2); border: 1px solid var(--line);
+}
+.cline.me .ct {
+  background: linear-gradient(135deg, var(--accent-d), var(--accent));
+  color: #04231d; border-color: transparent;
+}
+.cturn { text-align: center; font-size: clamp(14px, 2.2vh, 18px); font-weight: 700; }
+.cturn b { color: var(--accent); font-size: 1.3em; }
+.cturn .dim { color: var(--dim2); font-weight: 600; }
+.ctimer { height: 6px; border-radius: 999px; background: var(--panel2); overflow: hidden; }
+.ctimer i { display: block; height: 100%; width: 100%; background: var(--accent); transition: width .1s linear; }
+
 /* 게임 HUD */
 .hud {
   display: flex; align-items: center; gap: clamp(14px, 2.4vw, 34px);
