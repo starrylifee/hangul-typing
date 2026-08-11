@@ -48,8 +48,9 @@ var REPORT = (function () {
      하루치 집계
      ========================================================= */
   function summarize(dayKey) {
-    var d = APP.rec.days[dayKey];
-    if (!d) return null;
+    // 아직 아무것도 안 한 날도 빈 집계를 돌려준다.
+    // 아침에 어제 리포트만 불러오고 바로 PDF를 받는 경우가 있다.
+    var d = APP.rec.days[dayKey] || { practice: [], games: [], miss: {} };
     var pr = d.practice || [], gm = d.games || [];
     var sec = 0, keys = 0, err = 0, bestCpm = 0;
 
@@ -153,6 +154,7 @@ var REPORT = (function () {
     // 이 컴퓨터에 남은 기록이 우선
     for (k in APP.rec.days) {
       var s = summarize(k);
+      // 아무것도 안 한 날은 이력에 넣지 않는다
       if (s && (s.keys > 0 || s.sec > 0)) {
         out[k] = { sec: s.sec, keys: s.keys, err: s.err, acc: s.acc, cpm: s.cpm };
       }
