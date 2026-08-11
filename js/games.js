@@ -1,9 +1,12 @@
 /* =========================================================
-   games.js — 타자 게임 3종
-     defense : 낙하 낱말 방어전
-     race    : 컴퓨터와 달리기
+   games.js — 타자 게임 5종
+     defense : 낙하 낱말 방어전 (아이템 있음)
+     race    : 컴퓨터와 달리기 (아이템 있음)
      mole    : 두더지 타자
-   세 게임 모두 고른 단계의 자판으로만 된 낱말을 쓴다.
+     erase   : 낱말 지우개
+     spell   : 마법사 주문 (아이템 있음)
+   모두 고른 단계의 자판으로만 된 낱말을 쓴다.
+   아이템은 게임 성격에 맞는 곳에만 넣었다 (GAME_ITEMS).
    ========================================================= */
 var GAMES = (function () {
   'use strict';
@@ -23,17 +26,30 @@ var GAMES = (function () {
   var BASE_FALL = 3.2;          // %/초 — '쉬움' 기준으로 84% 내려오는 데 약 26초
   var GAME_NAME = {
     defense: '낱말 방어전', race: '컴퓨터와 달리기', mole: '두더지 타자',
-    build: '한글 조립', spell: '마법사 주문', chain: '끝말잇기'
+    erase: '낱말 지우개', spell: '마법사 주문'
   };
 
-  /* 아이템 — 낱말을 쳐서 없애면 효과가 걸린다 */
+  /* 아이템 — 아이템이 붙은 낱말을 쳐서 없애면 효과가 걸린다.
+     게임 성격에 맞는 곳에만 넣는다 (두더지는 칸이 빽빽해 넣지 않음). */
   var ITEMS = {
     freeze: { icon: '❄', name: '3초 멈춤', color: '#5ad4e6' },
     bomb: { icon: '💥', name: '모두 없애기', color: '#ff8fab' },
     heal: { icon: '❤', name: '방어선 회복', color: '#6ee7a0' },
-    double: { icon: '★', name: '점수 2배', color: '#ffcc5c' }
+    double: { icon: '★', name: '점수 2배', color: '#ffcc5c' },
+    boost: { icon: '⚡', name: '앞으로 쭉', color: '#ffd166' },
+    slowai: { icon: '🐢', name: '컴퓨터 느리게', color: '#7ee7c4' },
+    blast: { icon: '💫', name: '큰 피해', color: '#ff8a5c' },
+    potion: { icon: '❤', name: '체력 회복', color: '#6ee7a0' },
+    wild: { icon: '⭐', name: '만능 자모', color: '#ffcc5c' }
   };
   var ITEM_KEYS = ['freeze', 'bomb', 'heal', 'double'];
+  var GAME_ITEMS = {
+    defense: ['freeze', 'bomb', 'heal', 'double'],
+    race: ['boost', 'slowai', 'double'],
+    spell: ['blast', 'potion', 'double'],
+    mole: [],                      // 두더지는 칸이 빽빽해 넣지 않음
+    erase: []                      // 낱말 지우개는 시간 퍼즐이라 넣지 않음
+  };
 
   var sel = { level: 2, diff: 'first' };
   var G = null;        // 진행 중인 게임 상태
@@ -192,9 +208,8 @@ var GAMES = (function () {
     if (G.id === 'defense') stepDefense(dt);
     else if (G.id === 'race') stepRace(dt);
     else if (G.id === 'mole') stepMole(dt);
-    else if (G.id === 'build') stepBuild(dt);
+    else if (G.id === 'erase') stepErase(dt);
     else if (G.id === 'spell') stepSpell(dt);
-    else if (G.id === 'chain') stepChain(dt);
 
     var cpm = G.elapsed > 1 ? Math.round(G.keys / (G.elapsed / 60)) : 0;
     $('g-cpm').textContent = cpm;
@@ -232,8 +247,7 @@ var GAMES = (function () {
     var v = input.value;
 
     // 낱말을 통째로 확인해야 하는 게임은 엔터를 눌렀을 때만 판정한다
-    if (G.id === 'build') return buildInput(v, commit);
-    if (G.id === 'chain') return chainInput(v, commit);
+    if (G.id === 'erase') return eraseInput(v, commit);
 
     if (!v.length) {
       G.items.forEach(function (it) { it.lock = false; it.matched = 0; });
@@ -256,6 +270,11 @@ var GAMES = (function () {
     if (!best) {
       input.style.borderColor = 'var(--warn)';
       if (!G.wasBad) { G.errors++; G.wasBad = true; breakCombo(); }
+      // 한/영 키가 영문 상태인지 살펴서 알려 준다
+      var eng = G.items.some(function (it) {
+        return !it.dead && HG.judge(it.word, v).engMode;
+      });
+      if (eng) showEngWarn();
       draw();
       return;
     }
@@ -270,6 +289,17 @@ var GAMES = (function () {
       clearInput();
     }
     draw();
+  }
+
+  /** 한/영 키를 안 눌렀을 때 크게 알려 준다 */
+  function showEngWarn() {
+    var st = $('stage');
+    if (!st || st.querySelector('.engwarn')) return;
+    var w = document.createElement('div');
+    w.className = 'engwarn';
+    w.textContent = '한/영 키를 눌러 한글 자판으로 바꿔 주세요';
+    st.appendChild(w);
+    setTimeout(function () { w.remove(); }, 2200);
   }
 
   function clearInput() {
@@ -395,16 +425,7 @@ var GAMES = (function () {
     var active = G.items.filter(function (it) { return !it.dead; })
       .map(function (it) { return it.word; });
     var w = randWord(active);
-
-    // 아이템은 처음 두 번은 안 나오고, 그 뒤 여섯에 하나꼴
-    G.spawnCount = (G.spawnCount || 0) + 1;
-    var item = null;
-    if (G.spawnCount > 2 && Math.random() < 0.17) {
-      // 방어선이 깎였으면 회복이 더 잘 나오게
-      var pool = ITEM_KEYS.slice();
-      if (G.hp <= 50) pool.push('heal', 'heal');
-      item = pool[Math.floor(Math.random() * pool.length)];
-    }
+    var item = rollItem(0.17);
 
     var el = document.createElement('div');
     el.className = 'falling' + (item ? ' item' : '');
@@ -438,10 +459,36 @@ var GAMES = (function () {
     if (item.item) applyItem(item.item);
   }
 
-  /* ---------- 아이템 효과 ---------- */
+  /* ---------- 아이템 ---------- */
+  /** 이 게임에서 아이템 하나를 뽑는다 (안 나올 수도 있다) */
+  function rollItem(chance) {
+    var pool = GAME_ITEMS[G.id] || [];
+    if (!pool.length) return null;
+    G.spawnCount = (G.spawnCount || 0) + 1;
+    if (G.spawnCount <= 2) return null;              // 처음 두 번은 그냥
+    if (Math.random() >= (chance || 0.17)) return null;
+    var p = pool.slice();
+    // 체력이 깎였으면 회복이 더 잘 나오게
+    if (G.id === 'defense' && G.hp <= 50) p.push('heal', 'heal');
+    if (G.id === 'spell' && G.myHp <= 50) p.push('potion', 'potion');
+    return p[Math.floor(Math.random() * p.length)];
+  }
+
   function applyItem(kind) {
     var info = ITEMS[kind];
-    if (kind === 'freeze') {
+    if (kind === 'boost') {
+      G.myKeys = Math.min(G.totalKeys, G.myKeys + G.totalKeys * 0.12);
+    } else if (kind === 'slowai') {
+      G.aiSlowUntil = G.elapsed + 8;
+    } else if (kind === 'blast') {
+      G.bossHp -= 25;
+      shakeStage(500);
+      if (G.bossHp <= 0) { G.bossHp = 0; drawSpell(); flashItem(info); gameOver('🏆 보스를 물리쳤어요', true); return; }
+    } else if (kind === 'potion') {
+      G.myHp = Math.min(100, G.myHp + 28);
+    } else if (kind === 'wild') {
+      G.shelf.push('⭐');
+    } else if (kind === 'freeze') {
       G.freezeUntil = G.elapsed + 3.2;
     } else if (kind === 'bomb') {
       var gone = G.items.slice();
@@ -527,7 +574,9 @@ var GAMES = (function () {
 
   function stepRace(dt) {
     // 처음 5초는 컴퓨터가 기다려 준다 — 아이가 화면을 읽을 시간
-    if (G.elapsed > 5) G.aiKeys += (G.diff.aiCpm / 60) * dt;
+    var slow = G.aiSlowUntil > G.elapsed ? 0.4 : 1;
+    if (G.elapsed > 5) G.aiKeys += (G.diff.aiCpm * slow / 60) * dt;
+    if (G.aiSlowUntil && G.aiSlowUntil <= G.elapsed && G.slowOn) { G.slowOn = false; showBuff(); }
 
     var mp = Math.min(100, G.myKeys / G.totalKeys * 100);
     var ap = Math.min(100, G.aiKeys / G.totalKeys * 100);
@@ -569,6 +618,41 @@ var GAMES = (function () {
      ========================================================= */
   var MOLE_TIME = 60;
 
+  /* 두더지 그림 — 낱말 팻말을 들고 구멍에서 올라온다 */
+  var MOLE_SVG =
+    '<svg class="msvg" viewBox="0 0 100 92" aria-hidden="true">' +
+    '  <ellipse cx="50" cy="86" rx="30" ry="7" fill="rgba(0,0,0,.35)"/>' +
+    // 몸통
+    '  <path d="M22 88 C18 58 28 38 50 38 C72 38 82 58 78 88 Z" fill="#7a6357"/>' +
+    // 배
+    '  <path d="M34 88 C31 66 38 54 50 54 C62 54 69 66 66 88 Z" fill="#c8ad97"/>' +
+    // 머리
+    '  <ellipse cx="50" cy="40" rx="27" ry="24" fill="#8d7365"/>' +
+    // 볼
+    '  <ellipse cx="38" cy="47" rx="10" ry="8" fill="#a8897a"/>' +
+    '  <ellipse cx="62" cy="47" rx="10" ry="8" fill="#a8897a"/>' +
+    // 눈
+    '  <ellipse cx="41" cy="34" rx="4.6" ry="5.2" fill="#2b1f19"/>' +
+    '  <ellipse cx="59" cy="34" rx="4.6" ry="5.2" fill="#2b1f19"/>' +
+    '  <circle cx="42.6" cy="32.2" r="1.6" fill="#fff"/>' +
+    '  <circle cx="60.6" cy="32.2" r="1.6" fill="#fff"/>' +
+    // 코
+    '  <ellipse cx="50" cy="45" rx="6" ry="4.6" fill="#e8a0a8"/>' +
+    '  <ellipse cx="47.4" cy="44.2" rx="1.3" ry="1" fill="#8d5b62"/>' +
+    '  <ellipse cx="52.6" cy="44.2" rx="1.3" ry="1" fill="#8d5b62"/>' +
+    // 수염
+    '  <g stroke="#5c4438" stroke-width="1.2" stroke-linecap="round">' +
+    '    <path d="M42 49 L28 47"/><path d="M42 51 L29 53"/>' +
+    '    <path d="M58 49 L72 47"/><path d="M58 51 L71 53"/>' +
+    '  </g>' +
+    // 앞니
+    '  <rect x="47" y="49.5" width="6" height="5" rx="1.2" fill="#fff"/>' +
+    '  <line x1="50" y1="49.5" x2="50" y2="54.5" stroke="#dcd2c8" stroke-width=".8"/>' +
+    // 팻말 든 손
+    '  <ellipse cx="24" cy="66" rx="8" ry="7" fill="#7a6357"/>' +
+    '  <ellipse cx="76" cy="66" rx="8" ry="7" fill="#7a6357"/>' +
+    '</svg>';
+
   function startMole() {
     prepare('mole');
     var st = $('stage');
@@ -577,12 +661,18 @@ var GAMES = (function () {
     for (var i = 0; i < 9; i++) {
       var h = document.createElement('div');
       h.className = 'hole';
-      h.innerHTML = '<div class="word"></div><div class="timer"></div>';
+      h.innerHTML =
+        '<div class="dirt"></div>' +
+        '<div class="mole">' + MOLE_SVG + '<div class="sign"><div class="word"></div></div></div>' +
+        '<div class="timer"></div>';
       wrap.appendChild(h);
     }
     st.appendChild(wrap);
     G.holes = [].slice.call(wrap.children).map(function (el) {
-      return { el: el, wordEl: el.querySelector('.word'), timerEl: el.querySelector('.timer'), item: null };
+      return {
+        el: el, wordEl: el.querySelector('.word'),
+        timerEl: el.querySelector('.timer'), item: null
+      };
     });
     G.missed = 0;
     G.spawnAcc = 0.4;
@@ -658,191 +748,161 @@ var GAMES = (function () {
   }
 
   /* =========================================================
-     4) 한글 조립 — 떨어진 자모를 모아 글자를 만든다
+     4) 낱말 지우개 — 판에 깔린 자모를 낱말로 지운다
+        판은 그 단계 낱말들을 자모로 풀어 섞어 만든다.
+        그래서 반드시 지울 수 있는 낱말이 판 안에 들어 있다.
      ========================================================= */
-  var BUILD_CAP = 9;
+  var ERASE_WORDS = { first: 8, easy: 11, normal: 15, hard: 20 };
+  var ERASE_TIME = { first: 150, easy: 120, normal: 95, hard: 75 };
 
-  function levelJamos(lv) {
-    var cons = [], vow = [];
-    lv.keyList.forEach(function (k) {
+  /** 낱말을 기본 자모로 풀어낸다 (겹받침·겹모음도 낱개로) */
+  function jamosOfWord(w) {
+    var out = [];
+    HG.textToKeys(w).forEach(function (k) {
       var j = HG.KEYMAP[k];
-      if (!j) return;
-      if (j.charCodeAt(0) >= 0x314F && j.charCodeAt(0) <= 0x3163) vow.push(j);
-      else cons.push(j);
+      if (j) out.push(j);
     });
-    return { cons: cons, vow: vow };
+    return out;
   }
 
-  function startBuild() {
-    prepare('build');
+  function startErase() {
+    prepare('erase');
     var st = $('stage');
     var wrap = document.createElement('div');
-    wrap.className = 'buildwrap';
+    wrap.className = 'erasewrap';
     wrap.innerHTML =
-      '<div class="bhint" id="b-hint"></div>' +
-      '<div class="bshelf" id="b-shelf"></div>' +
-      '<div class="bcap">보관함 <b id="b-count">0</b> / ' + BUILD_CAP + '</div>';
+      '<div class="ehead">' +
+      '  <span id="e-left">남은 시간</span>' +
+      '  <span id="e-goal"></span>' +
+      '</div>' +
+      '<div class="eboard" id="e-board"></div>' +
+      '<div class="ehint" id="e-hint"></div>';
     st.appendChild(wrap);
 
-    G.jamos = levelJamos(G.level);
-    G.shelf = [];                   // 보관함에 쌓인 자모
-    G.spawnAcc = 0;
-    G.limitY = 66;
-    drawBuild();
-  }
+    var pool = DATA.WORD_UPTO[sel.level] || DATA.WORDS;
+    var n = Math.min(ERASE_WORDS[G.diff.id] || 12, pool.length);
+    var picks = DATA.shuffle(pool.slice()).slice(0, n);
 
-  // 이 게임은 낙하가 아니라 조립이 어려운 부분이라 낙하 속도를 따로 잡는다
-  var BUILD_FALL = { first: 7, easy: 8.5, normal: 11, hard: 14 };      // %/초
-  var BUILD_SPAWN = { first: 4.2, easy: 3.4, normal: 2.6, hard: 2.0 }; // 초
-
-  function stepBuild(dt) {
-    var d = G.diff;
-    var ramp = 1 + Math.min(G.elapsed / 120, 1) * d.ramp;
-    var speed = (BUILD_FALL[d.id] || 9) * ramp;
-    var interval = Math.max(1.2, (BUILD_SPAWN[d.id] || 3) / ramp);
-
-    G.spawnAcc += dt;
-    if (G.spawnAcc >= interval && G.items.length < 4) {
-      G.spawnAcc = 0;
-      spawnJamo();
-    }
-
-    var landed = false;
-    G.items.forEach(function (it) {
-      if (it.dead) return;
-      it.y += speed * dt;
-      if (it.y >= G.limitY) {
-        it.dead = true;
-        it.el.remove();
-        G.shelf.push(it.word);
-        landed = true;
-      }
+    var tiles = [];
+    picks.forEach(function (w) {
+      jamosOfWord(w).forEach(function (j) { tiles.push(j); });
     });
-    G.items = G.items.filter(function (it) { return !it.dead; });
+    G.tiles = DATA.shuffle(tiles);          // 지워진 자리는 null 로 남긴다
+    G.total = G.tiles.length;
+    G.cleared = 0;
+    G.goal = Math.ceil(G.total * 0.5);
+    G.left = ERASE_TIME[G.diff.id] || 100;
+    G.dict = DATA.shuffle(pool.slice());
+    G.dictSet = {};
+    pool.forEach(function (w) { G.dictSet[w] = 1; });
+    drawErase();
+  }
 
-    if (landed) {
-      drawBuild();
-      $('g-prog').style.width = (G.shelf.length / BUILD_CAP * 100) + '%';
-      if (G.shelf.length >= BUILD_CAP) {
-        gameOver('보관함이 가득 찼어요');
-        return;
-      }
+  function stepErase(dt) {
+    G.left -= dt;
+    var le = $('e-left');
+    if (le) le.textContent = '남은 시간 ' + Math.max(0, Math.ceil(G.left)) + '초';
+    $('g-prog').style.width = Math.min(100, G.cleared / G.goal * 100) + '%';
+
+    if (G.cleared >= G.goal) {
+      gameOver('🏆 목표를 채웠어요! ' + Math.round(G.cleared / G.total * 100) + '% 지움', true);
+      return;
     }
-    G.items.forEach(function (it) { it.el.style.top = it.y + '%'; });
-  }
-
-  function spawnJamo() {
-    // 보관함에 모음이 없으면 모음이 나오게 해서 글자를 만들 수 있게 한다
-    var hasVow = G.shelf.some(function (j) {
-      var c = j.charCodeAt(0); return c >= 0x314F && c <= 0x3163;
-    });
-    var pool = (!hasVow && G.jamos.vow.length) ? G.jamos.vow
-      : (Math.random() < 0.45 ? G.jamos.vow : G.jamos.cons);
-    if (!pool.length) pool = G.jamos.cons.concat(G.jamos.vow);
-    var j = pool[Math.floor(Math.random() * pool.length)];
-
-    var el = document.createElement('div');
-    el.className = 'falling jamo';
-    el.style.left = (14 + Math.random() * 72) + '%';
-    el.style.top = '0%';
-    el.textContent = j;
-    $('stage').appendChild(el);
-    G.items.push({ word: j, el: el, y: 0, dead: false });
-  }
-
-  function drawBuild() {
-    var shelf = $('b-shelf');
-    if (!shelf) return;
-    shelf.innerHTML = G.shelf.map(function (j) {
-      return '<span class="btile">' + esc(j) + '</span>';
-    }).join('');
-    $('b-count').textContent = G.shelf.length;
-    var hint = $('b-hint');
-    var can = findBuildable();
-    hint.innerHTML = can
-      ? '만들 수 있어요 → <b>' + esc(can) + '</b> 치고 엔터'
-      : '자모를 더 모아 보세요';
-  }
-
-  /** 보관함 자모만으로 만들 수 있는 글자 하나를 찾아 힌트로 준다 */
-  function findBuildable() {
-    var pool = countJamo(G.shelf);
-    var cons = [], vow = [];
-    for (var j in pool) {
-      var c = j.charCodeAt(0);
-      if (c >= 0x314F && c <= 0x3163) vow.push(j); else cons.push(j);
+    if (G.left <= 0) {
+      var pct = Math.round(G.cleared / G.total * 100);
+      gameOver(pct >= 50 ? '🏆 ' + pct + '% 지웠어요' : '시간 종료 · ' + pct + '% 지웠어요', pct >= 50);
     }
-    for (var a = 0; a < cons.length; a++) {
-      for (var b = 0; b < vow.length; b++) {
-        var s = APP.compose(cons[a], vow[b], '');
-        if (s) return s;
-      }
+  }
+
+  /** 지금 판으로 지울 수 있는 낱말 하나 */
+  function findErasable() {
+    var have = {};
+    G.tiles.forEach(function (j) { if (j) have[j] = (have[j] || 0) + 1; });
+    for (var i = 0; i < G.dict.length; i++) {
+      var need = jamosOfWord(G.dict[i]);
+      if (!need.length) continue;
+      var want = {}, ok = true;
+      need.forEach(function (j) { want[j] = (want[j] || 0) + 1; });
+      for (var j in want) { if ((have[j] || 0) < want[j]) { ok = false; break; } }
+      if (ok) return G.dict[i];
     }
     return null;
   }
 
-  function countJamo(list) {
-    var m = {};
-    list.forEach(function (j) { m[j] = (m[j] || 0) + 1; });
-    return m;
+  function drawErase() {
+    var b = $('e-board');
+    if (!b) return;
+    b.innerHTML = G.tiles.map(function (j) {
+      return j
+        ? '<span class="etile">' + esc(j) + '</span>'
+        : '<span class="etile gone"></span>';
+    }).join('');
+    var g = $('e-goal');
+    if (g) g.innerHTML = '지운 자모 <b>' + G.cleared + '</b> / 목표 ' + G.goal +
+      ' <span class="dim">(전체 ' + G.total + ')</span>';
+    showEraseHint();
   }
 
-  /** 입력한 글자를 보관함 자모로 만들 수 있는지 확인하고 차감한다 */
-  function buildInput(v, commit) {
+  function showEraseHint() {
+    var h = $('e-hint');
+    if (!h) return;
+    var w = findErasable();
+    if (!w) { h.innerHTML = '<span class="dim">더 지울 낱말이 없어요</span>'; return; }
+    var d = G.diff.id;
+    if (d === 'first' || d === 'easy') {
+      h.innerHTML = '이런 낱말을 칠 수 있어요 → <b>' + esc(w) + '</b>';
+    } else if (d === 'normal') {
+      h.innerHTML = '<b>' + esc(w[0]) + '</b> 로 시작하는 낱말을 칠 수 있어요';
+    } else {
+      h.innerHTML = '<span class="dim">판을 보고 낱말을 찾아 치세요</span>';
+    }
+  }
+
+  function eraseInput(v, commit) {
     var input = $('gamein');
     if (!commit) { input.style.borderColor = ''; return; }
-    var word = v.trim();
-    if (!word) return;
+    var w = v.trim();
+    if (!w) return;
 
-    // 낱말을 기본 자모로 모두 분해
-    var need = [];
-    var ok = true;
-    for (var i = 0; i < word.length; i++) {
-      var keys = HG.charToKeys(word[i]);
-      if (!keys.length) { ok = false; break; }
-      keys.forEach(function (k) {
-        var j = HG.KEYMAP[k.toLowerCase()];
-        // 윗글쇠 자모는 그대로 쓴다
-        need.push(HG.KEYMAP[k] || j);
-      });
-    }
-    if (!ok || !need.length) { badBuild('글자를 다시 확인해 보세요'); return; }
+    if (!G.dictSet[w]) { badErase('이 단계 낱말 목록에 없어요'); return; }
 
-    var have = countJamo(G.shelf);
-    var short = null;
-    var want = countJamo(need);
-    for (var j in want) {
-      if ((have[j] || 0) < want[j]) { short = j; break; }
-    }
-    if (short) { badBuild('보관함에 ' + short + ' 이(가) 모자라요'); return; }
+    var need = jamosOfWord(w);
+    var have = {};
+    G.tiles.forEach(function (j) { if (j) have[j] = (have[j] || 0) + 1; });
+    var want = {}, missing = null;
+    need.forEach(function (j) { want[j] = (want[j] || 0) + 1; });
+    for (var j in want) { if ((have[j] || 0) < want[j]) { missing = j; break; } }
+    if (missing) { badErase('판에 ' + missing + ' 이(가) 모자라요'); return; }
 
-    // 차감
-    need.forEach(function (j) {
-      var idx = G.shelf.indexOf(j);
-      if (idx >= 0) G.shelf.splice(idx, 1);
+    // 같은 자모가 여러 개면 그 중 아무거나 하나를 지운다
+    need.forEach(function (jm) {
+      var idxs = [];
+      for (var i = 0; i < G.tiles.length; i++) if (G.tiles[i] === jm) idxs.push(i);
+      if (!idxs.length) return;
+      G.tiles[idxs[Math.floor(Math.random() * idxs.length)]] = null;
     });
+
+    G.cleared += need.length;
     G.combo++;
     if (G.combo > G.bestCombo) G.bestCombo = G.combo;
-    G.score += need.length * 15 * (1 + Math.min(G.combo, 15) * 0.05);
-    G.score = Math.round(G.score);
-    G.keys += HG.textToKeys(word).length;
+    G.score += Math.round(need.length * 20 * (1 + Math.min(G.combo, 15) * 0.05));
+    G.keys += HG.textToKeys(w).length;
     $('g-score').textContent = G.score;
     $('g-combo').textContent = G.combo;
     input.style.borderColor = '';
-    flashItem({ icon: '✦', name: word + ' 완성', color: '#3ee0c0' });
+    flashItem({ icon: '✦', name: w + ' 지움', color: '#3ee0c0' });
     clearInput();
-    drawBuild();
-    $('g-prog').style.width = (G.shelf.length / BUILD_CAP * 100) + '%';
+    drawErase();
   }
 
-  function badBuild(msg) {
+  function badErase(msg) {
     var input = $('gamein');
     input.style.borderColor = 'var(--warn)';
     G.errors++;
     breakCombo();
-    var h = $('b-hint');
+    var h = $('e-hint');
     if (h) h.innerHTML = '<span style="color:var(--warn)">' + esc(msg) + '</span>';
-    setTimeout(drawBuild, 1400);
+    setTimeout(function () { if (G && G.running) showEraseHint(); }, 1500);
   }
 
   /* =========================================================
@@ -910,12 +970,19 @@ var GAMES = (function () {
     var d = G.diff;
     // 보스 공격 주기 — 난이도가 낮을수록 느리다
     var period = { first: 9, easy: 7, normal: 5, hard: 3.6 }[d.id] || 6;
+    // 공격 2초 전부터 기를 모은다 — 예고가 있어야 긴장이 생긴다
+    var wind = period - 2;
+    if (!G.charging && G.atkAcc >= wind) {
+      G.charging = true;
+      var bico = $('s-bico');
+      if (bico) bico.classList.add('charge');
+    }
+
     G.atkAcc += dt;
     if (G.atkAcc >= period) {
       G.atkAcc = 0;
-      G.myHp -= 12;
-      breakCombo();
-      flashItem({ icon: '💢', name: '공격을 받았어요', color: '#ff6b81' });
+      G.charging = false;
+      bossAttack();
       if (G.myHp <= 0) { G.myHp = 0; drawSpell(); gameOver('마법사가 쓰러졌어요'); return; }
     }
     // 보스가 가끔 속성을 바꾼다
@@ -929,11 +996,72 @@ var GAMES = (function () {
     drawSpell();
   }
 
+  /* ---------- 보스 공격 연출 ---------- */
+  function shakeStage(ms) {
+    var st = $('stage');
+    if (!st) return;
+    st.classList.add('shake');
+    setTimeout(function () { st.classList.remove('shake'); }, ms || 420);
+  }
+
+  function bossAttack() {
+    var e = ELEMS[G.elem];
+    G.myHp -= 12;
+    breakCombo();
+
+    var st = $('stage');
+    var bico = $('s-bico');
+    if (bico) {
+      bico.classList.remove('charge');
+      bico.classList.add('roar');
+      setTimeout(function () { if (bico) bico.classList.remove('roar'); }, 620);
+    }
+
+    // 보스 입에서 화면 아래로 뻗어 나가는 숨결
+    if (st) {
+      var breath = document.createElement('div');
+      breath.className = 'breath ' + G.elem;
+      breath.style.setProperty('--ec', e.color);
+      breath.innerHTML = e.icon + e.icon + e.icon;
+      st.appendChild(breath);
+      setTimeout(function () { breath.remove(); }, 800);
+
+      // 화면 전체가 그 속성 색으로 번쩍
+      var flash = document.createElement('div');
+      flash.className = 'hitflash';
+      flash.style.setProperty('--ec', e.color);
+      st.appendChild(flash);
+      setTimeout(function () { flash.remove(); }, 520);
+    }
+    shakeStage(520);
+    flashItem({ icon: '💢', name: e.name + ' 공격 · 12 피해', color: '#ff6b81' });
+  }
+
   function spellHit(item) {
     var weak = weakness(G.elem);
     var strong = item.elem === weak;
     var dmg = strong ? 22 : 7;
     G.bossHp -= dmg;
+
+    // 내 주문이 보스에게 날아가는 연출
+    var st = $('stage');
+    if (st) {
+      var bolt = document.createElement('div');
+      bolt.className = 'bolt' + (strong ? ' strong' : '');
+      bolt.style.setProperty('--ec', ELEMS[item.elem].color);
+      bolt.textContent = ELEMS[item.elem].icon;
+      st.appendChild(bolt);
+      setTimeout(function () { bolt.remove(); }, 520);
+    }
+    var bico = $('s-bico');
+    if (bico) {
+      bico.classList.add(strong ? 'bighit' : 'hit');
+      setTimeout(function () {
+        if (bico) bico.classList.remove('bighit', 'hit');
+      }, strong ? 560 : 320);
+    }
+    if (strong) shakeStage(380);
+
     flashItem({
       icon: ELEMS[item.elem].icon,
       name: strong ? '약점 적중! ' + dmg : dmg + ' 피해',
@@ -953,6 +1081,15 @@ var GAMES = (function () {
     var e = ELEMS[G.elem];
     var be = $('s-belem');
     if (!be) return;
+
+    // 몰릴수록 커지고 붉어진다
+    var bico = $('s-bico');
+    if (bico) {
+      var rage = G.bossHp <= 35;
+      bico.classList.toggle('rage', rage);
+      bico.style.setProperty('--grow', (1 + (100 - G.bossHp) / 100 * 0.35).toFixed(3));
+      bico.style.setProperty('--ec', e.color);
+    }
     be.innerHTML = '<span style="--ec:' + e.color + '">' + e.icon + ' ' + e.name + ' 보스</span>' +
       '<em>약점 · ' + ELEMS[weakness(G.elem)].icon + ' ' + ELEMS[weakness(G.elem)].name + '</em>';
     $('s-bhp').style.width = G.bossHp + '%';
@@ -971,165 +1108,6 @@ var GAMES = (function () {
         '<div class="se">' + el.icon + ' ' + el.name + (it.elem === weak ? ' · 약점' : '') + '</div>' +
         '<div class="sw">' + wordHtml(it) + '</div></div>';
     }).join('');
-  }
-
-  /* =========================================================
-     6) 끝말잇기 — 컴퓨터와 번갈아 낱말을 잇는다
-     ========================================================= */
-  function startChain() {
-    prepare('chain');
-    var st = $('stage');
-    var wrap = document.createElement('div');
-    wrap.className = 'chainwrap';
-    wrap.innerHTML =
-      '<div class="clog" id="c-log"></div>' +
-      '<div class="cturn" id="c-turn"></div>' +
-      '<div class="ctimer"><i id="c-timer"></i></div>';
-    st.appendChild(wrap);
-
-    // 끝말잇기는 이을 낱말이 많아야 재미있다.
-    // 쉬운 난이도의 "짧은 낱말만" 제한을 빼고 그 단계 낱말을 모두 쓴다.
-    var all = DATA.WORD_UPTO[sel.level] || DATA.WORDS;
-    G.dict = all.filter(function (w) { return w.length >= 2; });
-    G.dictSet = {};
-    G.first = {};                   // 첫 글자 -> 낱말들
-    G.dict.forEach(function (w) {
-      G.dictSet[w] = 1;
-      (G.first[w[0]] || (G.first[w[0]] = [])).push(w);
-    });
-    G.used = {};
-    G.chain = [];
-    G.limit = { first: 40, easy: 30, normal: 22, hard: 15 }[G.diff.id] || 25;
-    G.left = G.limit;
-    G.turn = 'ai';
-    G.aiWait = 1.2;
-    drawChain();
-  }
-
-  function lastChar(w) { return w[w.length - 1]; }
-
-  /** 그 글자로 시작하면서 아직 안 쓴 낱말들 */
-  function openWords(ch) {
-    var list = G.first[ch] || [];
-    return list.filter(function (w) { return !G.used[w]; });
-  }
-
-  function aiPick(startCh) {
-    var cand = startCh ? openWords(startCh) : G.dict.slice();
-    if (!cand.length) return null;
-
-    // 사전이 작아서, 답이 없는 낱말을 내면 아이가 손도 못 댄다.
-    // 다음 사람이 이을 수 있는 낱말을 먼저 고른다.
-    var fair = cand.filter(function (w) {
-      return openWords(lastChar(w)).filter(function (x) { return x !== w; }).length > 0;
-    });
-    var use = fair.length ? fair : cand;
-
-    // 쉬운 난이도에서는 이을 길이 넉넉한 낱말을 골라 준다
-    if (G.diff.id === 'first' || G.diff.id === 'easy') {
-      use = use.slice().sort(function (a, b) {
-        return openWords(lastChar(b)).length - openWords(lastChar(a)).length;
-      }).slice(0, Math.max(3, Math.ceil(use.length * 0.3)));
-    }
-    return use[Math.floor(Math.random() * use.length)];
-  }
-
-  function stepChain(dt) {
-    if (G.turn === 'ai') {
-      G.aiWait -= dt;
-      if (G.aiWait <= 0) {
-        var need = G.chain.length ? lastChar(G.chain[G.chain.length - 1].word) : null;
-        var w = need ? aiPick(need) : G.dict[Math.floor(Math.random() * G.dict.length)];
-        if (!w) {
-          gameOver('🏆 컴퓨터가 잇지 못했어요. 이겼습니다', true);
-          return;
-        }
-        G.used[w] = 1;
-        G.chain.push({ who: 'ai', word: w });
-        G.turn = 'me';
-        G.left = G.limit;
-        drawChain();
-
-        // 아이가 이을 낱말이 하나도 없으면 막다른 길이다. 벌 대신 승리로 끝낸다.
-        if (!openWords(lastChar(w)).length) {
-          gameOver('🏆 더 이을 낱말이 없어요. 이겼습니다', true);
-          return;
-        }
-      }
-      return;
-    }
-    // 내 차례 — 제한 시간
-    G.left -= dt;
-    $('c-timer').style.width = Math.max(0, G.left / G.limit * 100) + '%';
-    $('c-timer').style.background = G.left < G.limit * 0.3 ? 'var(--warn)' : 'var(--accent)';
-    if (G.left <= 0) {
-      gameOver('시간이 다 됐어요');
-      return;
-    }
-  }
-
-  function chainInput(v, commit) {
-    var input = $('gamein');
-    if (!commit) { input.style.borderColor = ''; return; }
-    if (G.turn !== 'me') return;
-    var w = v.trim();
-    if (!w) return;
-
-    var need = G.chain.length ? lastChar(G.chain[G.chain.length - 1].word) : null;
-    var why = null;
-    if (w.length < 2) why = '두 글자 이상 낱말이어야 해요';
-    else if (need && w[0] !== need) why = '"' + need + '" 로 시작해야 해요';
-    else if (G.used[w]) why = '이미 나온 낱말이에요';
-    else if (!G.dictSet[w]) why = '이 단계 낱말 목록에 없어요';
-
-    if (why) {
-      input.style.borderColor = 'var(--warn)';
-      G.errors++;
-      breakCombo();
-      var t = $('c-turn');
-      if (t) t.innerHTML = '<span style="color:var(--warn)">' + esc(why) + '</span>';
-      return;
-    }
-
-    G.used[w] = 1;
-    G.chain.push({ who: 'me', word: w });
-    G.combo++;
-    if (G.combo > G.bestCombo) G.bestCombo = G.combo;
-    G.score += w.length * 25 * (1 + Math.min(G.combo, 15) * 0.05);
-    G.score = Math.round(G.score);
-    G.keys += HG.textToKeys(w).length;
-    $('g-score').textContent = G.score;
-    $('g-combo').textContent = G.combo;
-    input.style.borderColor = '';
-    clearInput();
-    G.turn = 'ai';
-    G.aiWait = { first: 2.2, easy: 1.8, normal: 1.2, hard: 0.7 }[G.diff.id] || 1.2;
-    drawChain();
-  }
-
-  function drawChain() {
-    var log = $('c-log');
-    if (!log) return;
-    log.innerHTML = G.chain.slice(-7).map(function (c) {
-      return '<div class="cline ' + c.who + '">' +
-        '<span class="cw">' + (c.who === 'ai' ? '🤖' : '🙋') + '</span>' +
-        '<span class="ct">' + esc(c.word) + '</span></div>';
-    }).join('');
-    log.scrollTop = log.scrollHeight;
-
-    var t = $('c-turn');
-    if (G.turn === 'ai') {
-      t.innerHTML = '<span class="dim">컴퓨터가 생각하고 있어요…</span>';
-    } else {
-      var need = G.chain.length ? lastChar(G.chain[G.chain.length - 1].word) : '아무';
-      var html = '<b>' + esc(need) + '</b> 로 시작하는 낱말을 치고 엔터';
-      // 쉬운 난이도에서는 보기를 하나 보여 준다
-      if (G.diff.id === 'first' || G.diff.id === 'easy') {
-        var ex = openWords(need);
-        if (ex.length) html += ' <span class="dim">· 예를 들면 ' + esc(ex[0]) + '</span>';
-      }
-      t.innerHTML = html;
-    }
   }
 
   /* =========================================================
@@ -1190,9 +1168,8 @@ var GAMES = (function () {
     if (id === 'defense') startDefense();
     else if (id === 'race') startRace();
     else if (id === 'mole') startMole();
-    else if (id === 'build') startBuild();
+    else if (id === 'erase') startErase();
     else if (id === 'spell') startSpell();
-    else if (id === 'chain') startChain();
   }
 
   function init() {

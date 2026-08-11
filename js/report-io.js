@@ -502,41 +502,17 @@
   }
 
   /* =========================================================
-     통과 기준 설정
-     ========================================================= */
-  function openGoals() {
-    var g = REPORT.goals();
-    $('g-min').value = g.minutes;
-    $('g-acc').value = g.acc;
-    var row = $('g-cpm-row');
-    row.innerHTML = '';
-    DATA.LEVELS.forEach(function (lv) {
-      var d = document.createElement('div');
-      d.className = 'gc';
-      d.innerHTML = '<span>' + lv.no + '단계</span>' +
-        '<input type="number" min="10" max="600" data-lv="' + lv.no + '" value="' + g.cpm[lv.no] + '">';
-      row.appendChild(d);
-    });
-    $('modal-goals').hidden = false;
-  }
-
-  function saveGoals() {
-    var g = { minutes: 0, acc: 0, cpm: {} };
-    g.minutes = Math.max(1, Number($('g-min').value) || REPORT.DEFAULT_GOALS.minutes);
-    g.acc = Math.min(100, Math.max(50, Number($('g-acc').value) || REPORT.DEFAULT_GOALS.acc));
-    document.querySelectorAll('#g-cpm-row input').forEach(function (i) {
-      g.cpm[i.dataset.lv] = Math.max(10, Number(i.value) || 100);
-    });
-    APP.rec.goals = g;
-    APP.save();
-    $('modal-goals').hidden = true;
-    REPORT.render();
-    APP.toast('통과 기준을 저장했습니다.');
-  }
-
-  /* =========================================================
      연결
      ========================================================= */
+  /** 지난 기록이 하나도 없으면 어제 리포트를 먼저 불러오라고 알려 준다 */
+  function hasPastRecord() {
+    var today = APP.todayKey();
+    var imp = APP.rec.imported || {};
+    for (var k in imp) if (k !== today) return true;
+    for (var d in APP.rec.days) if (d !== today) return true;
+    return false;
+  }
+
   function init() {
     $('btn-open-report').onclick = function () {
       REPORT.resetComment();
@@ -549,18 +525,14 @@
       this.value = '';
     });
 
-    $('btn-goals').onclick = openGoals;
-    $('g-save').onclick = saveGoals;
-    $('g-close').onclick = function () { $('modal-goals').hidden = true; };
-    $('g-reset').onclick = function () {
-      APP.rec.goals = null; APP.save(); openGoals(); REPORT.render();
-    };
-    $('modal-goals').addEventListener('mousedown', function (e) {
-      if (e.target === this) this.hidden = true;
-    });
-
     $('btn-pdf').onclick = function () {
       var btn = this;
+      // 어제 것을 안 불러왔으면 기록이 끊긴다. 내려받기 전에 한 번 짚어 준다.
+      if (!hasPastRecord() && !btn._warned) {
+        btn._warned = true;
+        APP.toast('지난 기록이 없습니다. 어제 리포트가 있으면 먼저 불러오세요. 한 번 더 누르면 그대로 내려받습니다.');
+        return;
+      }
       btn.disabled = true;
       var old = btn.textContent;
       btn.textContent = '만드는 중…';

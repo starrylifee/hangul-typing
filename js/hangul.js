@@ -106,6 +106,37 @@ var HG = (function () {
     return groups;
   }
 
+  /* ---------- 한/영 구분이 되는 키 목록 ----------
+     키만 비교하면 한/영이 영문 상태일 때 'rk' 가 '가' 로 인정된다.
+     그 글자가 한글에서 나온 키인지(h)를 같이 들고 다녀야 구분할 수 있다. */
+  function charToKeyPairs(ch) {
+    var code = ch.charCodeAt(0);
+    var i, out = [];
+    if (code >= SBASE && code <= SLAST) {
+      var keys = charToKeys(ch);
+      for (i = 0; i < keys.length; i++) out.push({ k: keys[i], h: true });
+      return out;
+    }
+    if (JAMO2KEY[ch] || COMPOSITE[ch]) {
+      var jk = jamoToKeys(ch);
+      for (i = 0; i < jk.length; i++) out.push({ k: jk[i], h: true });
+      return out;
+    }
+    return [{ k: ch, h: false }];       // 공백·문장부호·영문 그 자체
+  }
+
+  function textToPairGroups(text) {
+    var groups = [];
+    for (var i = 0; i < text.length; i++) groups.push(charToKeyPairs(text[i]));
+    return groups;
+  }
+
+  function textToPairs(text) {
+    var out = [];
+    for (var i = 0; i < text.length; i++) out = out.concat(charToKeyPairs(text[i]));
+    return out;
+  }
+
   /* ---------- 자모 분해(표시용) ---------- */
   function decompose(ch) {
     var code = ch.charCodeAt(0);
@@ -155,14 +186,20 @@ var HG = (function () {
    *   badFrom   : 틀리기 시작한 글자 인덱스(-1이면 없음)
    */
   function judge(target, typed) {
-    var groups = textToKeyGroups(target);
-    var tKeys = textToKeys(typed);
+    var groups = textToPairGroups(target);
+    var tPairs = textToPairs(typed);
 
-    var gi = 0, ki = 0, matched = 0, bad = -1;
-    for (var i = 0; i < tKeys.length; i++) {
+    var gi = 0, ki = 0, matched = 0, bad = -1, eng = false;
+    for (var i = 0; i < tPairs.length; i++) {
       if (gi >= groups.length) { bad = groups.length; break; }
       var expect = groups[gi][ki];
-      if (tKeys[i] !== expect) { bad = gi; break; }
+      var got = tPairs[i];
+      if (got.k !== expect.k || got.h !== expect.h) {
+        bad = gi;
+        // 한글을 쳐야 하는데 영문 글자가 들어왔다 = 한/영 키가 영문 상태
+        if (expect.h && !got.h && /^[A-Za-z]$/.test(got.k)) eng = true;
+        break;
+      }
       matched++;
       ki++;
       if (ki >= groups[gi].length) { gi++; ki = 0; }
@@ -178,6 +215,7 @@ var HG = (function () {
       charDone: gi,
       partial: ki,               // 현재 글자에서 몇 키까지 쳤나
       badFrom: bad,
+      engMode: eng,              // 한/영 키를 안 눌렀을 때 true
       complete: bad === -1 && gi >= groups.length
     };
   }

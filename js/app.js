@@ -467,6 +467,18 @@ var APP = (function () {
     KB.highlight(j.ok ? HG.nextKey(curItem(), v) : null);
     S.curMatched = j.matched;
 
+    // 한/영 키가 영문 상태면 아무리 쳐도 안 맞는다. 바로 알려 준다.
+    var hint = $('hintline');
+    if (j.engMode) {
+      hint.innerHTML = '<b class="warnhint">한/영 키를 눌러 한글 자판으로 바꿔 주세요</b>';
+      $('typebox').classList.add('eng');
+    } else {
+      $('typebox').classList.remove('eng');
+      if (hint.querySelector('.warnhint')) {
+        hint.textContent = '틀리면 지우고 다시 치면 됩니다 · 한 줄을 다 치면 엔터';
+      }
+    }
+
     if (j.complete) {
       // 조합이 아직 안 끝났으면 엔터(또는 조합 종료)를 기다린다
       if (composing) {

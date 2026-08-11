@@ -10,10 +10,13 @@ var REPORT = (function () {
   var MARK_A = 'TYPING-DATA-v1';
   var MARK_B = 'END-TYPING-DATA';
 
+  /* 오늘 목표.
+     컴퓨터를 처음 만지는 아이 기준으로 넉넉하게 잡았다.
+     떨어뜨리기 위한 기준이 아니라, 오늘 무엇을 했는지 보여 주기 위한 눈금이다. */
   var DEFAULT_GOALS = {
-    minutes: 15,
-    acc: 95,
-    cpm: { 1: 80, 2: 90, 3: 100, 4: 110, 5: 120, 6: 130, 7: 140 }
+    minutes: 10,
+    acc: 85,
+    cpm: { 1: 40, 2: 45, 3: 50, 4: 55, 5: 60, 6: 65, 7: 70 }
   };
 
   function goals() {
@@ -112,11 +115,15 @@ var REPORT = (function () {
       ok: lvOk
     });
 
-    var passed = minOk && accOk && lvOk;
-    var grade = passed ? '통과'
-      : (minOk || accOk || lvOk) ? '조금 더' : '다시';
+    var done = (minOk ? 1 : 0) + (accOk ? 1 : 0) + (lvOk ? 1 : 0);
+    var passed = done === 3;
+    // 떨어뜨리는 판정이 아니라 오늘 어디까지 왔는지 보여 주는 말이다
+    var grade = done === 3 ? '아주 잘했어요'
+      : done === 2 ? '거의 다 왔어요'
+        : done === 1 ? '잘하고 있어요'
+          : '오늘도 시작';
     return {
-      passed: passed, grade: grade, checks: checks,
+      passed: passed, grade: grade, done: done, checks: checks,
       levelPass: levelPass, levelFail: levelFail
     };
   }
@@ -195,10 +202,10 @@ var REPORT = (function () {
       '</div>' +
       '</div>';
 
-    /* --- 판정 --- */
-    h += '<div class="verdict ' + (jd.passed ? 'ok' : jd.grade === '조금 더' ? 'mid' : 'no') + '">' +
+    /* --- 오늘 목표 --- */
+    h += '<div class="verdict ' + (jd.done === 3 ? 'ok' : jd.done >= 1 ? 'mid' : 'no') + '">' +
       '<div class="v-badge">' + jd.grade + '</div>' +
-      '<div class="v-checks">';
+      '<div class="v-checks"><div class="v-cap">오늘 목표 ' + jd.done + ' / 3</div>';
     jd.checks.forEach(function (c) {
       h += '<div class="v-chk ' + (c.ok ? 'y' : 'n') + '">' +
         '<span class="mk">' + (c.ok ? '✓' : '·') + '</span>' +

@@ -5,7 +5,38 @@
    ========================================================= */
 
 const API_URL = 'https://api.upstage.ai/v1/chat/completions';
+
+/* 교사 무료 플랜이 덮어 주는 모델만 쓴다.
+   무료 대상은 Solar Pro 2/3 와 Document Parse 뿐이고, solar-mini 는 과금될 수 있다.
+   그래서 모델 이름을 여기 고정해 두고 밖에서 바꿀 수 없게 한다. */
 const MODEL = 'solar-pro3';
+
+/* 공개 주소라 아무나 부를 수 있다. 무료 한도를 지키려고 최소한의 문을 달아 둔다.
+   - 우리 사이트에서 온 요청만 받는다
+   - 같은 사람이 짧은 시간에 여러 번 부르지 못하게 한다 */
+const RATE_WINDOW_MS = 60 * 1000;
+const RATE_MAX = 6;
+const hits = new Map();
+
+function tooMany(ip) {
+  const now = Date.now();
+  const list = (hits.get(ip) || []).filter((t) => now - t < RATE_WINDOW_MS);
+  list.push(now);
+  hits.set(ip, list);
+  if (hits.size > 500) hits.clear();          // 메모리가 새지 않게
+  return list.length > RATE_MAX;
+}
+
+function sameSite(req) {
+  const host = req.headers.host || '';
+  const src = req.headers.origin || req.headers.referer || '';
+  if (!src) return false;
+  try {
+    return new URL(src).host === host;
+  } catch (e) {
+    return false;
+  }
+}
 
 const SYSTEM = [
   '너는 초등학교 담임 교사다. 학생의 오늘 타자 연습 기록을 보고 짧은 총평을 쓴다.',
@@ -85,6 +116,17 @@ function sane(d) {
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'POST 만 받습니다' });
+    return;
+  }
+
+  // 무료 한도를 지키기 위한 최소한의 문 — 막혀도 앱은 규칙 문장으로 넘어간다
+  if (!sameSite(req)) {
+    res.status(403).json({ error: '이 주소에서 온 요청만 받습니다' });
+    return;
+  }
+  const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'unknown';
+  if (tooMany(ip)) {
+    res.status(429).json({ error: '조금 뒤에 다시 시도해 주세요' });
     return;
   }
 

@@ -604,6 +604,25 @@ input, textarea { font-family: inherit; }
   font-size: 12.5px; font-weight: 800;
 }
 
+/* 한/영 안내 */
+.engwarn {
+  position: absolute; left: 50%; top: 12%;
+  transform: translateX(-50%);
+  padding: 12px 24px; border-radius: 12px;
+  background: rgba(255, 107, 129, .95); color: #2a0a10;
+  font-size: clamp(15px, 2.4vh, 20px); font-weight: 900;
+  white-space: nowrap; z-index: 9; pointer-events: none;
+  box-shadow: 0 8px 26px -8px #000;
+  animation: engwarn 2.2s ease-out forwards;
+}
+@keyframes engwarn {
+  0% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+  10%, 80% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  100% { opacity: 0; }
+}
+.typebox.eng input { border-color: var(--warn); }
+.warnhint { color: var(--warn); }
+
 /* 얼리기 걸린 화면 */
 .stage.frozen { box-shadow: inset 0 0 60px -10px rgba(90, 212, 230, .5); }
 .stage.frozen .falling { filter: saturate(.5) brightness(1.1); }
@@ -665,26 +684,179 @@ input, textarea { font-family: inherit; }
 }
 .hole {
   border-radius: var(--r);
-  background: rgba(10,14,21,.55);
-  border: 1px dashed var(--line);
-  display: flex; align-items: center; justify-content: center;
   position: relative; overflow: hidden;
+  background: rgba(10, 14, 21, .5);
+  border: 1px dashed var(--line);
+}
+/* 흙더미 — 두더지가 그 뒤에서 올라온다 */
+.hole .dirt {
+  position: absolute; left: 16%; right: 16%; bottom: -3%;
+  height: 20%; border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  background: linear-gradient(#4a3b31, #2b221c);
+  box-shadow: inset 0 3px 7px -4px rgba(255, 255, 255, .18);
+  z-index: 3;
+}
+/* 두더지 본체 — 구멍 아래 숨어 있다가 올라온다 */
+.hole .mole {
+  position: absolute; left: 50%; bottom: 4%;
+  height: 84%;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+  transform: translate(-50%, 108%);
+  transition: transform .26s cubic-bezier(.2, 1.5, .5, 1);
+  z-index: 2;
+}
+.hole.up .mole { transform: translate(-50%, 6%); }
+.hole .msvg { height: 72%; width: auto; display: block; order: 2; }
+/* 낱말 팻말 */
+.hole .sign {
+  order: 1; margin-bottom: -4%;
+  padding: 4px 12px; border-radius: 8px;
+  background: linear-gradient(#fdf6e6, #e8d9bd);
+  border: 2px solid #8b6f4e;
+  box-shadow: 0 3px 8px -3px rgba(0, 0, 0, .6);
+  position: relative; z-index: 4; white-space: nowrap;
 }
 .hole .word {
-  font-size: clamp(16px, 2.8vh, 26px); font-weight: 800;
-  opacity: 0; transform: translateY(14px) scale(.9);
-  transition: .18s;
+  font-size: clamp(14px, 2.4vh, 22px); font-weight: 900;
+  color: #2f2418; letter-spacing: -.01em;
 }
-.hole.up .word { opacity: 1; transform: none; }
-.hole.up { border-style: solid; border-color: #33456b; background: var(--panel); }
-.hole.lock { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
-.hole .word .hit { color: var(--accent); }
+.hole .word .hit { color: #1f8a4c; }
+.hole.up { border-style: solid; border-color: #33456b; }
+.hole.lock { border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent); }
+.hole.lock .sign { border-color: var(--accent-d); box-shadow: 0 0 12px -2px var(--accent); }
 .hole .timer {
-  position: absolute; left: 0; bottom: 0; height: 3px;
-  background: var(--warn); width: 100%;
+  position: absolute; left: 0; bottom: 0; height: 4px;
+  background: var(--warn); width: 100%; z-index: 5;
+  display: none;
 }
-.hole.pop { animation: pop .25s ease-out; }
-@keyframes pop { 50% { background: rgba(62,224,192,.22); } }
+.hole.up .timer { display: block; }
+.hole.pop .mole { animation: molepop .28s ease-in forwards; }
+@keyframes molepop {
+  to { transform: translate(-50%, 118%) scale(.7); opacity: 0; }
+}
+
+/* 낱말 지우개 */
+.erasewrap {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; gap: 10px;
+  padding: clamp(12px, 2.2vh, 22px) clamp(14px, 3vw, 34px);
+}
+.ehead {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: clamp(12.5px, 1.9vh, 15px); font-weight: 700; color: var(--dim);
+}
+.ehead b { color: var(--accent); }
+.ehead .dim { color: var(--dim2); font-weight: 600; }
+.eboard {
+  flex: 1; min-height: 0; overflow-y: auto;
+  display: flex; flex-wrap: wrap;
+  align-content: center; justify-content: center;
+  gap: clamp(6px, 1.1vh, 11px);
+  padding: clamp(10px, 1.8vh, 18px);
+  border-radius: var(--r);
+  background: rgba(10, 14, 21, .55); border: 1px solid var(--line);
+}
+.etile {
+  width: clamp(36px, 6vh, 58px); height: clamp(36px, 6vh, 58px);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(160deg, var(--panel2), var(--panel));
+  border: 1px solid #3a4c74;
+  font-size: clamp(18px, 3.1vh, 28px); font-weight: 800;
+  color: var(--text);
+  box-shadow: 0 2px 6px -2px rgba(0, 0, 0, .5);
+}
+.etile.gone {
+  background: transparent; border-style: dashed;
+  border-color: rgba(36, 48, 74, .5); box-shadow: none;
+}
+.ehint { text-align: center; font-size: clamp(13px, 2vh, 16px); font-weight: 700; color: var(--dim); }
+.ehint b { color: var(--accent); font-size: 1.2em; }
+.ehint .dim { color: var(--dim2); font-weight: 600; }
+
+/* ---- 마법사 전투 연출 ---- */
+.boss .bico {
+  transform: scale(var(--grow, 1));
+  transition: transform .3s, filter .3s;
+  filter: drop-shadow(0 0 12px var(--ec, transparent));
+}
+.boss .bico.rage { filter: drop-shadow(0 0 18px #ff5a5a) saturate(1.4); }
+/* 공격 전 기 모으기 */
+.boss .bico.charge { animation: charge .5s ease-in-out infinite alternate; }
+@keyframes charge {
+  from { transform: scale(var(--grow, 1)); }
+  to { transform: scale(calc(var(--grow, 1) * 1.16)); filter: drop-shadow(0 0 24px var(--ec, #fff)) brightness(1.25); }
+}
+/* 포효 */
+.boss .bico.roar { animation: roar .6s ease-out; }
+@keyframes roar {
+  0% { transform: scale(calc(var(--grow, 1) * 1.16)); }
+  22% { transform: scale(calc(var(--grow, 1) * 1.55)) rotate(-4deg); }
+  55% { transform: scale(calc(var(--grow, 1) * 1.3)) rotate(3deg); }
+  100% { transform: scale(var(--grow, 1)) rotate(0); }
+}
+/* 맞았을 때 */
+.boss .bico.hit { animation: bhit .3s ease-out; }
+.boss .bico.bighit { animation: bbighit .55s ease-out; }
+@keyframes bhit {
+  0%, 100% { filter: none; }
+  40% { filter: brightness(2.4) saturate(0); transform: scale(calc(var(--grow,1) * .92)) translateX(5px); }
+}
+@keyframes bbighit {
+  0% { filter: brightness(3) saturate(0); transform: scale(calc(var(--grow,1) * .82)); }
+  30% { transform: scale(calc(var(--grow,1) * 1.1)) translateX(-9px) rotate(-6deg); }
+  60% { transform: scale(calc(var(--grow,1) * .95)) translateX(7px) rotate(4deg); }
+  100% { filter: none; transform: scale(var(--grow,1)); }
+}
+/* 보스가 뿜는 숨결 */
+.breath {
+  position: absolute; left: 50%; top: 18%;
+  transform: translateX(-50%);
+  font-size: clamp(30px, 6vh, 58px); letter-spacing: -.15em;
+  z-index: 7; pointer-events: none;
+  text-shadow: 0 0 26px var(--ec);
+  animation: breath .8s ease-in forwards;
+}
+@keyframes breath {
+  0% { opacity: 0; transform: translateX(-50%) translateY(0) scale(.4); }
+  25% { opacity: 1; transform: translateX(-50%) translateY(14vh) scale(1); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(46vh) scale(2.6); }
+}
+/* 내 주문이 날아간다 */
+.bolt {
+  position: absolute; left: 50%; bottom: 26%;
+  transform: translateX(-50%);
+  font-size: clamp(26px, 4.6vh, 44px); z-index: 7; pointer-events: none;
+  text-shadow: 0 0 20px var(--ec);
+  animation: bolt .5s ease-out forwards;
+}
+.bolt.strong { font-size: clamp(36px, 6.4vh, 62px); }
+@keyframes bolt {
+  0% { opacity: 0; transform: translateX(-50%) translateY(0) scale(.5); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-40vh) scale(1.6); }
+}
+/* 피격 화면 번쩍 */
+.hitflash {
+  position: absolute; inset: 0; z-index: 6; pointer-events: none;
+  background: radial-gradient(circle at 50% 20%, var(--ec) 0%, transparent 62%);
+  animation: hitflash .5s ease-out forwards;
+}
+@keyframes hitflash {
+  0% { opacity: .55; }
+  100% { opacity: 0; }
+}
+/* 화면 흔들림 */
+.stage.shake { animation: shake .42s cubic-bezier(.36,.07,.19,.97); }
+@keyframes shake {
+  10%, 90% { transform: translate(-2px, 1px); }
+  20%, 80% { transform: translate(4px, -2px); }
+  30%, 50%, 70% { transform: translate(-7px, 2px); }
+  40%, 60% { transform: translate(7px, -1px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stage.shake, .boss .bico.charge, .boss .bico.roar { animation: none; }
+}
 
 /* =========================================================
    한글 조립
