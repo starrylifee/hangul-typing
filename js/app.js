@@ -449,6 +449,17 @@ var APP = (function () {
     if (S.locked) { el.value = ''; return; }
 
     var v = el.value;
+
+    // 앞 줄에서 뒤늦게 넘어온 조합 잔여 글자를 걷어낸다
+    if (S.tail && performance.now() < S.tailUntil) {
+      if (!composing && v && S.tail.indexOf(v) >= 0) {
+        el.value = '';
+        S.tail = '';
+        return;
+      }
+      if (v && v !== S.tail) S.tail = '';
+    }
+
     if (!S.startAt && v.length) S.startAt = Date.now();
 
     var j = paintTarget(v);
@@ -498,6 +509,12 @@ var APP = (function () {
     S.locked = true;
     S.doneKeys += keys;
     S.curMatched = 0;
+
+    // 한글 IME 가 조합 중이던 글자를 입력창을 비운 뒤에 밀어 넣는 일이 있다.
+    // 방금 끝낸 줄의 꼬리 글자를 기억해 두었다가 걷어낸다.
+    var lastLine = S.items[S.idx] || '';
+    S.tail = lastLine.slice(-2);
+    S.tailUntil = performance.now() + 700;
     S.idx++;
 
     var el = $('typein');

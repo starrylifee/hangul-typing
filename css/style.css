@@ -767,56 +767,54 @@ input, textarea { font-family: inherit; }
   to { transform: translate(-50%, 118%) scale(.7); opacity: 0; }
 }
 
-/* 낱말 지우개 */
-.erasewrap {
+/* 낱말 맞추기 — 자모 카드 */
+.cardwrap {
   position: absolute; inset: 0;
   display: flex; flex-direction: column; gap: 10px;
   padding: clamp(12px, 2.2vh, 22px) clamp(14px, 3vw, 34px);
 }
-.ehead {
+.chead {
   display: flex; justify-content: space-between; align-items: center;
   font-size: clamp(12.5px, 1.9vh, 15px); font-weight: 700; color: var(--dim);
 }
-.ehead b { color: var(--accent); }
-.ehead .dim { color: var(--dim2); font-weight: 600; }
-.eboard {
+.chead b { color: var(--accent); }
+.cards {
   flex: 1; min-height: 0; overflow-y: auto;
   display: flex; flex-wrap: wrap;
   align-content: center; justify-content: center;
-  gap: clamp(6px, 1.1vh, 11px);
-  padding: clamp(10px, 1.8vh, 18px);
-  border-radius: var(--r);
-  background: rgba(10, 14, 21, .55); border: 1px solid var(--line);
+  gap: clamp(9px, 1.6vh, 16px);
+  padding: clamp(8px, 1.4vh, 14px);
 }
-.etile {
-  width: clamp(36px, 6vh, 58px); height: clamp(36px, 6vh, 58px);
-  border-radius: 10px;
+.wcard {
+  padding: clamp(9px, 1.6vh, 15px) clamp(11px, 1.8vw, 18px);
+  border-radius: 14px;
+  background: linear-gradient(160deg, var(--panel), var(--bg2));
+  border: 1px solid #33456b;
+  display: flex; flex-direction: column; align-items: center; gap: 7px;
+  box-shadow: 0 4px 14px -6px rgba(0, 0, 0, .7);
+  transition: .18s;
+}
+.wcard.hinted { border-color: var(--gold); box-shadow: 0 0 18px -6px var(--gold); }
+.wcard .wjs { display: flex; gap: clamp(4px, .8vh, 7px); }
+.wcard .wj {
+  width: clamp(30px, 5vh, 46px); height: clamp(30px, 5vh, 46px);
+  border-radius: 9px;
   display: flex; align-items: center; justify-content: center;
-  background: linear-gradient(160deg, var(--panel2), var(--panel));
-  border: 1px solid #3a4c74;
-  font-size: clamp(18px, 3.1vh, 28px); font-weight: 800;
-  color: var(--text);
-  box-shadow: 0 2px 6px -2px rgba(0, 0, 0, .5);
+  background: var(--panel2); border: 1px solid #3a4c74;
+  font-size: clamp(16px, 2.8vh, 25px); font-weight: 800; color: var(--text);
 }
-/* 지워진 자리 — 얼마나 비웠는지 눈에 보이게 흔적을 남긴다 */
-.etile.gone {
-  background: rgba(62, 224, 192, .05);
-  border-style: dashed; border-color: rgba(62, 224, 192, .3);
-  box-shadow: none;
+.wcard .wmeta { font-size: clamp(10.5px, 1.5vh, 12.5px); color: var(--dim2); font-weight: 700; }
+.wcard .wmeta b { color: var(--gold); font-size: 1.15em; }
+/* 맞힌 카드 */
+.wcard.done {
+  border-color: var(--accent-d);
+  background: linear-gradient(160deg, rgba(62, 224, 192, .14), rgba(62, 224, 192, .04));
+  justify-content: center; min-height: clamp(56px, 9vh, 84px);
 }
-.ehint { text-align: center; font-size: clamp(13px, 2vh, 16px); font-weight: 700; color: var(--dim); }
-.ehint b { color: var(--accent); font-size: 1.2em; }
-.ehint .dim { color: var(--dim2); font-weight: 600; }
-.eused {
-  display: flex; flex-wrap: wrap; gap: 5px; justify-content: center;
-  font-size: 11.5px; color: var(--dim2); font-weight: 700;
-  align-items: center; min-height: 20px;
+.wcard.done .wans {
+  font-size: clamp(18px, 3vh, 28px); font-weight: 900; color: var(--accent);
 }
-.eused span {
-  padding: 2px 8px; border-radius: 999px;
-  background: rgba(62, 224, 192, .12); color: var(--accent);
-  text-decoration: line-through; text-decoration-color: rgba(62, 224, 192, .5);
-}
+.cnote { text-align: center; font-size: clamp(12.5px, 1.9vh, 15px); font-weight: 700; color: var(--dim); }
 
 /* ---- 마법사 전투 연출 ---- */
 .boss .bico {

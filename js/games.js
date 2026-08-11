@@ -26,7 +26,7 @@ var GAMES = (function () {
   var BASE_FALL = 3.2;          // %/초 — '쉬움' 기준으로 84% 내려오는 데 약 26초
   var GAME_NAME = {
     defense: '낱말 방어전', race: '컴퓨터와 달리기', mole: '두더지 타자',
-    erase: '낱말 지우개', spell: '마법사 주문'
+    erase: '낱말 맞추기', spell: '마법사 주문'
   };
 
   /* 아이템 — 아이템이 붙은 낱말을 쳐서 없애면 효과가 걸린다.
@@ -246,6 +246,18 @@ var GAMES = (function () {
     if (G.locked) { input.value = ''; return; }
     var v = input.value;
 
+    /* 한글 IME 는 입력창을 비운 뒤에 조합 중이던 글자를 뒤늦게 밀어 넣는다.
+       그래서 "낙지" 를 맞히고 나면 "지" 가 남아 다음 낱말이 "지알다" 가 됐다.
+       방금 처리한 낱말의 꼬리 글자가 조합이 끝난 채로 혼자 들어오면 걷어낸다. */
+    if (G.tail && performance.now() < G.tailUntil) {
+      if (!composing && v && G.tail.indexOf(v) >= 0) {
+        input.value = '';
+        G.tail = '';
+        return;
+      }
+      if (v && v !== G.tail) G.tail = '';      // 새로 치기 시작했으면 감시를 푼다
+    }
+
     // 낱말을 통째로 확인해야 하는 게임은 엔터를 눌렀을 때만 판정한다
     if (G.id === 'erase') return eraseInput(v, commit);
 
@@ -285,8 +297,9 @@ var GAMES = (function () {
 
     // 조합이 끝나야(엔터·스페이스 등) 성공 처리한다 — IME 상태를 깨지 않기 위해
     if (bestJ.complete && !composing) {
+      var done = best.word;
       hit(best);
-      clearInput();
+      clearInput(done);
     }
     draw();
   }
@@ -302,10 +315,14 @@ var GAMES = (function () {
     setTimeout(function () { w.remove(); }, 2200);
   }
 
-  function clearInput() {
+  /** 낱말을 처리한 뒤 입력창을 비운다.
+      뒤늦게 들어올 수 있는 조합 잔여 글자를 걷어내려고 꼬리를 기억해 둔다. */
+  function clearInput(word) {
     var el = $('gamein');
     G.locked = true;
     el.value = '';
+    G.tail = word ? String(word).slice(-2) : '';
+    G.tailUntil = performance.now() + 700;
     setTimeout(function () {
       if (!G) return;
       el.value = '';
@@ -859,12 +876,19 @@ var GAMES = (function () {
   }
 
   /* =========================================================
-     4) 낱말 지우개 — 판에 깔린 자모를 낱말로 지운다
-        판은 그 단계 낱말들을 자모로 풀어 섞어 만든다.
-        그래서 반드시 지울 수 있는 낱말이 판 안에 들어 있다.
+     4) 낱말 맞추기 — 자모 카드를 보고 낱말을 알아낸다
+
+     앞선 설계(자모를 판에 흩뿌리기)는 두 가지가 무너졌다.
+     하나는 짧은 낱말만 반복해도 목표가 채워진 것, 다른 하나는
+     "칠 수 있는 낱말" 힌트를 띄우니 학생이 판을 보지 않고 힌트만 읽은 것이다.
+
+     그래서 자모를 낱말 단위 카드에 담았다. 카드에 든 자모가 딱 그 낱말 분량이라
+     힌트 없이도 답이 나온다. 카드 자체가 문제다.
      ========================================================= */
-  var ERASE_WORDS = { first: 8, easy: 11, normal: 15, hard: 20 };
-  var ERASE_TIME = { first: 150, easy: 120, normal: 95, hard: 75 };
+  var CARD_COUNT = { first: 5, easy: 7, normal: 10, hard: 14 };
+  var CARD_TIME = { first: 150, easy: 130, normal: 110, hard: 90 };
+  /* 자모 순서를 섞을지 — 낮은 단계는 순서를 두어 자모 읽기 연습이 되게 한다 */
+  var CARD_SHUFFLE = { first: false, easy: false, normal: true, hard: true };
 
   /** 낱말을 기본 자모로 풀어낸다 (겹받침·겹모음도 낱개로) */
   function jamosOfWord(w) {
@@ -876,134 +900,101 @@ var GAMES = (function () {
     return out;
   }
 
+  /** 자모 묶음을 견주기 좋게 정렬한 문자열로 */
+  function jamoKey(list) {
+    return list.slice().sort().join('');
+  }
+
   function startErase() {
     prepare('erase');
     var st = $('stage');
     var wrap = document.createElement('div');
-    wrap.className = 'erasewrap';
+    wrap.className = 'cardwrap';
     wrap.innerHTML =
-      '<div class="ehead">' +
-      '  <span id="e-left">남은 시간</span>' +
-      '  <span id="e-goal"></span>' +
+      '<div class="chead">' +
+      '  <span id="c-left">남은 시간</span>' +
+      '  <span id="c-count"></span>' +
       '</div>' +
-      '<div class="eboard" id="e-board"></div>' +
-      '<div class="ehint" id="e-hint"></div>' +
-      '<div class="eused" id="e-used"></div>';
+      '<div class="cards" id="c-cards"></div>' +
+      '<div class="cnote" id="c-note">자모를 보고 낱말을 알아내 치고 엔터</div>';
     st.appendChild(wrap);
 
-    // 한 글자 낱말은 쓰지 않는다.
-    // 1단계에는 말·남·안·알 같은 한 글자 낱말이 여덟 개나 있어서,
-    // 그것만 돌려 쳐도 목표를 채울 수 있었다. 그러면 낱말을 떠올릴 일이 없다.
+    // 두 글자 이상만 — 한 글자는 자모 두세 개뿐이라 문제가 되지 않는다
     var pool = (DATA.WORD_UPTO[sel.level] || DATA.WORDS)
       .filter(function (w) { return w.length >= 2; });
-    var n = Math.min(ERASE_WORDS[G.diff.id] || 12, pool.length);
+    var n = Math.min(CARD_COUNT[G.diff.id] || 8, pool.length);
     var picks = DATA.shuffle(pool.slice()).slice(0, n);
 
-    var tiles = [];
-    picks.forEach(function (w) {
-      jamosOfWord(w).forEach(function (j) { tiles.push(j); });
+    var mix = CARD_SHUFFLE[G.diff.id];
+    G.cards = picks.map(function (w) {
+      var j = jamosOfWord(w);
+      return {
+        word: w,
+        key: jamoKey(j),
+        show: mix ? DATA.shuffle(j.slice()) : j,
+        done: false,
+        hint: false
+      };
     });
-    G.tiles = DATA.shuffle(tiles);          // 지워진 자리는 null 로 남긴다
-    G.total = G.tiles.length;
-    G.cleared = 0;
-    G.goal = Math.ceil(G.total * 0.5);
-    G.left = ERASE_TIME[G.diff.id] || 100;
-    G.dict = DATA.shuffle(pool.slice());
     G.dictSet = {};
     pool.forEach(function (w) { G.dictSet[w] = 1; });
-    G.usedWords = {};                       // 같은 낱말을 두 번 쓸 수 없다
-    G.usedList = [];
-    drawErase();
-  }
 
-  /* 보기로 보여 줄 낱말 개수 — 낮은 난이도일수록 많이 보여 준다 */
-  var ERASE_SHOW = { first: 3, easy: 3, normal: 1, hard: 0 };
+    G.total = G.cards.length;
+    G.solved = 0;
+    G.left = CARD_TIME[G.diff.id] || 110;
+    G.stuck = 0;                       // 못 맞힌 채 흐른 시간
+    drawCards();
+  }
 
   function stepErase(dt) {
     G.left -= dt;
-    var le = $('e-left');
-    if (le) le.textContent = '남은 시간 ' + Math.max(0, Math.ceil(G.left)) + '초';
-    $('g-prog').style.width = Math.min(100, G.cleared / G.goal * 100) + '%';
+    G.stuck += dt;
 
-    if (G.cleared >= G.goal) {
-      gameOver('🏆 목표를 채웠어요! ' + Math.round(G.cleared / G.total * 100) + '% 지움 · 낱말 ' +
-        G.usedList.length + '개', true);
+    var le = $('c-left');
+    if (le) le.textContent = '남은 시간 ' + Math.max(0, Math.ceil(G.left)) + '초';
+    $('g-prog').style.width = (G.solved / G.total * 100) + '%';
+
+    // 한참 막혀 있으면 아직 못 맞힌 카드 하나에 첫 글자만 슬쩍 보여 준다
+    var wait = G.diff.id === 'hard' ? 30 : G.diff.id === 'normal' ? 24 : 18;
+    if (G.stuck >= wait) {
+      G.stuck = 0;
+      var todo = G.cards.filter(function (c) { return !c.done && !c.hint; });
+      if (todo.length) {
+        todo[0].hint = true;
+        drawCards();
+        flashItem({ icon: '💡', name: '첫 글자를 보여 줄게요', color: '#ffcc5c' });
+      }
+    }
+
+    if (G.solved >= G.total) {
+      gameOver('🏆 카드를 모두 맞혔어요! ' + Math.ceil(G.left) + '초 남김', true);
       return;
     }
     if (G.left <= 0) {
-      var pct = Math.round(G.cleared / G.total * 100);
-      gameOver((pct >= 50 ? '🏆 ' : '시간 종료 · ') + pct + '% 지웠어요 · 낱말 ' +
-        G.usedList.length + '개', pct >= 50);
-      return;
-    }
-    // 더 만들 수 있는 낱말이 없으면 붙잡아 두지 않고 마친다
-    if (!erasableWords(1).length) {
-      var p2 = Math.round(G.cleared / G.total * 100);
-      gameOver('더 만들 수 있는 낱말이 없어요 · ' + p2 + '% 지움 · 낱말 ' +
-        G.usedList.length + '개', p2 >= 50);
+      gameOver((G.solved >= Math.ceil(G.total / 2) ? '🏆 ' : '시간 종료 · ') +
+        G.total + '장 중 ' + G.solved + '장 맞혔어요', G.solved >= Math.ceil(G.total / 2));
     }
   }
 
-  /** 지금 판으로 지울 수 있는 낱말들 (아직 안 쓴 것만) */
-  function erasableWords(limit) {
-    var have = {};
-    G.tiles.forEach(function (j) { if (j) have[j] = (have[j] || 0) + 1; });
-    var out = [];
-    for (var i = 0; i < G.dict.length; i++) {
-      var w = G.dict[i];
-      if (G.usedWords[w]) continue;
-      var need = jamosOfWord(w);
-      if (!need.length) continue;
-      var want = {}, ok = true;
-      need.forEach(function (j) { want[j] = (want[j] || 0) + 1; });
-      for (var j in want) { if ((have[j] || 0) < want[j]) { ok = false; break; } }
-      if (ok) {
-        out.push(w);
-        if (limit && out.length >= limit) return out;
+  function drawCards() {
+    var box = $('c-cards');
+    if (!box) return;
+    box.innerHTML = G.cards.map(function (c, i) {
+      if (c.done) {
+        return '<div class="wcard done"><div class="wans">' + esc(c.word) + '</div></div>';
       }
-    }
-    return out;
-  }
-
-  function drawErase() {
-    var b = $('e-board');
-    if (!b) return;
-    b.innerHTML = G.tiles.map(function (j) {
-      return j
-        ? '<span class="etile">' + esc(j) + '</span>'
-        : '<span class="etile gone"></span>';
+      var tiles = c.show.map(function (j) {
+        return '<span class="wj">' + esc(j) + '</span>';
+      }).join('');
+      return '<div class="wcard' + (c.hint ? ' hinted' : '') + '">' +
+        '<div class="wjs">' + tiles + '</div>' +
+        '<div class="wmeta">' + c.word.length + '글자' +
+        (c.hint ? ' · <b>' + esc(c.word[0]) + '</b> 로 시작' : '') +
+        '</div></div>';
     }).join('');
-    var g = $('e-goal');
-    if (g) {
-      var left = erasableWords(0).length;
-      g.innerHTML = '지운 자모 <b>' + G.cleared + '</b> / 목표 ' + G.goal +
-        ' <span class="dim">· 만들 수 있는 낱말 ' + left + '개</span>';
-    }
-    var u = $('e-used');
-    if (u) {
-      u.innerHTML = G.usedList.length
-        ? '쓴 낱말 ' + G.usedList.slice(-10).map(function (w) {
-          return '<span>' + esc(w) + '</span>';
-        }).join('')
-        : '';
-    }
-    showEraseHint();
-  }
 
-  function showEraseHint() {
-    var h = $('e-hint');
-    if (!h) return;
-    var show = ERASE_SHOW[G.diff.id];
-    if (show === undefined) show = 1;
-
-    if (show === 0) {
-      h.innerHTML = '<span class="dim">판을 보고 두 글자 이상 낱말을 찾아 치세요</span>';
-      return;
-    }
-    var list = erasableWords(show);
-    if (!list.length) { h.innerHTML = '<span class="dim">더 만들 수 있는 낱말이 없어요</span>'; return; }
-    h.innerHTML = '이 낱말을 칠 수 있어요 → ' +
-      list.map(function (w) { return '<b>' + esc(w) + '</b>'; }).join(' &nbsp; ');
+    var cc = $('c-count');
+    if (cc) cc.innerHTML = '맞힌 카드 <b>' + G.solved + '</b> / ' + G.total;
   }
 
   function eraseInput(v, commit) {
@@ -1013,41 +1004,32 @@ var GAMES = (function () {
     if (!w) return;
 
     if (w.length < 2) { badErase('두 글자 이상 낱말을 쳐 주세요'); return; }
-    if (G.usedWords[w]) { badErase('이미 쓴 낱말이에요. 다른 낱말을 찾아보세요'); return; }
     if (!G.dictSet[w]) { badErase('우리가 배운 낱말이 아니에요'); return; }
 
-    var need = jamosOfWord(w);
-    var have = {};
-    G.tiles.forEach(function (j) { if (j) have[j] = (have[j] || 0) + 1; });
-    var want = {}, missing = null;
-    need.forEach(function (j) { want[j] = (want[j] || 0) + 1; });
-    for (var j in want) { if ((have[j] || 0) < want[j]) { missing = j; break; } }
-    if (missing) { badErase('판에 ' + missing + ' 이(가) 모자라요'); return; }
+    // 자모 구성이 똑같은 카드를 찾는다.
+    // 카드에 적힌 낱말이 아니어도, 그 자모로 만들어지는 다른 낱말이면 맞는 것으로 친다.
+    var key = jamoKey(jamosOfWord(w));
+    var card = null;
+    for (var i = 0; i < G.cards.length; i++) {
+      if (!G.cards[i].done && G.cards[i].key === key) { card = G.cards[i]; break; }
+    }
+    if (!card) { badErase('어느 카드와도 자모가 맞지 않아요'); return; }
 
-    G.usedWords[w] = 1;
-    G.usedList.push(w);
-
-    // 같은 자모가 여러 개면 그 중 아무거나 하나를 지운다
-    need.forEach(function (jm) {
-      var idxs = [];
-      for (var i = 0; i < G.tiles.length; i++) if (G.tiles[i] === jm) idxs.push(i);
-      if (!idxs.length) return;
-      G.tiles[idxs[Math.floor(Math.random() * idxs.length)]] = null;
-    });
-
-    G.cleared += need.length;
+    card.done = true;
+    card.word = w;                       // 학생이 찾아낸 낱말로 적어 준다
+    G.solved++;
+    G.stuck = 0;
     G.combo++;
     if (G.combo > G.bestCombo) G.bestCombo = G.combo;
-    // 긴 낱말일수록 더 준다 — 짧은 것만 골라 치는 게 유리하지 않게
-    var lenBonus = 1 + (w.length - 2) * 0.3;
-    G.score += Math.round(need.length * 20 * lenBonus * (1 + Math.min(G.combo, 15) * 0.05));
+    var lenBonus = 1 + (w.length - 2) * 0.35;
+    G.score += Math.round(w.length * 40 * lenBonus * (1 + Math.min(G.combo, 15) * 0.05));
     G.keys += HG.textToKeys(w).length;
     $('g-score').textContent = G.score;
     $('g-combo').textContent = G.combo;
     input.style.borderColor = '';
-    flashItem({ icon: '✦', name: w + ' 지움', color: '#3ee0c0' });
-    clearInput();
-    drawErase();
+    flashItem({ icon: '✦', name: w + ' 맞혔어요', color: '#3ee0c0' });
+    clearInput(w);
+    drawCards();
   }
 
   function badErase(msg) {
@@ -1055,9 +1037,11 @@ var GAMES = (function () {
     input.style.borderColor = 'var(--warn)';
     G.errors++;
     breakCombo();
-    var h = $('e-hint');
+    var h = $('c-note');
     if (h) h.innerHTML = '<span style="color:var(--warn)">' + esc(msg) + '</span>';
-    setTimeout(function () { if (G && G.running) showEraseHint(); }, 1500);
+    setTimeout(function () {
+      if (G && G.running && h) h.textContent = '자모를 보고 낱말을 알아내 치고 엔터';
+    }, 1600);
   }
 
   /* =========================================================
