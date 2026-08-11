@@ -88,7 +88,12 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  const key = process.env.UPSTAGE_API_KEY;
+  // 환경변수를 넣을 때 BOM·공백·따옴표가 섞여 들어오는 일이 있다.
+  // 그대로 헤더에 넣으면 요청 자체가 깨지므로 걷어낸다.
+  const key = String(process.env.UPSTAGE_API_KEY || '')
+    .replace(/^﻿/, '')
+    .replace(/^["']|["']$/g, '')
+    .trim();
   if (!key) {
     // 키가 없으면 앱이 규칙 기반 문장으로 넘어간다
     res.status(503).json({ error: 'UPSTAGE_API_KEY 가 없습니다' });
