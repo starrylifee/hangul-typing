@@ -887,10 +887,15 @@ var GAMES = (function () {
       '  <span id="e-goal"></span>' +
       '</div>' +
       '<div class="eboard" id="e-board"></div>' +
-      '<div class="ehint" id="e-hint"></div>';
+      '<div class="ehint" id="e-hint"></div>' +
+      '<div class="eused" id="e-used"></div>';
     st.appendChild(wrap);
 
-    var pool = DATA.WORD_UPTO[sel.level] || DATA.WORDS;
+    // 한 글자 낱말은 쓰지 않는다.
+    // 1단계에는 말·남·안·알 같은 한 글자 낱말이 여덟 개나 있어서,
+    // 그것만 돌려 쳐도 목표를 채울 수 있었다. 그러면 낱말을 떠올릴 일이 없다.
+    var pool = (DATA.WORD_UPTO[sel.level] || DATA.WORDS)
+      .filter(function (w) { return w.length >= 2; });
     var n = Math.min(ERASE_WORDS[G.diff.id] || 12, pool.length);
     var picks = DATA.shuffle(pool.slice()).slice(0, n);
 
@@ -906,8 +911,13 @@ var GAMES = (function () {
     G.dict = DATA.shuffle(pool.slice());
     G.dictSet = {};
     pool.forEach(function (w) { G.dictSet[w] = 1; });
+    G.usedWords = {};                       // 같은 낱말을 두 번 쓸 수 없다
+    G.usedList = [];
     drawErase();
   }
+
+  /* 보기로 보여 줄 낱말 개수 — 낮은 난이도일수록 많이 보여 준다 */
+  var ERASE_SHOW = { first: 3, easy: 3, normal: 1, hard: 0 };
 
   function stepErase(dt) {
     G.left -= dt;
@@ -916,28 +926,43 @@ var GAMES = (function () {
     $('g-prog').style.width = Math.min(100, G.cleared / G.goal * 100) + '%';
 
     if (G.cleared >= G.goal) {
-      gameOver('🏆 목표를 채웠어요! ' + Math.round(G.cleared / G.total * 100) + '% 지움', true);
+      gameOver('🏆 목표를 채웠어요! ' + Math.round(G.cleared / G.total * 100) + '% 지움 · 낱말 ' +
+        G.usedList.length + '개', true);
       return;
     }
     if (G.left <= 0) {
       var pct = Math.round(G.cleared / G.total * 100);
-      gameOver(pct >= 50 ? '🏆 ' + pct + '% 지웠어요' : '시간 종료 · ' + pct + '% 지웠어요', pct >= 50);
+      gameOver((pct >= 50 ? '🏆 ' : '시간 종료 · ') + pct + '% 지웠어요 · 낱말 ' +
+        G.usedList.length + '개', pct >= 50);
+      return;
+    }
+    // 더 만들 수 있는 낱말이 없으면 붙잡아 두지 않고 마친다
+    if (!erasableWords(1).length) {
+      var p2 = Math.round(G.cleared / G.total * 100);
+      gameOver('더 만들 수 있는 낱말이 없어요 · ' + p2 + '% 지움 · 낱말 ' +
+        G.usedList.length + '개', p2 >= 50);
     }
   }
 
-  /** 지금 판으로 지울 수 있는 낱말 하나 */
-  function findErasable() {
+  /** 지금 판으로 지울 수 있는 낱말들 (아직 안 쓴 것만) */
+  function erasableWords(limit) {
     var have = {};
     G.tiles.forEach(function (j) { if (j) have[j] = (have[j] || 0) + 1; });
+    var out = [];
     for (var i = 0; i < G.dict.length; i++) {
-      var need = jamosOfWord(G.dict[i]);
+      var w = G.dict[i];
+      if (G.usedWords[w]) continue;
+      var need = jamosOfWord(w);
       if (!need.length) continue;
       var want = {}, ok = true;
       need.forEach(function (j) { want[j] = (want[j] || 0) + 1; });
       for (var j in want) { if ((have[j] || 0) < want[j]) { ok = false; break; } }
-      if (ok) return G.dict[i];
+      if (ok) {
+        out.push(w);
+        if (limit && out.length >= limit) return out;
+      }
     }
-    return null;
+    return out;
   }
 
   function drawErase() {
@@ -949,24 +974,36 @@ var GAMES = (function () {
         : '<span class="etile gone"></span>';
     }).join('');
     var g = $('e-goal');
-    if (g) g.innerHTML = '지운 자모 <b>' + G.cleared + '</b> / 목표 ' + G.goal +
-      ' <span class="dim">(전체 ' + G.total + ')</span>';
+    if (g) {
+      var left = erasableWords(0).length;
+      g.innerHTML = '지운 자모 <b>' + G.cleared + '</b> / 목표 ' + G.goal +
+        ' <span class="dim">· 만들 수 있는 낱말 ' + left + '개</span>';
+    }
+    var u = $('e-used');
+    if (u) {
+      u.innerHTML = G.usedList.length
+        ? '쓴 낱말 ' + G.usedList.slice(-10).map(function (w) {
+          return '<span>' + esc(w) + '</span>';
+        }).join('')
+        : '';
+    }
     showEraseHint();
   }
 
   function showEraseHint() {
     var h = $('e-hint');
     if (!h) return;
-    var w = findErasable();
-    if (!w) { h.innerHTML = '<span class="dim">더 지울 낱말이 없어요</span>'; return; }
-    var d = G.diff.id;
-    if (d === 'first' || d === 'easy') {
-      h.innerHTML = '이런 낱말을 칠 수 있어요 → <b>' + esc(w) + '</b>';
-    } else if (d === 'normal') {
-      h.innerHTML = '<b>' + esc(w[0]) + '</b> 로 시작하는 낱말을 칠 수 있어요';
-    } else {
-      h.innerHTML = '<span class="dim">판을 보고 낱말을 찾아 치세요</span>';
+    var show = ERASE_SHOW[G.diff.id];
+    if (show === undefined) show = 1;
+
+    if (show === 0) {
+      h.innerHTML = '<span class="dim">판을 보고 두 글자 이상 낱말을 찾아 치세요</span>';
+      return;
     }
+    var list = erasableWords(show);
+    if (!list.length) { h.innerHTML = '<span class="dim">더 만들 수 있는 낱말이 없어요</span>'; return; }
+    h.innerHTML = '이 낱말을 칠 수 있어요 → ' +
+      list.map(function (w) { return '<b>' + esc(w) + '</b>'; }).join(' &nbsp; ');
   }
 
   function eraseInput(v, commit) {
@@ -975,7 +1012,9 @@ var GAMES = (function () {
     var w = v.trim();
     if (!w) return;
 
-    if (!G.dictSet[w]) { badErase('이 단계 낱말 목록에 없어요'); return; }
+    if (w.length < 2) { badErase('두 글자 이상 낱말을 쳐 주세요'); return; }
+    if (G.usedWords[w]) { badErase('이미 쓴 낱말이에요. 다른 낱말을 찾아보세요'); return; }
+    if (!G.dictSet[w]) { badErase('우리가 배운 낱말이 아니에요'); return; }
 
     var need = jamosOfWord(w);
     var have = {};
@@ -984,6 +1023,9 @@ var GAMES = (function () {
     need.forEach(function (j) { want[j] = (want[j] || 0) + 1; });
     for (var j in want) { if ((have[j] || 0) < want[j]) { missing = j; break; } }
     if (missing) { badErase('판에 ' + missing + ' 이(가) 모자라요'); return; }
+
+    G.usedWords[w] = 1;
+    G.usedList.push(w);
 
     // 같은 자모가 여러 개면 그 중 아무거나 하나를 지운다
     need.forEach(function (jm) {
@@ -996,7 +1038,9 @@ var GAMES = (function () {
     G.cleared += need.length;
     G.combo++;
     if (G.combo > G.bestCombo) G.bestCombo = G.combo;
-    G.score += Math.round(need.length * 20 * (1 + Math.min(G.combo, 15) * 0.05));
+    // 긴 낱말일수록 더 준다 — 짧은 것만 골라 치는 게 유리하지 않게
+    var lenBonus = 1 + (w.length - 2) * 0.3;
+    G.score += Math.round(need.length * 20 * lenBonus * (1 + Math.min(G.combo, 15) * 0.05));
     G.keys += HG.textToKeys(w).length;
     $('g-score').textContent = G.score;
     $('g-combo').textContent = G.combo;

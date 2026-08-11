@@ -798,13 +798,25 @@ input, textarea { font-family: inherit; }
   color: var(--text);
   box-shadow: 0 2px 6px -2px rgba(0, 0, 0, .5);
 }
+/* 지워진 자리 — 얼마나 비웠는지 눈에 보이게 흔적을 남긴다 */
 .etile.gone {
-  background: transparent; border-style: dashed;
-  border-color: rgba(36, 48, 74, .5); box-shadow: none;
+  background: rgba(62, 224, 192, .05);
+  border-style: dashed; border-color: rgba(62, 224, 192, .3);
+  box-shadow: none;
 }
 .ehint { text-align: center; font-size: clamp(13px, 2vh, 16px); font-weight: 700; color: var(--dim); }
 .ehint b { color: var(--accent); font-size: 1.2em; }
 .ehint .dim { color: var(--dim2); font-weight: 600; }
+.eused {
+  display: flex; flex-wrap: wrap; gap: 5px; justify-content: center;
+  font-size: 11.5px; color: var(--dim2); font-weight: 700;
+  align-items: center; min-height: 20px;
+}
+.eused span {
+  padding: 2px 8px; border-radius: 999px;
+  background: rgba(62, 224, 192, .12); color: var(--accent);
+  text-decoration: line-through; text-decoration-color: rgba(62, 224, 192, .5);
+}
 
 /* ---- 마법사 전투 연출 ---- */
 .boss .bico {
