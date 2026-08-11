@@ -887,8 +887,32 @@ var GAMES = (function () {
      ========================================================= */
   var CARD_COUNT = { first: 5, easy: 7, normal: 10, hard: 14 };
   var CARD_TIME = { first: 150, easy: 130, normal: 110, hard: 90 };
-  /* 자모 순서를 섞을지 — 낮은 단계는 순서를 두어 자모 읽기 연습이 되게 한다 */
-  var CARD_SHUFFLE = { first: false, easy: false, normal: true, hard: true };
+  /* 자모 자리를 몇 번 바꿀지.
+     한 번에 두 자모가 서로 자리를 바꾼다. -1 이면 전부 섞는다.
+     순서를 조금씩 흐트러뜨려야 난이도가 계단처럼 올라간다. */
+  var CARD_MIX = { first: 1, easy: 2, normal: 4, hard: -1 };
+  var MIX_NOTE = {
+    first: '자모 자리가 한 군데 바뀌어 있어요',
+    easy: '자모 자리가 두 군데 바뀌어 있어요',
+    normal: '자모 자리가 네 군데 바뀌어 있어요',
+    hard: '자모가 완전히 섞여 있어요'
+  };
+
+  /** 자모 순서를 정해진 횟수만큼 자리바꿈한다 */
+  function mixJamo(list, swaps) {
+    var a = list.slice();
+    if (a.length < 2) return a;
+    if (swaps < 0) return DATA.shuffle(a);
+
+    for (var s = 0, guard = 0; s < swaps && guard < 200; guard++) {
+      var i = Math.floor(Math.random() * a.length);
+      var j = Math.floor(Math.random() * a.length);
+      if (i === j || a[i] === a[j]) continue;   // 같은 자리·같은 자모면 바꿔도 티가 안 난다
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+      s++;
+    }
+    return a;
+  }
 
   /** 낱말을 기본 자모로 풀어낸다 (겹받침·겹모음도 낱개로) */
   function jamosOfWord(w) {
@@ -916,7 +940,7 @@ var GAMES = (function () {
       '  <span id="c-count"></span>' +
       '</div>' +
       '<div class="cards" id="c-cards"></div>' +
-      '<div class="cnote" id="c-note">자모를 보고 낱말을 알아내 치고 엔터</div>';
+      '<div class="cnote" id="c-note"></div>';
     st.appendChild(wrap);
 
     // 두 글자 이상만 — 한 글자는 자모 두세 개뿐이라 문제가 되지 않는다
@@ -925,13 +949,14 @@ var GAMES = (function () {
     var n = Math.min(CARD_COUNT[G.diff.id] || 8, pool.length);
     var picks = DATA.shuffle(pool.slice()).slice(0, n);
 
-    var mix = CARD_SHUFFLE[G.diff.id];
+    var swaps = CARD_MIX[G.diff.id];
+    if (swaps === undefined) swaps = 2;
     G.cards = picks.map(function (w) {
       var j = jamosOfWord(w);
       return {
         word: w,
         key: jamoKey(j),
-        show: mix ? DATA.shuffle(j.slice()) : j,
+        show: mixJamo(j, swaps),
         done: false,
         hint: false
       };
@@ -943,6 +968,9 @@ var GAMES = (function () {
     G.solved = 0;
     G.left = CARD_TIME[G.diff.id] || 110;
     G.stuck = 0;                       // 못 맞힌 채 흐른 시간
+    G.note = (MIX_NOTE[G.diff.id] || '') + ' · 낱말을 알아내 치고 엔터';
+    var cn = $('c-note');
+    if (cn) cn.textContent = G.note;
     drawCards();
   }
 
@@ -1040,7 +1068,7 @@ var GAMES = (function () {
     var h = $('c-note');
     if (h) h.innerHTML = '<span style="color:var(--warn)">' + esc(msg) + '</span>';
     setTimeout(function () {
-      if (G && G.running && h) h.textContent = '자모를 보고 낱말을 알아내 치고 엔터';
+      if (G && G.running && h) h.textContent = G.note || '낱말을 알아내 치고 엔터';
     }, 1600);
   }
 
