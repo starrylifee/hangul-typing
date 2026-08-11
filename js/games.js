@@ -315,6 +315,8 @@ var GAMES = (function () {
   }
 
   function hit(item) {
+    // 치면 안 되는 동물은 점수를 주지 않고 깎는다
+    if (G.id === 'mole' && item.bad) { moleBadHit(item); return; }
     addScore(item.word);
     if (G.id === 'defense') killFalling(item);
     else if (G.id === 'race') raceHit(item);
@@ -653,6 +655,63 @@ var GAMES = (function () {
     '  <ellipse cx="76" cy="66" rx="8" ry="7" fill="#7a6357"/>' +
     '</svg>';
 
+  /* 치면 안 되는 동물들 — 이 친구들이 든 낱말을 치면 점수가 깎인다 */
+  var RABBIT_SVG =
+    '<svg class="msvg" viewBox="0 0 100 92" aria-hidden="true">' +
+    '  <ellipse cx="50" cy="86" rx="28" ry="6" fill="rgba(0,0,0,.35)"/>' +
+    // 귀
+    '  <ellipse cx="38" cy="20" rx="7" ry="20" fill="#eee7e1" transform="rotate(-10 38 20)"/>' +
+    '  <ellipse cx="62" cy="20" rx="7" ry="20" fill="#eee7e1" transform="rotate(10 62 20)"/>' +
+    '  <ellipse cx="38" cy="21" rx="3.4" ry="14" fill="#f2b8c6" transform="rotate(-10 38 21)"/>' +
+    '  <ellipse cx="62" cy="21" rx="3.4" ry="14" fill="#f2b8c6" transform="rotate(10 62 21)"/>' +
+    // 몸·머리
+    '  <path d="M24 88 C21 64 30 46 50 46 C70 46 79 64 76 88 Z" fill="#efe9e3"/>' +
+    '  <ellipse cx="50" cy="52" rx="25" ry="21" fill="#f6f1ec"/>' +
+    // 눈
+    '  <ellipse cx="41" cy="48" rx="4.2" ry="5" fill="#3a2a2a"/>' +
+    '  <ellipse cx="59" cy="48" rx="4.2" ry="5" fill="#3a2a2a"/>' +
+    '  <circle cx="42.4" cy="46.4" r="1.5" fill="#fff"/>' +
+    '  <circle cx="60.4" cy="46.4" r="1.5" fill="#fff"/>' +
+    // 코·입
+    '  <path d="M50 58 L46.6 54.6 L53.4 54.6 Z" fill="#e08fa2"/>' +
+    '  <path d="M50 58 v3.4" stroke="#c98096" stroke-width="1.4" stroke-linecap="round"/>' +
+    '  <rect x="47" y="61.4" width="6" height="5" rx="1" fill="#fff" stroke="#ddd2c8" stroke-width=".6"/>' +
+    '  <g stroke="#c9bdb2" stroke-width="1.1" stroke-linecap="round">' +
+    '    <path d="M42 57 L28 54"/><path d="M42 59 L29 62"/>' +
+    '    <path d="M58 57 L72 54"/><path d="M58 59 L71 62"/>' +
+    '  </g>' +
+    '</svg>';
+
+  var FROG_SVG =
+    '<svg class="msvg" viewBox="0 0 100 92" aria-hidden="true">' +
+    '  <ellipse cx="50" cy="86" rx="30" ry="6" fill="rgba(0,0,0,.35)"/>' +
+    '  <path d="M18 88 C16 62 28 46 50 46 C72 46 84 62 82 88 Z" fill="#5aa851"/>' +
+    '  <ellipse cx="50" cy="76" rx="22" ry="13" fill="#d2ea9d"/>' +
+    '  <ellipse cx="50" cy="52" rx="30" ry="19" fill="#6cbe61"/>' +
+    // 튀어나온 눈
+    '  <circle cx="33" cy="33" r="13" fill="#6cbe61"/>' +
+    '  <circle cx="67" cy="33" r="13" fill="#6cbe61"/>' +
+    '  <circle cx="33" cy="32" r="9" fill="#fff"/>' +
+    '  <circle cx="67" cy="32" r="9" fill="#fff"/>' +
+    '  <circle cx="33" cy="33" r="5" fill="#1e2b16"/>' +
+    '  <circle cx="67" cy="33" r="5" fill="#1e2b16"/>' +
+    '  <circle cx="34.8" cy="31" r="1.8" fill="#fff"/>' +
+    '  <circle cx="68.8" cy="31" r="1.8" fill="#fff"/>' +
+    // 입·콧구멍
+    '  <path d="M31 57 Q50 69 69 57" stroke="#2f6b2c" stroke-width="2.6" fill="none" stroke-linecap="round"/>' +
+    '  <circle cx="45" cy="47" r="1.5" fill="#2f6b2c"/>' +
+    '  <circle cx="55" cy="47" r="1.5" fill="#2f6b2c"/>' +
+    '</svg>';
+
+  var CRITTERS = {
+    mole: { svg: MOLE_SVG, name: '두더지', bad: false },
+    rabbit: { svg: RABBIT_SVG, name: '토끼', bad: true },
+    frog: { svg: FROG_SVG, name: '개구리', bad: true }
+  };
+  var BAD_KINDS = ['rabbit', 'frog'];
+  /* 치면 안 되는 동물이 나올 확률 */
+  var BAD_RATE = { first: 0.15, easy: 0.22, normal: 0.30, hard: 0.38 };
+
   function startMole() {
     prepare('mole');
     var st = $('stage');
@@ -663,19 +722,27 @@ var GAMES = (function () {
       h.className = 'hole';
       h.innerHTML =
         '<div class="dirt"></div>' +
-        '<div class="mole">' + MOLE_SVG + '<div class="sign"><div class="word"></div></div></div>' +
+        '<div class="mole"></div>' +
         '<div class="timer"></div>';
       wrap.appendChild(h);
     }
     st.appendChild(wrap);
     G.holes = [].slice.call(wrap.children).map(function (el) {
       return {
-        el: el, wordEl: el.querySelector('.word'),
+        el: el, moleEl: el.querySelector('.mole'), wordEl: null,
         timerEl: el.querySelector('.timer'), item: null
       };
     });
     G.missed = 0;
+    G.badHit = 0;
     G.spawnAcc = 0.4;
+
+    // 규칙 안내 — 무엇을 치면 안 되는지 먼저 알려 준다
+    var rule = document.createElement('div');
+    rule.className = 'molerule';
+    rule.innerHTML = '두더지가 든 낱말만 치세요 · ' +
+      '<span class="bad">토끼와 개구리</span>가 든 낱말을 치면 점수가 깎여요';
+    st.appendChild(rule);
   }
 
   function stepMole(dt) {
@@ -698,16 +765,22 @@ var GAMES = (function () {
       h.item.t -= dt;
       h.timerEl.style.width = Math.max(0, h.item.t / h.item.life * 100) + '%';
       if (h.item.t <= 0) {
+        // 토끼·개구리는 그냥 사라지는 게 맞다. 놓친 것으로 치지 않는다.
+        var wasBad = h.item.bad;
         removeMole(h);
-        G.missed++;
-        missedNow = true;
+        if (!wasBad) { G.missed++; missedNow = true; }
       }
     });
     if (missedNow) breakCombo();
 
     var left = Math.max(0, MOLE_TIME - G.elapsed);
     $('g-prog').style.width = (G.elapsed / MOLE_TIME * 100) + '%';
-    if (left <= 0) { gameOver('시간 종료! 놓친 낱말 ' + G.missed + '개', G.missed <= 3); return; }
+    if (left <= 0) {
+      var msg = '시간 종료! 놓친 두더지 ' + G.missed + '마리';
+      if (G.badHit) msg += ' · 잘못 친 동물 ' + G.badHit + '마리';
+      gameOver(msg, G.missed <= 3 && G.badHit === 0);
+      return;
+    }
     drawMole();
   }
 
@@ -717,9 +790,25 @@ var GAMES = (function () {
     var h = empty[Math.floor(Math.random() * empty.length)];
     var active = G.items.map(function (it) { return it.word; });
     var w = randWord(active);
-    var item = { word: w, hole: h, t: life, life: life, lock: false, matched: 0 };
+
+    // 가끔 치면 안 되는 동물이 나온다
+    var kind = 'mole';
+    if (Math.random() < (BAD_RATE[G.diff.id] || 0.25)) {
+      kind = BAD_KINDS[Math.floor(Math.random() * BAD_KINDS.length)];
+    }
+    var c = CRITTERS[kind];
+
+    var item = {
+      word: w, hole: h, t: life, life: life,
+      lock: false, matched: 0, kind: kind, bad: c.bad
+    };
     h.item = item;
     G.items.push(item);
+
+    h.moleEl.innerHTML = c.svg +
+      '<div class="sign' + (c.bad ? ' bad' : '') + '"><div class="word"></div></div>';
+    h.wordEl = h.moleEl.querySelector('.word');
+    h.el.classList.toggle('badhole', !!c.bad);
     h.el.classList.add('up');
     h.timerEl.style.width = '100%';
   }
@@ -729,7 +818,12 @@ var GAMES = (function () {
     G.items = G.items.filter(function (it) { return it !== h.item; });
     h.item = null;
     h.el.classList.remove('up', 'lock');
-    h.wordEl.textContent = '';
+    var el = h.moleEl;
+    // 내려간 뒤에 지운다 — 내려가는 모습이 보이게
+    setTimeout(function () {
+      if (el && !el.parentNode.classList.contains('up')) el.innerHTML = '';
+    }, 300);
+    h.wordEl = null;
   }
 
   function moleHit(item) {
@@ -739,9 +833,26 @@ var GAMES = (function () {
     removeMole(h);
   }
 
+  /** 토끼·개구리를 쳐 버렸을 때 */
+  function moleBadHit(item) {
+    var h = item.hole;
+    var c = CRITTERS[item.kind];
+    var pen = keyLen(item.word) * 12;
+    G.score = Math.max(0, G.score - pen);
+    G.badHit++;
+    breakCombo();
+    $('g-score').textContent = G.score;
+
+    h.el.classList.add('wrong');
+    setTimeout(function () { h.el.classList.remove('wrong'); }, 500);
+    // 토끼·개구리 모두 받침이 없어서 조사는 '는' 으로 붙는다
+    flashItem({ icon: '✋', name: c.name + '는 치면 안 돼요 · ' + pen + '점 깎임', color: '#ff6b81' });
+    removeMole(h);
+  }
+
   function drawMole() {
     G.holes.forEach(function (h) {
-      if (!h.item) return;
+      if (!h.item || !h.wordEl) return;
       h.wordEl.innerHTML = wordHtml(h.item);
       h.el.classList.toggle('lock', !!h.item.lock);
     });
