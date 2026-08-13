@@ -720,12 +720,77 @@ var GAMES = (function () {
     '  <circle cx="55" cy="47" r="1.5" fill="#2f6b2c"/>' +
     '</svg>';
 
+  /* 두더지 가면을 쓴 토끼 — 귀와 흰 몸이 그대로 드러나 정체를 알 수 있다 */
+  var MASKED_RABBIT_SVG =
+    '<svg class="msvg" viewBox="0 0 100 92" aria-hidden="true">' +
+    '  <ellipse cx="50" cy="86" rx="28" ry="6" fill="rgba(0,0,0,.35)"/>' +
+    // 귀 — 가면 위로 그대로 드러나는 단서
+    '  <ellipse cx="38" cy="20" rx="7" ry="20" fill="#eee7e1" transform="rotate(-10 38 20)"/>' +
+    '  <ellipse cx="62" cy="20" rx="7" ry="20" fill="#eee7e1" transform="rotate(10 62 20)"/>' +
+    '  <ellipse cx="38" cy="21" rx="3.4" ry="14" fill="#f2b8c6" transform="rotate(-10 38 21)"/>' +
+    '  <ellipse cx="62" cy="21" rx="3.4" ry="14" fill="#f2b8c6" transform="rotate(10 62 21)"/>' +
+    // 몸·머리 — 흰 토끼 그대로
+    '  <path d="M24 88 C21 64 30 46 50 46 C70 46 79 64 76 88 Z" fill="#efe9e3"/>' +
+    '  <ellipse cx="50" cy="52" rx="25" ry="21" fill="#f6f1ec"/>' +
+    // 가면 끈
+    '  <g stroke="#5c4438" stroke-width="2" stroke-linecap="round">' +
+    '    <path d="M31 48 L26 45"/><path d="M69 48 L74 45"/>' +
+    '  </g>' +
+    // 두더지 얼굴 가면
+    '  <ellipse cx="50" cy="53" rx="20" ry="16" fill="#8d7365" stroke="#5c4438" stroke-width="1.6"/>' +
+    '  <ellipse cx="41" cy="58" rx="7" ry="5.5" fill="#a8897a"/>' +
+    '  <ellipse cx="59" cy="58" rx="7" ry="5.5" fill="#a8897a"/>' +
+    '  <ellipse cx="42" cy="48" rx="3.8" ry="4.4" fill="#2b1f19"/>' +
+    '  <ellipse cx="58" cy="48" rx="3.8" ry="4.4" fill="#2b1f19"/>' +
+    '  <circle cx="43.4" cy="46.4" r="1.3" fill="#fff"/>' +
+    '  <circle cx="59.4" cy="46.4" r="1.3" fill="#fff"/>' +
+    '  <ellipse cx="50" cy="56" rx="5" ry="3.8" fill="#e8a0a8"/>' +
+    '  <rect x="47.5" y="59.8" width="5" height="4.2" rx="1" fill="#fff"/>' +
+    '  <line x1="50" y1="59.8" x2="50" y2="64" stroke="#dcd2c8" stroke-width=".7"/>' +
+    '</svg>';
+
+  /* 두더지 가면을 쓴 개구리 — 튀어나온 왕눈과 초록 몸이 단서 */
+  var MASKED_FROG_SVG =
+    '<svg class="msvg" viewBox="0 0 100 92" aria-hidden="true">' +
+    '  <ellipse cx="50" cy="86" rx="30" ry="6" fill="rgba(0,0,0,.35)"/>' +
+    '  <path d="M18 88 C16 62 28 46 50 46 C72 46 84 62 82 88 Z" fill="#5aa851"/>' +
+    '  <ellipse cx="50" cy="76" rx="22" ry="13" fill="#d2ea9d"/>' +
+    '  <ellipse cx="50" cy="52" rx="30" ry="19" fill="#6cbe61"/>' +
+    // 튀어나온 눈 — 가면 위로 드러나는 단서
+    '  <circle cx="33" cy="33" r="13" fill="#6cbe61"/>' +
+    '  <circle cx="67" cy="33" r="13" fill="#6cbe61"/>' +
+    '  <circle cx="33" cy="32" r="9" fill="#fff"/>' +
+    '  <circle cx="67" cy="32" r="9" fill="#fff"/>' +
+    '  <circle cx="33" cy="33" r="5" fill="#1e2b16"/>' +
+    '  <circle cx="67" cy="33" r="5" fill="#1e2b16"/>' +
+    '  <circle cx="34.8" cy="31" r="1.8" fill="#fff"/>' +
+    '  <circle cx="68.8" cy="31" r="1.8" fill="#fff"/>' +
+    // 가면 끈
+    '  <g stroke="#5c4438" stroke-width="2" stroke-linecap="round">' +
+    '    <path d="M32 56 L24 53"/><path d="M68 56 L76 53"/>' +
+    '  </g>' +
+    // 두더지 얼굴 가면
+    '  <ellipse cx="50" cy="57" rx="19" ry="13" fill="#8d7365" stroke="#5c4438" stroke-width="1.6"/>' +
+    '  <ellipse cx="42" cy="61" rx="6" ry="4.6" fill="#a8897a"/>' +
+    '  <ellipse cx="58" cy="61" rx="6" ry="4.6" fill="#a8897a"/>' +
+    '  <ellipse cx="43" cy="53" rx="3.2" ry="3.8" fill="#2b1f19"/>' +
+    '  <ellipse cx="57" cy="53" rx="3.2" ry="3.8" fill="#2b1f19"/>' +
+    '  <circle cx="44.2" cy="51.6" r="1.1" fill="#fff"/>' +
+    '  <circle cx="58.2" cy="51.6" r="1.1" fill="#fff"/>' +
+    '  <ellipse cx="50" cy="59.5" rx="4.6" ry="3.4" fill="#e8a0a8"/>' +
+    '  <rect x="47.8" y="62.6" width="4.4" height="3.8" rx="1" fill="#fff"/>' +
+    '  <line x1="50" y1="62.6" x2="50" y2="66.4" stroke="#dcd2c8" stroke-width=".7"/>' +
+    '</svg>';
+
   var CRITTERS = {
     mole: { svg: MOLE_SVG, name: '두더지', bad: false },
     rabbit: { svg: RABBIT_SVG, name: '토끼', bad: true },
-    frog: { svg: FROG_SVG, name: '개구리', bad: true }
+    frog: { svg: FROG_SVG, name: '개구리', bad: true },
+    /* masked: 겉모습 단서(빨간 팻말·경고 글)를 주지 않는다 — 그림만 보고 알아채야 한다 */
+    maskedRabbit: { svg: MASKED_RABBIT_SVG, name: '두더지 가면을 쓴 토끼', bad: true, masked: true },
+    maskedFrog: { svg: MASKED_FROG_SVG, name: '두더지 가면을 쓴 개구리', bad: true, masked: true }
   };
-  var BAD_KINDS = ['rabbit', 'frog'];
+  var BAD_KINDS = ['rabbit', 'frog', 'maskedRabbit', 'maskedFrog'];
   /* 치면 안 되는 동물이 나올 확률 */
   var BAD_RATE = { first: 0.15, easy: 0.22, normal: 0.30, hard: 0.38 };
 
@@ -758,7 +823,8 @@ var GAMES = (function () {
     var rule = document.createElement('div');
     rule.className = 'molerule';
     rule.innerHTML = '두더지가 든 낱말만 치세요 · ' +
-      '<span class="bad">토끼와 개구리</span>가 든 낱말을 치면 점수가 깎여요';
+      '<span class="bad">토끼와 개구리</span>가 든 낱말을 치면 점수가 깎여요 · ' +
+      '두더지 가면을 쓴 녀석도 있으니 귀와 눈을 잘 보세요!';
     st.appendChild(rule);
   }
 
@@ -822,10 +888,12 @@ var GAMES = (function () {
     h.item = item;
     G.items.push(item);
 
+    // 가면을 쓴 동물은 팻말도 두더지와 똑같다 — 경고 표시를 붙이지 않는다
+    var warn = c.bad && !c.masked;
     h.moleEl.innerHTML = c.svg +
-      '<div class="sign' + (c.bad ? ' bad' : '') + '"><div class="word"></div></div>';
+      '<div class="sign' + (warn ? ' bad' : '') + '"><div class="word"></div></div>';
     h.wordEl = h.moleEl.querySelector('.word');
-    h.el.classList.toggle('badhole', !!c.bad);
+    h.el.classList.toggle('badhole', warn);
     h.el.classList.add('up');
     h.timerEl.style.width = '100%';
   }
