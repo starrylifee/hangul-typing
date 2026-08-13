@@ -1632,6 +1632,19 @@ var GAMES = (function () {
   var DIG_GEM_RATE = 0.18;     // 기획서: 운이 좋으면 가끔 보석
   var DIG_GEM_BONUS = 50;
   var BAG_ICONS = ['🍪', '🍬', '🍭', '🍫', '🍿', '🧁', '🍩', '🥨'];
+  /* 봉지 색 — 기획서 디자인2의 색연필 봉지들(하늘·주황·초록·빨강·노랑) */
+  var BAG_COLORS = [
+    ['#7ec8e3', '#5aa8c6'], ['#f5a25d', '#d97f3c'], ['#67c587', '#46a366'],
+    ['#e5726f', '#c14f4c'], ['#f2d15a', '#d4ac35'], ['#b48ce0', '#9067c4']
+  ];
+  /* 호미 — 이모지가 없어서 직접 그렸다. 나무 자루 + 굽은 쇠날 */
+  var HOE_SVG =
+    '<svg viewBox="0 0 60 60" aria-hidden="true">' +
+    '  <rect x="44" y="2" width="7" height="38" rx="3.5" fill="#a8734b" transform="rotate(28 47.5 21)"/>' +
+    '  <rect x="44" y="2" width="3" height="38" rx="1.5" fill="#c99569" transform="rotate(28 47.5 21)"/>' +
+    '  <path d="M34 36 C20 34 10 40 6 52 C16 48 24 50 32 56 C38 50 40 42 34 36 Z" fill="#5a6472"/>' +
+    '  <path d="M34 36 C24 35 15 39 10 47 C18 44 26 46 32 51 C36 46 37 40 34 36 Z" fill="#7b8694"/>' +
+    '</svg>';
   /* 봉지에는 진짜 과자 이름이 적혀 있다 — 기획서 디자인2가 실제 과자 봉지 그림이었다.
      (포카칩·바나나킥·누룽지팝은 기획서에 그려진 것) */
   var SNACK_NAMES = [
@@ -1675,6 +1688,9 @@ var GAMES = (function () {
       el.style.left = x + '%';
       el.style.top = y + '%';
       el.style.setProperty('--rot', (Math.random() * 24 - 12).toFixed(1) + 'deg');
+      var bc = BAG_COLORS[i % BAG_COLORS.length];
+      el.style.setProperty('--bagc', bc[0]);
+      el.style.setProperty('--bagc-d', bc[1]);
       el.innerHTML = '<div class="bagico">' + BAG_ICONS[i % BAG_ICONS.length] + '</div>' +
         '<div class="sword"></div>';
       cave.appendChild(el);
@@ -1695,21 +1711,45 @@ var GAMES = (function () {
     item.dead = true;
     G.dug++;
 
-    // 호미가 내려찍고 봉지가 뽑혀 나온다
+    var cave = G.cave, x = item.x, y = item.y;
+
+    // 호미가 날아와 두 번 내려찍고, 그다음 봉지가 뽑혀 나온다
     var hoe = document.createElement('div');
     hoe.className = 'hoe';
-    hoe.textContent = '⛏️';
-    hoe.style.left = item.x + '%';
-    hoe.style.top = item.y + '%';
-    G.cave.appendChild(hoe);
-    setTimeout(function () { hoe.remove(); }, 520);
+    hoe.innerHTML = HOE_SVG;
+    hoe.style.left = x + '%';
+    hoe.style.top = y + '%';
+    cave.appendChild(hoe);
+    setTimeout(function () { hoe.remove(); }, 1050);
 
-    item.el.classList.add('dug');
-    (function (el) { setTimeout(function () { el.remove(); }, 620); })(item.el);
+    (function (el) {
+      setTimeout(function () { el.classList.add('dug'); }, 320);
+      setTimeout(function () { el.remove(); }, 1000);
+    })(item.el);
 
     if (Math.random() < DIG_GEM_RATE) {
       G.score += DIG_GEM_BONUS;
       $('g-score').textContent = G.score;
+      // 보석이 캐낸 자리에서 반짝이며 튀어나온다
+      setTimeout(function () {
+        if (!cave.parentNode) return;
+        var gem = document.createElement('div');
+        gem.className = 'gempop';
+        gem.innerHTML = '💎<span class="gtag">보석 +' + DIG_GEM_BONUS + '</span>';
+        gem.style.left = x + '%';
+        gem.style.top = y + '%';
+        cave.appendChild(gem);
+        for (var s = 0; s < 3; s++) {
+          var sp = document.createElement('div');
+          sp.className = 'gemspark';
+          sp.textContent = '✨';
+          sp.style.left = (x + (Math.random() * 10 - 5)) + '%';
+          sp.style.top = (y + (Math.random() * 8 - 4)) + '%';
+          cave.appendChild(sp);
+          (function (e) { setTimeout(function () { e.remove(); }, 950); })(sp);
+        }
+        setTimeout(function () { gem.remove(); }, 1650);
+      }, 480);
       flashItem({ icon: '💎', name: '보석을 캤어요! +' + DIG_GEM_BONUS, color: '#5ad4e6' });
     }
 

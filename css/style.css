@@ -1391,35 +1391,77 @@ ul.notyet li {
     radial-gradient(circle at 20% 85%, rgba(0, 0, 0, .5) 0 20%, transparent 32%),
     radial-gradient(circle at 82% 82%, rgba(0, 0, 0, .55) 0 18%, transparent 30%);
 }
+/* 과자봉지 — 지그재그 포장지에 과자 이름이 그대로 쓰여 있다 (기획서 디자인2) */
 .snack {
   position: absolute; transform: translate(-50%, -50%) rotate(var(--rot, 0deg));
-  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  background: linear-gradient(165deg, var(--bagc, #7ec8e3), var(--bagc-d, #5aa8c6));
+  padding: clamp(12px, 1.9vh, 17px) clamp(10px, 1.2vw, 16px);
+  clip-path: polygon(0 9%, 6.25% 0, 12.5% 9%, 18.75% 0, 25% 9%, 31.25% 0, 37.5% 9%,
+      43.75% 0, 50% 9%, 56.25% 0, 62.5% 9%, 68.75% 0, 75% 9%, 81.25% 0, 87.5% 9%,
+      93.75% 0, 100% 9%, 100% 91%, 93.75% 100%, 87.5% 91%, 81.25% 100%, 75% 91%,
+      68.75% 100%, 62.5% 91%, 56.25% 100%, 50% 91%, 43.75% 100%, 37.5% 91%,
+      31.25% 100%, 25% 91%, 18.75% 100%, 12.5% 91%, 6.25% 100%, 0 91%);
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .65));
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
 }
-.snack .bagico {
-  font-size: clamp(20px, 3.6vh, 32px); line-height: 1;
-  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, .7));
-}
+.snack .bagico { font-size: clamp(15px, 2.6vh, 24px); line-height: 1; }
 .snack .sword {
-  background: #f6edd8; color: #3a2c18; padding: 3px 10px; border-radius: 8px;
-  font-weight: 800; font-size: clamp(13px, 2.2vh, 18px);
-  border: 2px solid #c9b98f; box-shadow: 0 4px 12px rgba(0, 0, 0, .5);
+  background: rgba(255, 255, 255, .94); color: #3a2c18;
+  padding: 2px 9px; border-radius: 7px;
+  font-weight: 800; font-size: clamp(13px, 2.2vh, 18px); white-space: nowrap;
 }
 .snack .sword .hit { color: #1fa374; }
 .snack.lock .sword { outline: 3px solid var(--accent); }
-.snack.dug { animation: dugout .55s forwards ease-in; }
+.snack.dug { animation: dugout .6s forwards ease-in; }
 @keyframes dugout {
   30% { transform: translate(-50%, -46%) rotate(var(--rot, 0deg)); }
-  100% { transform: translate(-50%, -160%) scale(.3) rotate(50deg); opacity: 0; }
+  100% { transform: translate(-50%, -170%) scale(.3) rotate(50deg); opacity: 0; }
 }
+
+/* 호미 — 캐낼 때 날아와 두 번 내려찍는다 */
 .hoe {
-  position: absolute; font-size: clamp(26px, 4.4vh, 40px);
+  position: absolute; width: clamp(54px, 8vh, 84px); height: clamp(54px, 8vh, 84px);
+  margin-left: clamp(20px, 3vh, 34px);
   transform: translate(-50%, -50%);
-  animation: hoeswing .5s forwards ease-out; pointer-events: none;
+  transform-origin: 85% 12%;
+  animation: hoeswing 1s forwards ease-in-out; pointer-events: none;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, .6));
+  z-index: 3;
 }
+.hoe svg { width: 100%; height: 100%; }
 @keyframes hoeswing {
-  0% { transform: translate(-50%, -110%) rotate(-70deg); opacity: 0; }
-  35% { transform: translate(-50%, -55%) rotate(15deg); opacity: 1; }
-  100% { transform: translate(-50%, -50%) rotate(20deg); opacity: 0; }
+  0% { transform: translate(-30%, -130%) rotate(-80deg); opacity: 0; }
+  22% { transform: translate(-50%, -60%) rotate(6deg); opacity: 1; }
+  38% { transform: translate(-48%, -80%) rotate(-42deg); }
+  56% { transform: translate(-50%, -58%) rotate(8deg); }
+  80% { transform: translate(-50%, -62%) rotate(2deg); opacity: 1; }
+  100% { transform: translate(-52%, -70%) rotate(-16deg); opacity: 0; }
+}
+
+/* 보석 — 운이 좋으면 캐낸 자리에서 반짝이며 튀어나온다 */
+.gempop {
+  position: absolute; transform: translate(-50%, -50%);
+  font-size: clamp(30px, 5.4vh, 48px); line-height: 1;
+  animation: gemup 1.6s forwards ease-out; pointer-events: none;
+  filter: drop-shadow(0 0 12px rgba(90, 212, 230, .95)); z-index: 4;
+}
+.gempop .gtag {
+  position: absolute; left: 50%; top: -6px; transform: translate(-50%, -100%);
+  background: rgba(90, 212, 230, .16); border: 1px solid #5ad4e6; color: #bdf0fa;
+  font-size: clamp(12px, 2vh, 15px); font-weight: 800;
+  padding: 2px 10px; border-radius: 999px; white-space: nowrap;
+}
+@keyframes gemup {
+  0% { transform: translate(-50%, -30%) scale(.3); opacity: 0; }
+  18% { transform: translate(-50%, -75%) scale(1.25); opacity: 1; }
+  32% { transform: translate(-50%, -65%) scale(1); }
+  78% { transform: translate(-50%, -120%) scale(1.05); opacity: 1; }
+  100% { transform: translate(-50%, -160%) scale(.9); opacity: 0; }
+}
+.gemspark {
+  position: absolute; transform: translate(-50%, -50%);
+  font-size: clamp(16px, 3vh, 26px);
+  animation: burstpop .9s forwards ease-out; pointer-events: none; z-index: 4;
 }
 
 /* =========================================================
