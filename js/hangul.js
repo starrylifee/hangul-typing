@@ -60,6 +60,13 @@ var HG = (function () {
     'ㅢ': ['ㅡ', 'ㅣ']
   };
 
+  // IME가 연달아 치면 겹자모 한 글자로 붙여 버리는 쌍 (ㄹ+ㅁ→ㄻ, ㅗ+ㅏ→ㅘ …)
+  var COMBINE = {};
+  for (var cj in COMPOSITE) {
+    COMBINE[COMPOSITE[cj][0] + COMPOSITE[cj][1]] = cj;
+  }
+  function combines(a, b) { return COMBINE.hasOwnProperty(a + b); }
+
   var SBASE = 0xAC00, SLAST = 0xD7A3;
 
   /* ---------- 자모 → 키들 ---------- */
@@ -247,6 +254,7 @@ var HG = (function () {
     textToKeyGroups: textToKeyGroups,
     decompose: decompose,
     isTypableWith: isTypableWith,
+    combines: combines,
     usedKeys: usedKeys,
     judge: judge,
     nextKey: nextKey,

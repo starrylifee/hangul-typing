@@ -243,7 +243,13 @@ var APP = (function () {
     var out = [];
     for (var g = 0; g < groups; g++) {
       var s = '';
-      for (var i = 0; i < per; i++) s += pick(jamos);
+      for (var i = 0; i < per; i++) {
+        var j = pick(jamos);
+        // IME가 겹자모로 합치는 쌍(ㄹ+ㅁ→ㄻ 등)은 낱자 연습에서 나란히 두지 않는다
+        for (var t = 0; t < 8 && s && HG.combines(s[s.length - 1], j); t++) j = pick(jamos);
+        if (s && HG.combines(s[s.length - 1], j)) j = s[s.length - 1];
+        s += j;
+      }
       out.push(s);
     }
     return out.join(' ');
@@ -451,13 +457,15 @@ var APP = (function () {
     var v = el.value;
 
     // 앞 줄에서 뒤늦게 넘어온 조합 잔여 글자를 걷어낸다
+    // (IME가 ㄹ+ㅁ을 ㄻ으로 합쳐서 밀어 넣기도 하므로 글자가 아니라 키 단위로 비교)
     if (S.tail && performance.now() < S.tailUntil) {
-      if (!composing && v && S.tail.indexOf(v) >= 0) {
+      var vk = HG.textToKeys(v).join('');
+      if (!composing && v && S.tail.indexOf(vk) >= 0) {
         el.value = '';
         S.tail = '';
         return;
       }
-      if (v && v !== S.tail) S.tail = '';
+      if (v && vk !== S.tail) S.tail = '';
     }
 
     if (!S.startAt && v.length) S.startAt = Date.now();
@@ -513,7 +521,7 @@ var APP = (function () {
     // 한글 IME 가 조합 중이던 글자를 입력창을 비운 뒤에 밀어 넣는 일이 있다.
     // 방금 끝낸 줄의 꼬리 글자를 기억해 두었다가 걷어낸다.
     var lastLine = S.items[S.idx] || '';
-    S.tail = lastLine.slice(-2);
+    S.tail = HG.textToKeys(lastLine.slice(-2)).join('');
     S.tailUntil = performance.now() + 700;
     S.idx++;
 
