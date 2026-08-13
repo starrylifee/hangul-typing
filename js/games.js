@@ -1454,6 +1454,14 @@ var GAMES = (function () {
   function renderStudent() {
     var el = $('tycoin');
     if (el) el.textContent = '🪙 ' + stu().coin;
+    var b = document.querySelector('[data-best="student"]');
+    if (b) b.textContent = stu().coin ? '🪙 타자코인 ' + stu().coin : '';
+  }
+
+  /** 학생 게임 선택 화면 */
+  function openStudent() {
+    renderStudent();
+    APP.show('studentsel');
   }
 
   /* ---------- 1) 타자 판뒤집기 (기획 · 남자팀) ---------- */
@@ -1624,6 +1632,14 @@ var GAMES = (function () {
   var DIG_GEM_RATE = 0.18;     // 기획서: 운이 좋으면 가끔 보석
   var DIG_GEM_BONUS = 50;
   var BAG_ICONS = ['🍪', '🍬', '🍭', '🍫', '🍿', '🧁', '🍩', '🥨'];
+  /* 봉지에는 진짜 과자 이름이 적혀 있다 — 기획서 디자인2가 실제 과자 봉지 그림이었다.
+     (포카칩·바나나킥·누룽지팝은 기획서에 그려진 것) */
+  var SNACK_NAMES = [
+    '포카칩', '바나나킥', '새우깡', '누룽지팝', '꼬깔콘', '홈런볼', '초코파이', '오징어집',
+    '양파링', '콘칩', '맛동산', '죠리퐁', '빼빼로', '칸쵸', '웨하스', '몽쉘',
+    '오예스', '에이스', '계란과자', '별뽀빠이', '조청유과', '감자깡', '고구마깡', '자갈치',
+    '꿀꽈배기', '캐러멜콘', '치즈볼', '쌀로별'
+  ];
 
   function startDig() {
     prepare('dig');
@@ -1642,10 +1658,16 @@ var GAMES = (function () {
       [8, 40], [90, 60], [10, 64], [22, 84], [42, 88],
       [64, 87], [84, 80], [30, 42], [70, 40]
     ];
-    var used = [];
+    // 과자 이름을 섞어서 14개 뽑는다
+    var names = SNACK_NAMES.slice();
+    for (var s = names.length - 1; s > 0; s--) {
+      var r = Math.floor(Math.random() * (s + 1));
+      var t = names[s]; names[s] = names[r]; names[r] = t;
+    }
+
     G.items = [];
     for (var i = 0; i < DIG_COUNT; i++) {
-      var w = randWord(used); used.push(w);
+      var w = names[i];
       var el = document.createElement('div');
       el.className = 'snack';
       var x = slots[i][0] + (Math.random() * 4 - 2);
@@ -1939,8 +1961,8 @@ var GAMES = (function () {
 
     var id = G.id, wasStudent = !!G.student;
     $('go-again').onclick = function () { start(id); };
-    // 학생 게임은 게임 선택 화면이 아니라 홈(학생 게임 섹션)으로 돌아간다
-    $('go-sel').onclick = function () { stop(); if (wasStudent) APP.show('home'); else openSelect(); };
+    // 학생 게임은 학생 게임 선택 화면으로 돌아간다
+    $('go-sel').onclick = function () { stop(); if (wasStudent) openStudent(); else openSelect(); };
     $('go-home').onclick = function () { stop(); APP.show('home'); };
     $('go-again').focus();
   }
@@ -1982,7 +2004,12 @@ var GAMES = (function () {
       setTimeout(function () { onGameInput(c); }, 0);
     });
     gi.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') { stop(); openSelect(); return; }
+      if (e.key === 'Escape') {
+        var wasStudent = G && G.student;
+        stop();
+        if (wasStudent) openStudent(); else openSelect();
+        return;
+      }
       if (e.key === 'Enter') {
         // 조합 중이면 IME 가 먼저 글자를 확정한다 → compositionend 에서 이어받는다
         wantCommit = true;
@@ -1999,7 +2026,12 @@ var GAMES = (function () {
         onGameInput(true);
       }
     });
-    $('btn-game-exit').onclick = function () { stop(); openSelect(); };
+    $('btn-game-exit').onclick = function () {
+      // 학생 게임에서 나가면 학생 게임 선택 화면으로
+      var wasStudent = G && G.student;
+      stop();
+      if (wasStudent) openStudent(); else openSelect();
+    };
     $('s-game').addEventListener('mousedown', function (e) {
       if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT') {
         setTimeout(function () { var i = $('gamein'); if (!i.disabled) i.focus(); }, 0);
@@ -2007,5 +2039,8 @@ var GAMES = (function () {
     });
   }
 
-  return { init: init, openSelect: openSelect, start: start, stop: stop, renderStudent: renderStudent };
+  return {
+    init: init, openSelect: openSelect, openStudent: openStudent,
+    start: start, stop: stop, renderStudent: renderStudent
+  };
 })();

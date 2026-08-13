@@ -77,50 +77,12 @@
           <p>방어전 · 달리기 · 두더지</p>
           <div class="best" data-best="game"></div>
         </button>
-      </div>
-      <div class="student-sec">
-        <div class="student-head">
-          <h2>🖍️ 학생이 만든 게임</h2>
-          <span class="foot-note">여름캠프 학생들이 종이에 그린 기획서를 그대로 게임으로 만들었습니다 · 모든 낱말이 나옵니다</span>
-          <div class="spacer"></div>
-          <span class="tycoin" id="tycoin">🪙 0</span>
-          <button class="btn sm" id="btn-shop">판 상점</button>
-        </div>
-        <div class="student-grid">
-          <div class="sgame-card" data-sgame="flip" role="button" tabindex="0">
-            <div class="ico">🟦</div>
-            <div class="body">
-              <h3>타자 판뒤집기</h3>
-              <p>낱말을 쳐서 컴퓨터의 판을 빼앗으세요. 시간이 끝났을 때 판이 많은 쪽이 이깁니다. 이기면 타자코인 20개!</p>
-            </div>
-            <div class="side">
-              <span class="credit">기획 · 남자팀</span>
-              <a class="pdflink" href="game_vibe/20260813104500.pdf" target="_blank" rel="noopener">📄 기획서</a>
-            </div>
-          </div>
-          <div class="sgame-card" data-sgame="dig" role="button" tabindex="0">
-            <div class="ico">⛏️</div>
-            <div class="body">
-              <h3>과자 캐기</h3>
-              <p>동굴에 도둑이 숨긴 과자가 있어요. 봉지에 적힌 낱말을 치면 호미로 캡니다. 운이 좋으면 보석도!</p>
-            </div>
-            <div class="side">
-              <span class="credit">기획 · 쭈꾸미</span>
-              <a class="pdflink" href="game_vibe/20260813104514.pdf" target="_blank" rel="noopener">📄 기획서</a>
-            </div>
-          </div>
-          <div class="sgame-card" data-sgame="fire" role="button" tabindex="0">
-            <div class="ico">🎆</div>
-            <div class="body">
-              <h3>폭죽 놀이</h3>
-              <p>불이 폭죽에 닿기 전에 낱말을 치면 +5점. 폭탄에 적힌 낱말은 치면 안 돼요. 목숨은 3개!</p>
-            </div>
-            <div class="side">
-              <span class="credit">기획 · 3학년 아이들</span>
-              <a class="pdflink" href="game_vibe/20260813104526.pdf" target="_blank" rel="noopener">📄 기획서</a>
-            </div>
-          </div>
-        </div>
+        <button class="mode-card" data-mode="student">
+          <div class="ico">🖍️</div>
+          <h3>학생이 만든 게임</h3>
+          <p>판뒤집기 · 과자 캐기 · 폭죽 놀이</p>
+          <div class="best" data-best="student"></div>
+        </button>
       </div>
       <div class="home-foot">
         <button class="btn primary" id="btn-open-report">📋 오늘 학습 리포트 보기</button>
@@ -164,6 +126,59 @@
           <button class="btn primary sm" id="btn-paste-go">이 글로 연습</button>
         </div>
         <textarea id="paste-area" placeholder="여기에 글을 붙여넣으세요. 줄바꿈 그대로 한 줄씩 연습합니다."></textarea>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 학생 게임 선택 ================= -->
+  <section class="screen" id="s-studentsel">
+    <header class="topbar">
+      <button class="btn ghost sm" data-go="home">← 처음으로</button>
+      <div class="brand" style="font-size:16px"><span class="dot"></span>학생이 만든 게임</div>
+      <div class="spacer"></div>
+      <span class="tycoin" id="tycoin">🪙 0</span>
+      <button class="btn sm" id="btn-shop">판 상점</button>
+    </header>
+    <div class="page">
+      <div class="page-head">
+        <h2>학생이 만든 게임</h2>
+        <p>여름캠프 학생들이 종이에 그린 기획서를 그대로 게임으로 만들었습니다. 단계 제한 없이 모든 낱말이
+          나옵니다. 카드의 "기획서" 버튼을 누르면 손으로 그린 원본을 볼 수 있어요.</p>
+      </div>
+      <div class="student-grid">
+        <div class="sgame-card" data-sgame="flip" role="button" tabindex="0">
+          <div class="ico">🟦</div>
+          <div class="body">
+            <h3>타자 판뒤집기</h3>
+            <p>낱말을 쳐서 컴퓨터의 판을 빼앗으세요. 시간이 끝났을 때 판이 많은 쪽이 이깁니다. 이기면 타자코인 20개!</p>
+          </div>
+          <div class="side">
+            <span class="credit">기획 · 남자팀</span>
+            <a class="pdflink" href="game_vibe/20260813104500.pdf" target="_blank" rel="noopener">📄 기획서</a>
+          </div>
+        </div>
+        <div class="sgame-card" data-sgame="dig" role="button" tabindex="0">
+          <div class="ico">⛏️</div>
+          <div class="body">
+            <h3>과자 캐기</h3>
+            <p>동굴에 도둑이 숨긴 과자가 있어요. 봉지에 적힌 과자 이름을 치면 호미로 캡니다. 운이 좋으면 보석도!</p>
+          </div>
+          <div class="side">
+            <span class="credit">기획 · 쭈꾸미</span>
+            <a class="pdflink" href="game_vibe/20260813104514.pdf" target="_blank" rel="noopener">📄 기획서</a>
+          </div>
+        </div>
+        <div class="sgame-card" data-sgame="fire" role="button" tabindex="0">
+          <div class="ico">🎆</div>
+          <div class="body">
+            <h3>폭죽 놀이</h3>
+            <p>불이 폭죽에 닿기 전에 낱말을 치면 +5점. 폭탄에 적힌 낱말은 치면 안 돼요. 목숨은 3개!</p>
+          </div>
+          <div class="side">
+            <span class="credit">기획 · 3학년 아이들</span>
+            <a class="pdflink" href="game_vibe/20260813104526.pdf" target="_blank" rel="noopener">📄 기획서</a>
+          </div>
+        </div>
       </div>
     </div>
   </section>

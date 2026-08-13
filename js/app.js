@@ -617,6 +617,7 @@ var APP = (function () {
         var m = btn.dataset.mode;
         if (m === 'long') { renderLongList(); return; }
         if (m === 'game') { GAMES.openSelect(); return; }
+        if (m === 'student') { GAMES.openStudent(); return; }
         pendingMode = m;
         renderLevels();
       };
