@@ -118,6 +118,9 @@ var APP = (function () {
     for (var k in rec.games) if (rec.games[k] > g) g = rec.games[k];
     document.querySelector('[data-best="game"]').textContent = g ? '최고 ' + g + '점' : '';
 
+    // 학생 게임 타자코인 표시
+    if (window.GAMES && GAMES.renderStudent) GAMES.renderStudent();
+
     // 오늘 얼마나 했는지 한 줄
     var brief = $('today-brief');
     if (brief) {

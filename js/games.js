@@ -26,8 +26,12 @@ var GAMES = (function () {
   var BASE_FALL = 3.2;          // %/초 — '쉬움' 기준으로 84% 내려오는 데 약 26초
   var GAME_NAME = {
     defense: '낱말 방어전', race: '컴퓨터와 달리기', mole: '두더지 타자',
-    erase: '낱말 맞추기', spell: '마법사 주문'
+    erase: '낱말 맞추기', spell: '마법사 주문',
+    // 학생이 종이 기획서로 설계한 게임 (game_vibe/ 의 PDF 참고)
+    flip: '타자 판뒤집기', dig: '과자 캐기', fire: '폭죽 놀이'
   };
+  /* 학생 게임의 기획 모둠 — 크레딧은 기획서 원문 그대로 */
+  var STUDENT_CREDIT = { flip: '남자팀', dig: '쭈꾸미', fire: '3학년 아이들' };
 
   /* 아이템 — 아이템이 붙은 낱말을 쳐서 없애면 효과가 걸린다.
      게임 성격에 맞는 곳에만 넣는다 (두더지는 칸이 빽빽해 넣지 않음). */
@@ -64,6 +68,15 @@ var GAMES = (function () {
   function keyLen(w) { return HG.textToKeys(w).length; }
 
   function wordPool() {
+    // 학생 게임은 단계(자리표) 제한 없이 전체 낱말을 쓴다
+    if (G && G.student) {
+      var all = DATA.WORDS;
+      if (G.shortWords) {
+        var ss = all.filter(function (w) { return keyLen(w) <= 8; });
+        if (ss.length > 25) return ss;
+      }
+      return all;
+    }
     var p = DATA.WORD_UPTO[sel.level] || [];
     if (!p.length) p = DATA.WORDS;
     // 쉬운 난이도에서는 짧은 낱말만 — 처음 치는 아이가 긴 낱말에 막히지 않게
@@ -210,6 +223,9 @@ var GAMES = (function () {
     else if (G.id === 'mole') stepMole(dt);
     else if (G.id === 'erase') stepErase(dt);
     else if (G.id === 'spell') stepSpell(dt);
+    else if (G.id === 'flip') stepFlip(dt);
+    else if (G.id === 'dig') stepDig(dt);
+    else if (G.id === 'fire') stepFire(dt);
 
     var cpm = G.elapsed > 1 ? Math.round(G.keys / (G.elapsed / 60)) : 0;
     $('g-cpm').textContent = cpm;
@@ -334,11 +350,15 @@ var GAMES = (function () {
   function hit(item) {
     // 치면 안 되는 동물은 점수를 주지 않고 깎는다
     if (G.id === 'mole' && item.bad) { moleBadHit(item); return; }
+    // 폭죽 놀이는 점수 규칙이 다르고(+5점 고정) 폭탄 판정이 있어서 따로 처리한다
+    if (G.id === 'fire') { fireHit(item); return; }
     addScore(item.word);
     if (G.id === 'defense') killFalling(item);
     else if (G.id === 'race') raceHit(item);
     else if (G.id === 'mole') moleHit(item);
     else if (G.id === 'spell') spellHit(item);
+    else if (G.id === 'flip') flipHit(item);
+    else if (G.id === 'dig') digHit(item);
   }
 
   function draw() {
@@ -347,6 +367,9 @@ var GAMES = (function () {
     else if (G.id === 'mole') drawMole();
     else if (G.id === 'race') drawRaceWord();
     else if (G.id === 'spell') drawSpell();
+    else if (G.id === 'flip') drawFlip();
+    else if (G.id === 'dig') drawDig();
+    else if (G.id === 'fire') drawFire();
   }
 
   /** 낱말을 "친 부분 / 남은 부분" 으로 나눠 그린다 */
@@ -1416,6 +1439,458 @@ var GAMES = (function () {
   }
 
   /* =========================================================
+     학생이 만든 게임 3종
+     여름캠프 학생들이 종이에 그린 기획서(game_vibe/*.pdf)를 그대로 옮겼다.
+     기획서의 수치(판 25개, 코인 20, 도화선 10초, +5점, 목숨 3개, 제한 2분,
+     판 가격 100~1000코인)는 임의로 고치지 않는다.
+     단계(자리표) 제한 없이 전체 낱말을 쓴다.
+     ========================================================= */
+
+  /** 타자코인·산 판 개수 — 판뒤집기 상점용 저장 공간 */
+  function stu() {
+    if (!APP.rec.student) APP.rec.student = { coin: 0, boards: 0 };
+    return APP.rec.student;
+  }
+  function renderStudent() {
+    var el = $('tycoin');
+    if (el) el.textContent = '🪙 ' + stu().coin;
+  }
+
+  /* ---------- 1) 타자 판뒤집기 (기획 · 남자팀) ---------- */
+  var FLIP_START = 25;        // 기획서: 각 팀에 판 25개씩
+  var FLIP_WIN_COIN = 20;     // 기획서: 승리하면 타자코인 20
+
+  function startFlip() {
+    prepare('flip');
+    G.student = true;
+    G.shortWords = true;      // 판이 작아서 짧은 낱말 위주
+    $('game-lv').textContent = '학생 게임 · 기획 남자팀';
+
+    var st = $('stage');
+    var bar = document.createElement('div');
+    bar.className = 'flipbar';
+    bar.innerHTML = '<span class="me">나 0</span>' +
+      '<div class="meter"><i id="f-meter"></i></div>' +
+      '<span class="ai">컴퓨터 0</span>' +
+      '<span class="timeleft" id="f-time"></span>';
+    st.appendChild(bar);
+
+    var wrap = document.createElement('div');
+    wrap.className = 'flipwrap';
+    st.appendChild(wrap);
+
+    // 상점에서 산 판만큼 내 판이 많은 상태로 시작한다 (기획서 원문)
+    var extra = Math.min(stu().boards, 10);
+    var owners = [];
+    var total = FLIP_START * 2 + extra;
+    for (var i = 0; i < total; i++) owners.push(i < FLIP_START + extra ? 'me' : 'ai');
+    for (var s = owners.length - 1; s > 0; s--) {
+      var r = Math.floor(Math.random() * (s + 1));
+      var tmp = owners[s]; owners[s] = owners[r]; owners[r] = tmp;
+    }
+
+    var used = [];
+    G.panels = [];
+    owners.forEach(function (o) {
+      var w = randWord(used); used.push(w);
+      var el = document.createElement('div');
+      wrap.appendChild(el);
+      G.panels.push({ word: w, owner: o, box: false, el: el, lock: false, matched: 0, dead: false });
+    });
+
+    // 기획서: 제한시간은 10분 내로 랜덤 결정된다 → 수업용으로 1분30초~3분 사이 랜덤
+    G.timeLimit = 90 + Math.floor(Math.random() * 90);
+    G.aiAcc = 0;
+    G.boxAcc = 0;
+    G.bonusGiven = false;
+    syncFlipItems();
+    drawFlip();
+  }
+
+  function syncFlipItems() {
+    // 칠 수 있는 것 = 컴퓨터 판(랜덤박스 포함). 내 판은 쳐도 변화 없음
+    G.items = G.panels.filter(function (p) { return p.owner === 'ai'; });
+  }
+  function countOwner(o) {
+    var n = 0;
+    for (var i = 0; i < G.panels.length; i++) if (G.panels[i].owner === o) n++;
+    return n;
+  }
+  function popPanel(p) {
+    p.el.classList.add('pop');
+    setTimeout(function () { p.el.classList.remove('pop'); }, 200);
+  }
+
+  function stepFlip(dt) {
+    // 컴퓨터가 내 판을 빼앗아 간다 — 시간이 갈수록 조금씩 빨라진다
+    // (처음 치는 아이가 10낱말/분 정도인 걸 감안해 컴퓨터는 그보다 느리게 시작)
+    var gap = Math.max(4.5, 7.0 - G.elapsed / 60);
+    G.aiAcc += dt;
+    if (G.aiAcc >= gap) {
+      G.aiAcc = 0;
+      var mine = G.panels.filter(function (p) { return p.owner === 'me'; });
+      if (mine.length) {
+        var p = mine[Math.floor(Math.random() * mine.length)];
+        p.owner = 'ai'; p.box = false; p.lock = false;
+        popPanel(p);
+        syncFlipItems();
+        drawFlip();
+      }
+    }
+    // 기획서: 중간에 곳곳에 상자 판이 나온다
+    G.boxAcc += dt;
+    if (G.boxAcc >= 12) {
+      G.boxAcc = 0;
+      var ais = G.panels.filter(function (p) { return p.owner === 'ai' && !p.box; });
+      if (ais.length) {
+        ais[Math.floor(Math.random() * ais.length)].box = true;
+        drawFlip();
+      }
+    }
+
+    var left = Math.max(0, G.timeLimit - G.elapsed);
+    $('g-prog').style.width = Math.min(100, G.elapsed / G.timeLimit * 100) + '%';
+    var ft = $('f-time');
+    if (ft) ft.textContent = Math.ceil(left) + '초';
+
+    if (left <= 0) {
+      var me = countOwner('me'), ai = countOwner('ai');
+      if (me === ai && !G.bonusGiven) {
+        // 기획서: 판 개수가 같다면 보너스 시간이 랜덤으로 주어진다
+        G.bonusGiven = true;
+        G.timeLimit += 6 + Math.floor(Math.random() * 10);
+        flashItem({ icon: '⏱', name: '동점! 보너스 시간', color: '#ffcc5c' });
+      } else {
+        flipEnd(me, ai);
+      }
+    }
+  }
+
+  function flipHit(item) {
+    item.lock = false;
+    if (item.box) {
+      // 기획서: 상자 판을 치면 상대 판 중 n개를 랜덤으로 가져온다
+      var n = 2 + Math.floor(Math.random() * 3);
+      item.box = false; item.owner = 'me'; popPanel(item);
+      var ais = G.panels.filter(function (p) { return p.owner === 'ai'; });
+      var got = 0;
+      for (var i = 0; i < n && ais.length; i++) {
+        var k = Math.floor(Math.random() * ais.length);
+        var p = ais.splice(k, 1)[0];
+        p.owner = 'me'; p.box = false; p.lock = false;
+        popPanel(p); got++;
+      }
+      flashItem({ icon: '🎁', name: '랜덤박스! 컴퓨터 판 ' + got + '개 획득', color: '#ffcc5c' });
+    } else {
+      item.owner = 'me';
+      popPanel(item);
+    }
+    syncFlipItems();
+    drawFlip();
+  }
+
+  function flipEnd(me, ai) {
+    var win = me > ai;
+    if (win) {
+      stu().coin += FLIP_WIN_COIN;   // 기획서: 승리하면 타자코인 20
+      APP.save();
+      renderStudent();
+    }
+    var msg = win ? '🏆 ' + me + ' : ' + ai + ' — 이겼어요! 타자코인 +' + FLIP_WIN_COIN
+      : me === ai ? me + ' : ' + ai + ' — 무승부'
+        : me + ' : ' + ai + ' — 컴퓨터가 이겼어요';
+    gameOver(msg, win);
+  }
+
+  function drawFlip() {
+    if (!G || G.id !== 'flip') return;
+    var me = 0, ai = 0;
+    G.panels.forEach(function (p) {
+      if (p.owner === 'me') me++; else ai++;
+      p.el.className = 'fpanel ' + p.owner + (p.box ? ' box' : '') + (p.lock ? ' lock' : '');
+      p.el.innerHTML = (p.box ? '🎁 ' : '') + wordHtml(p);
+    });
+    var bar = $('stage').querySelector('.flipbar');
+    if (bar) {
+      bar.querySelector('.me').textContent = '나 ' + me;
+      bar.querySelector('.ai').textContent = '컴퓨터 ' + ai;
+      var m = $('f-meter');
+      if (m) m.style.width = (me / (me + ai) * 100) + '%';
+    }
+  }
+
+  /* ---------- 2) 과자 캐기 (기획 · 쭈꾸미) ---------- */
+  var DIG_COUNT = 14;
+  var DIG_GEM_RATE = 0.18;     // 기획서: 운이 좋으면 가끔 보석
+  var DIG_GEM_BONUS = 50;
+  var BAG_ICONS = ['🍪', '🍬', '🍭', '🍫', '🍿', '🧁', '🍩', '🥨'];
+
+  function startDig() {
+    prepare('dig');
+    G.student = true;
+    $('game-lv').textContent = '학생 게임 · 기획 쭈꾸미';
+
+    var st = $('stage');
+    var cave = document.createElement('div');
+    cave.className = 'cave';
+    st.appendChild(cave);
+    G.cave = cave;
+
+    // 동굴 벽을 따라 봉지가 삐죽 나와 있다 (기획서 그림)
+    var slots = [
+      [14, 18], [36, 14], [58, 13], [80, 18], [92, 36],
+      [8, 40], [90, 60], [10, 64], [22, 84], [42, 88],
+      [64, 87], [84, 80], [30, 42], [70, 40]
+    ];
+    var used = [];
+    G.items = [];
+    for (var i = 0; i < DIG_COUNT; i++) {
+      var w = randWord(used); used.push(w);
+      var el = document.createElement('div');
+      el.className = 'snack';
+      var x = slots[i][0] + (Math.random() * 4 - 2);
+      var y = slots[i][1] + (Math.random() * 4 - 2);
+      el.style.left = x + '%';
+      el.style.top = y + '%';
+      el.style.setProperty('--rot', (Math.random() * 24 - 12).toFixed(1) + 'deg');
+      el.innerHTML = '<div class="bagico">' + BAG_ICONS[i % BAG_ICONS.length] + '</div>' +
+        '<div class="sword"></div>';
+      cave.appendChild(el);
+      G.items.push({
+        word: w, el: el, wEl: el.querySelector('.sword'),
+        x: x, y: y, lock: false, matched: 0, dead: false
+      });
+    }
+    G.dug = 0;
+    drawDig();
+  }
+
+  function stepDig() {
+    $('g-prog').style.width = (G.dug / DIG_COUNT * 100) + '%';
+  }
+
+  function digHit(item) {
+    item.dead = true;
+    G.dug++;
+
+    // 호미가 내려찍고 봉지가 뽑혀 나온다
+    var hoe = document.createElement('div');
+    hoe.className = 'hoe';
+    hoe.textContent = '⛏️';
+    hoe.style.left = item.x + '%';
+    hoe.style.top = item.y + '%';
+    G.cave.appendChild(hoe);
+    setTimeout(function () { hoe.remove(); }, 520);
+
+    item.el.classList.add('dug');
+    (function (el) { setTimeout(function () { el.remove(); }, 620); })(item.el);
+
+    if (Math.random() < DIG_GEM_RATE) {
+      G.score += DIG_GEM_BONUS;
+      $('g-score').textContent = G.score;
+      flashItem({ icon: '💎', name: '보석을 캤어요! +' + DIG_GEM_BONUS, color: '#5ad4e6' });
+    }
+
+    G.items = G.items.filter(function (it) { return it !== item; });
+    if (!G.items.length) {
+      G.dug = DIG_COUNT;
+      stepDig();
+      gameOver('⛏️ 동굴의 과자를 다 캤어요! ' + Math.round(G.elapsed) + '초', true);
+      return;
+    }
+    drawDig();
+  }
+
+  function drawDig() {
+    if (!G || G.id !== 'dig') return;
+    G.items.forEach(function (it) {
+      it.wEl.innerHTML = wordHtml(it);
+      it.el.classList.toggle('lock', !!it.lock);
+    });
+  }
+
+  /* ---------- 3) 폭죽 놀이 (기획 · 3학년 아이들) ---------- */
+  var FIRE_TIME = 120;    // 기획서: 제한시간 2분
+  var FIRE_FUSE = 10;     // 기획서: 불이 폭죽에 닿을 때까지 10초
+  var FIRE_POINT = 5;     // 기획서: 낱말을 쓰면 +5점
+  var FIRE_LIVES = 3;     // 기획서: 목숨 3개
+
+  function startFire() {
+    prepare('fire');
+    G.student = true;
+    $('game-lv').textContent = '학생 게임 · 기획 3학년 아이들';
+
+    var st = $('stage');
+    var sky = document.createElement('div');
+    sky.className = 'fwsky';
+    sky.innerHTML = '<div class="fwground"></div><div class="fwlives" id="fw-lives"></div>';
+    st.appendChild(sky);
+    G.sky = sky;
+    G.lives = FIRE_LIVES;
+    G.spawnDelay = 0.6;
+    drawLives();
+  }
+
+  function drawLives() {
+    var el = $('fw-lives');
+    if (!el) return;
+    var h = '';
+    for (var i = 0; i < FIRE_LIVES; i++) h += i < G.lives ? '❤️' : '🖤';
+    el.textContent = h;
+  }
+
+  function makeRocket(w, x, bomb) {
+    var el = document.createElement('div');
+    el.className = 'rocket' + (bomb ? ' bombitem' : '');
+    el.style.left = x + '%';
+    el.innerHTML =
+      (bomb ? '<div class="warns">쓰지 마시오!</div>' : '') +
+      '<div class="rico">' + (bomb ? '💣' : '🧨') + '</div>' +
+      '<div class="rword"></div>' +
+      '<div class="fuse"><i></i></div>';
+    G.sky.appendChild(el);
+    return {
+      word: w, el: el, wEl: el.querySelector('.rword'), fuseEl: el.querySelector('.fuse i'),
+      t: FIRE_FUSE, bomb: bomb, x: x, lock: false, matched: 0, dead: false
+    };
+  }
+
+  function spawnFire() {
+    var used = G.items.map(function (i) { return i.word; });
+    var w = randWord(used);
+    var x = 25 + Math.random() * 40;
+    G.items.push(makeRocket(w, x, false));
+    // 기획서: 또 폭탄이 있는데, 폭탄의 낱말은 쓰면 안 된다
+    if (Math.random() < 0.35) {
+      used.push(w);
+      G.items.push(makeRocket(randWord(used), x < 45 ? x + 30 : x - 30, true));
+    }
+    drawFire();
+  }
+
+  function stepFire(dt) {
+    // 기획서: 폭죽이 하나씩 나온다
+    if (!G.items.length) {
+      G.spawnDelay -= dt;
+      if (G.spawnDelay <= 0) { G.spawnDelay = 0.8; spawnFire(); }
+    }
+    for (var i = G.items.length - 1; i >= 0; i--) {
+      var it = G.items[i];
+      it.t -= dt;
+      it.fuseEl.style.width = Math.max(0, it.t / FIRE_FUSE * 100) + '%';
+      if (it.t <= 0) {
+        it.el.remove();
+        G.items.splice(i, 1);
+        if (!it.bomb) {
+          // 기획서: 낱말을 안 쓰면 목숨이 하나 없어진다
+          G.lives--;
+          breakCombo();
+          drawLives();
+          shakeStage(380);
+          flashItem({ icon: '💥', name: '불이 닿았어요! 목숨 -1', color: '#ff6b81' });
+          if (G.lives <= 0) { fireEnd(false); return; }
+        }
+      }
+    }
+    var left = Math.max(0, FIRE_TIME - G.elapsed);
+    $('g-prog').style.width = Math.min(100, G.elapsed / FIRE_TIME * 100) + '%';
+    if (left <= 0) { fireEnd(G.lives > 0); return; }
+  }
+
+  function fireHit(item) {
+    G.items = G.items.filter(function (i) { return i !== item; });
+    if (item.bomb) {
+      // 기획서: 폭탄에 있는 낱말을 쓰면 목숨 두 개가 없어진다
+      item.el.remove();
+      G.lives -= 2;
+      breakCombo();
+      drawLives();
+      shakeStage(500);
+      flashItem({ icon: '💣', name: '폭탄이었어요! 목숨 -2', color: '#ff6b81' });
+      if (G.lives <= 0) fireEnd(false);
+      return;
+    }
+    // 기획서: 성공하면 +5점
+    G.score += FIRE_POINT;
+    G.keys += keyLen(item.word);
+    G.combo++;
+    if (G.combo > G.bestCombo) G.bestCombo = G.combo;
+    $('g-score').textContent = G.score;
+    $('g-combo').textContent = G.combo;
+
+    // 폭죽이 날아올라 하늘에서 터진다
+    item.el.classList.add('launch');
+    var el = item.el;
+    setTimeout(function () { el.remove(); }, 750);
+    var burst = document.createElement('div');
+    burst.className = 'fwburst';
+    burst.textContent = ['🎆', '🎇', '✨'][Math.floor(Math.random() * 3)];
+    burst.style.left = item.x + '%';
+    burst.style.top = (12 + Math.random() * 25) + '%';
+    var sky = G.sky;
+    setTimeout(function () {
+      if (!sky.parentNode) return;
+      sky.appendChild(burst);
+      setTimeout(function () { burst.remove(); }, 950);
+    }, 450);
+  }
+
+  function fireEnd(survived) {
+    drawLives();
+    gameOver(survived ? '🎆 끝까지 살아남았어요! 폭죽 놀이 끝' : '폭죽 놀이 끝', survived);
+  }
+
+  function drawFire() {
+    if (!G || G.id !== 'fire') return;
+    G.items.forEach(function (it) {
+      it.wEl.innerHTML = wordHtml(it);
+      it.el.classList.toggle('lock', !!it.lock);
+    });
+  }
+
+  /* ---------- 판 상점 (기획서의 Shop 화면) ---------- */
+  function openShop() {
+    var s = stu();
+    var back = document.createElement('div');
+    back.className = 'shop-back';
+    var items = '';
+    for (var i = 1; i <= 10; i++) {
+      var price = i * 100;    // 기획서: 판 1개 100코인 … 판 10개 1000코인
+      var cls = i <= s.boards ? ' owned' : (i === s.boards + 1 ? '' : ' locked');
+      items += '<div class="shop-item' + cls + '">' +
+        '<div class="no">' + i + '번째 판</div>' +
+        '<div class="price">' + (i <= s.boards ? '내 것!' : price + ' 코인') + '</div>' +
+        (i === s.boards + 1
+          ? '<button class="btn sm primary" data-buy="' + i + '"' + (s.coin < price ? ' disabled' : '') + '>사기</button>'
+          : '') +
+        '</div>';
+    }
+    back.innerHTML =
+      '<div class="shop"><h3>🪙 판 상점</h3>' +
+      '<p class="desc">판뒤집기에서 이기면 타자코인 <b>20개</b>를 받아요. 판을 사면 다음 판뒤집기를 ' +
+      '<b>내 판이 더 많은 상태</b>로 시작합니다. 판은 순서대로만 살 수 있고 최대 10개까지예요. (기획 · 남자팀)</p>' +
+      '<div class="shop-grid">' + items + '</div>' +
+      '<div class="shop-foot"><span class="tycoin">🪙 ' + s.coin + '</span><div class="spacer"></div>' +
+      '<button class="btn" id="shop-close">닫기</button></div></div>';
+    document.body.appendChild(back);
+    back.addEventListener('click', function (e) {
+      if (e.target === back || e.target.id === 'shop-close') { back.remove(); return; }
+      var buy = e.target.getAttribute && e.target.getAttribute('data-buy');
+      if (buy) {
+        var n = parseInt(buy, 10), cost = n * 100;
+        if (s.coin >= cost && n === s.boards + 1) {
+          s.coin -= cost;      // 기획서: 판을 사면 돈은 없어진다
+          s.boards = n;
+          APP.save();
+          renderStudent();
+          back.remove();
+          openShop();
+        }
+      }
+    });
+  }
+
+  /* =========================================================
      게임 종료
      ========================================================= */
   function gameOver(msg, win) {
@@ -1425,7 +1900,7 @@ var GAMES = (function () {
     if (G.raf) cancelAnimationFrame(G.raf);
     $('gamein').disabled = true;
 
-    var key = G.id + '_' + G.level.no + '_' + G.diff.id;
+    var key = G.student ? G.id + '_student' : G.id + '_' + G.level.no + '_' + G.diff.id;
     var prev = APP.rec.games[key] || 0;
     var isNew = G.score > prev;
     if (isNew) { APP.rec.games[key] = G.score; APP.save(); }
@@ -1434,8 +1909,11 @@ var GAMES = (function () {
       ? Math.round(G.keys / (G.keys + G.errors) * 100) : 100;
 
     APP.logGame({
-      game: G.id, name: GAME_NAME[G.id], level: G.level.no, diff: G.diff.id,
-      diffName: G.diff.name, score: G.score, cpm: G.cpm || 0, acc: acc,
+      game: G.id, name: GAME_NAME[G.id],
+      level: G.student ? '-' : G.level.no,
+      diff: G.student ? 'student' : G.diff.id,
+      diffName: G.student ? '학생 게임' : G.diff.name,
+      score: G.score, cpm: G.cpm || 0, acc: acc,
       keys: G.keys, err: G.errors, combo: G.bestCombo,
       sec: Math.round(G.elapsed), win: !!win, at: Date.now()
     });
@@ -1459,9 +1937,10 @@ var GAMES = (function () {
       '</div>';
     $('stage').appendChild(ov);
 
-    var id = G.id;
+    var id = G.id, wasStudent = !!G.student;
     $('go-again').onclick = function () { start(id); };
-    $('go-sel').onclick = function () { stop(); openSelect(); };
+    // 학생 게임은 게임 선택 화면이 아니라 홈(학생 게임 섹션)으로 돌아간다
+    $('go-sel').onclick = function () { stop(); if (wasStudent) APP.show('home'); else openSelect(); };
     $('go-home').onclick = function () { stop(); APP.show('home'); };
     $('go-again').focus();
   }
@@ -1475,12 +1954,25 @@ var GAMES = (function () {
     else if (id === 'mole') startMole();
     else if (id === 'erase') startErase();
     else if (id === 'spell') startSpell();
+    else if (id === 'flip') startFlip();
+    else if (id === 'dig') startDig();
+    else if (id === 'fire') startFire();
   }
 
   function init() {
     document.querySelectorAll('.game-card').forEach(function (b) {
       b.onclick = function () { start(b.dataset.game); };
     });
+    // 학생이 만든 게임 — 홈 섹션 카드에서 바로 시작 (기획서 링크는 제외)
+    document.querySelectorAll('.sgame-card').forEach(function (c) {
+      c.onclick = function (e) {
+        if (e.target.closest && e.target.closest('a')) return;
+        start(c.dataset.sgame);
+      };
+    });
+    var shopBtn = $('btn-shop');
+    if (shopBtn) shopBtn.onclick = openShop;
+    renderStudent();
     var gi = $('gamein');
     gi.addEventListener('input', onGameInput);
     gi.addEventListener('compositionstart', function () { composing = true; });
@@ -1515,5 +2007,5 @@ var GAMES = (function () {
     });
   }
 
-  return { init: init, openSelect: openSelect, start: start, stop: stop };
+  return { init: init, openSelect: openSelect, start: start, stop: stop, renderStudent: renderStudent };
 })();

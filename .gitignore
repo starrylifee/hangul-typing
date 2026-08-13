@@ -10,6 +10,10 @@ node_modules/
 # 개인정보·산출물 (학생 이름이 든 리포트는 저장소에 넣지 않는다)
 *.pdf
 !docs/*.pdf
+# 학생 게임 기획서 스캔 — 닉네임만 있고 실명 없음을 확인함 (2026-08-13)
+!game_vibe/*.pdf
+game_vibe/png_*/
+game_vibe/*_corner.png
 out/
 downloads/
 

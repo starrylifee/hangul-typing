@@ -1273,3 +1273,210 @@ ul.notyet li {
   .text-grid { grid-template-columns: repeat(2, 1fr); }
   .game-grid { grid-template-columns: 1fr; }
 }
+
+/* =========================================================
+   학생이 만든 게임 (홈 섹션)
+   ========================================================= */
+.student-sec { display: flex; flex-direction: column; gap: 10px; }
+.student-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.student-head h2 { font-size: clamp(15px, 2.2vh, 20px); font-weight: 800; }
+.student-head .spacer { flex: 1; }
+.tycoin { font-weight: 800; color: var(--gold); font-size: clamp(13px, 2vh, 16px); }
+.student-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: clamp(10px, 1.4vw, 18px);
+}
+.sgame-card {
+  display: flex; gap: 12px; align-items: center; text-align: left;
+  padding: clamp(10px, 1.8vh, 18px);
+  border-radius: var(--r);
+  background: linear-gradient(160deg, var(--panel), var(--bg2));
+  border: 1px solid var(--line);
+  cursor: pointer; transition: .18s; overflow: hidden;
+}
+.sgame-card:hover {
+  border-color: var(--violet);
+  box-shadow: 0 14px 40px -18px var(--violet);
+  transform: translateY(-2px);
+}
+.sgame-card .ico { font-size: clamp(20px, 3vh, 28px); flex-shrink: 0; }
+.sgame-card h3 { font-size: clamp(14px, 2.1vh, 18px); font-weight: 800; }
+.sgame-card p { color: var(--dim); font-size: clamp(11px, 1.7vh, 13px); line-height: 1.45; margin-top: 4px; }
+.sgame-card .side {
+  margin-left: auto; flex-shrink: 0;
+  display: flex; flex-direction: column; gap: 6px; align-items: flex-end;
+}
+.sgame-card .credit { color: var(--violet); font-size: 12px; font-weight: 700; white-space: nowrap; }
+.pdflink {
+  color: var(--dim2); font-size: 12px; text-decoration: none;
+  border: 1px solid var(--line); padding: 3px 8px; border-radius: 8px; white-space: nowrap;
+}
+.pdflink:hover { color: var(--text); border-color: var(--accent-d); }
+
+/* 판 상점 */
+.shop-back {
+  position: fixed; inset: 0; background: rgba(4, 8, 14, .74);
+  display: flex; align-items: center; justify-content: center; z-index: 60;
+}
+.shop {
+  width: min(720px, 94vw); max-height: 88vh; overflow-y: auto;
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: 16px; padding: 22px;
+}
+.shop h3 { font-size: 20px; font-weight: 800; }
+.shop .desc { color: var(--dim); font-size: 13px; margin: 8px 0 14px; line-height: 1.5; }
+.shop-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+.shop-item {
+  border: 1px solid var(--line); border-radius: 12px; padding: 10px 6px;
+  text-align: center; display: flex; flex-direction: column; gap: 6px; align-items: center;
+}
+.shop-item .no { font-weight: 800; font-size: 14px; }
+.shop-item .price { color: var(--gold); font-weight: 800; font-size: 13px; }
+.shop-item.owned { border-color: var(--ok); background: rgba(94, 224, 138, .08); }
+.shop-item.owned .price { color: var(--ok); }
+.shop-item.locked { opacity: .45; }
+.shop-foot { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
+.shop-foot .spacer { flex: 1; }
+
+/* =========================================================
+   학생 게임 1) 타자 판뒤집기
+   ========================================================= */
+.flipwrap {
+  position: absolute; inset: 44px 10px 10px;
+  display: grid; grid-template-columns: repeat(10, 1fr);
+  gap: 6px; align-content: stretch;
+}
+.fpanel {
+  border-radius: 8px; border: 1px solid rgba(0, 0, 0, .3);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: clamp(11px, 1.9vh, 16px);
+  overflow: hidden; white-space: nowrap;
+  transition: background .25s, transform .15s;
+}
+.fpanel.me { background: linear-gradient(160deg, #e2504f, #a83232); color: #fff; }
+.fpanel.ai { background: linear-gradient(160deg, #3a6fd8, #27498f); color: #fff; }
+.fpanel.box {
+  background: linear-gradient(160deg, #57606f, #2f3542);
+  color: var(--gold); border-color: var(--gold);
+}
+.fpanel.lock { outline: 2px solid var(--accent); outline-offset: -2px; }
+.fpanel.pop { transform: scale(1.14); }
+.flipbar {
+  position: absolute; top: 8px; left: 10px; right: 10px; height: 30px;
+  display: flex; align-items: center; gap: 10px;
+  font-weight: 800; font-size: clamp(13px, 2.2vh, 17px);
+}
+.flipbar .me { color: #ff8f8e; }
+.flipbar .ai { color: #7fa8ef; }
+.flipbar .meter {
+  flex: 1; height: 12px; border-radius: 6px; overflow: hidden;
+  background: #27498f; display: flex;
+}
+.flipbar .meter i { display: block; height: 100%; background: #e2504f; transition: width .3s; }
+.flipbar .timeleft { color: var(--dim); font-size: 13px; font-weight: 700; }
+
+/* =========================================================
+   학생 게임 2) 과자 캐기
+   ========================================================= */
+.cave {
+  position: absolute; inset: 0; overflow: hidden;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 38%, #3b2f1f 0%, #241b10 55%, #120d07 100%);
+}
+.cave::before {
+  content: ''; position: absolute; inset: 0;
+  background:
+    radial-gradient(circle at 12% 20%, rgba(0, 0, 0, .55) 0 18%, transparent 30%),
+    radial-gradient(circle at 88% 26%, rgba(0, 0, 0, .5) 0 16%, transparent 28%),
+    radial-gradient(circle at 20% 85%, rgba(0, 0, 0, .5) 0 20%, transparent 32%),
+    radial-gradient(circle at 82% 82%, rgba(0, 0, 0, .55) 0 18%, transparent 30%);
+}
+.snack {
+  position: absolute; transform: translate(-50%, -50%) rotate(var(--rot, 0deg));
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+.snack .bagico {
+  font-size: clamp(20px, 3.6vh, 32px); line-height: 1;
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, .7));
+}
+.snack .sword {
+  background: #f6edd8; color: #3a2c18; padding: 3px 10px; border-radius: 8px;
+  font-weight: 800; font-size: clamp(13px, 2.2vh, 18px);
+  border: 2px solid #c9b98f; box-shadow: 0 4px 12px rgba(0, 0, 0, .5);
+}
+.snack .sword .hit { color: #1fa374; }
+.snack.lock .sword { outline: 3px solid var(--accent); }
+.snack.dug { animation: dugout .55s forwards ease-in; }
+@keyframes dugout {
+  30% { transform: translate(-50%, -46%) rotate(var(--rot, 0deg)); }
+  100% { transform: translate(-50%, -160%) scale(.3) rotate(50deg); opacity: 0; }
+}
+.hoe {
+  position: absolute; font-size: clamp(26px, 4.4vh, 40px);
+  transform: translate(-50%, -50%);
+  animation: hoeswing .5s forwards ease-out; pointer-events: none;
+}
+@keyframes hoeswing {
+  0% { transform: translate(-50%, -110%) rotate(-70deg); opacity: 0; }
+  35% { transform: translate(-50%, -55%) rotate(15deg); opacity: 1; }
+  100% { transform: translate(-50%, -50%) rotate(20deg); opacity: 0; }
+}
+
+/* =========================================================
+   학생 게임 3) 폭죽 놀이
+   ========================================================= */
+.fwsky {
+  position: absolute; inset: 0; overflow: hidden;
+  background: linear-gradient(180deg, #070a24 0%, #131040 55%, #221224 100%);
+}
+.fwground {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 12%;
+  background: linear-gradient(180deg, #1d2415, #0e1209);
+  border-top: 2px solid #2c3a1e;
+}
+.fwlives {
+  position: absolute; top: 8px; right: 14px;
+  font-size: clamp(20px, 3.6vh, 30px); letter-spacing: 5px;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, .6));
+}
+.rocket {
+  position: absolute; bottom: 11%; transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.rocket .rico { font-size: clamp(30px, 5.6vh, 50px); line-height: 1; }
+.rocket .rword {
+  background: #fff; color: #23180a; padding: 4px 14px; border-radius: 9px;
+  font-weight: 800; font-size: clamp(15px, 2.7vh, 21px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .5);
+}
+.rocket .rword .hit { color: #1fa374; }
+.rocket.lock .rword { outline: 3px solid var(--accent); }
+.rocket .fuse {
+  width: clamp(90px, 12vw, 150px); height: 8px;
+  background: #2a2a3a; border-radius: 4px; overflow: hidden;
+}
+.rocket .fuse i {
+  display: block; height: 100%; border-radius: 4px;
+  background: linear-gradient(90deg, #ffcc5c, #ff6b3d);
+}
+.rocket.bombitem .rword { background: #ffd7dc; color: #7d1f28; border: 2px solid #e2504f; }
+.rocket.bombitem .warns { color: var(--warn); font-size: clamp(11px, 1.8vh, 13px); font-weight: 800; }
+.rocket.launch { animation: launchup .7s forwards ease-in; }
+@keyframes launchup {
+  100% { transform: translateX(-50%) translateY(-72vh) scale(.5); opacity: 0; }
+}
+.fwburst {
+  position: absolute; transform: translate(-50%, -50%);
+  font-size: clamp(34px, 6vh, 56px);
+  animation: burstpop .9s forwards ease-out; pointer-events: none;
+}
+@keyframes burstpop {
+  0% { transform: translate(-50%, -50%) scale(.2); opacity: 0; }
+  30% { transform: translate(-50%, -50%) scale(1.4); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(2.1); opacity: 0; }
+}
+
+@media (max-width: 1100px) {
+  .student-grid { grid-template-columns: 1fr; }
+  .flipwrap { grid-template-columns: repeat(8, 1fr); }
+}
