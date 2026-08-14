@@ -67,6 +67,10 @@ var HG = (function () {
   }
   function combines(a, b) { return COMBINE.hasOwnProperty(a + b); }
 
+  // IME가 같은 자음을 연달아 치면 쌍자음 한 글자로 합치기도 한다 (ㅂ+ㅂ→ㅃ)
+  // 쌍자음 키 → 홑자음 키
+  var SSANG_BASE = { Q: 'q', W: 'w', E: 'e', R: 'r', T: 't' };
+
   var SBASE = 0xAC00, SLAST = 0xD7A3;
 
   /* ---------- 자모 → 키들 ---------- */
@@ -194,36 +198,54 @@ var HG = (function () {
    */
   function judge(target, typed) {
     var groups = textToPairGroups(target);
-    var tPairs = textToPairs(typed);
 
-    var gi = 0, ki = 0, matched = 0, bad = -1, eng = false;
-    for (var i = 0; i < tPairs.length; i++) {
-      if (gi >= groups.length) { bad = groups.length; break; }
-      var expect = groups[gi][ki];
-      var got = tPairs[i];
-      if (got.k !== expect.k || got.h !== expect.h) {
-        bad = gi;
-        // 한글을 쳐야 하는데 영문 글자가 들어왔다 = 한/영 키가 영문 상태
-        if (expect.h && !got.h && /^[A-Za-z]$/.test(got.k)) eng = true;
-        break;
+    // 목표 키를 한 줄로 펴 두고(글자 번호 g 포함) 포인터 하나로 걷는다
+    var flat = [], starts = [], g, q;
+    for (g = 0; g < groups.length; g++) {
+      starts.push(flat.length);
+      for (q = 0; q < groups[g].length; q++) {
+        flat.push({ k: groups[g][q].k, h: groups[g][q].h, g: g });
       }
-      matched++;
-      ki++;
-      if (ki >= groups[gi].length) { gi++; ki = 0; }
     }
 
-    var total = 0;
-    for (var g = 0; g < groups.length; g++) total += groups[g].length;
+    var tPairs = textToPairs(typed);
+    var p = 0, matched = 0, bad = -1, eng = false;
+    for (var i = 0; i < tPairs.length; i++) {
+      if (p >= flat.length) { bad = groups.length; break; }
+      var expect = flat[p];
+      var got = tPairs[i];
+      if (got.k === expect.k && got.h === expect.h) {
+        matched++;
+        p++;
+        continue;
+      }
+      // IME가 같은 자음 두 타를 쌍자음 한 글자로 합친 경우(ㅂㅂ→ㅃ) → 두 타로 인정
+      var base = SSANG_BASE[got.k];
+      if (got.h && expect.h && base && base === expect.k &&
+        p + 1 < flat.length && flat[p + 1].h && flat[p + 1].k === base) {
+        matched += 2;
+        p += 2;
+        continue;
+      }
+      bad = expect.g;
+      // 한글을 쳐야 하는데 영문 글자가 들어왔다 = 한/영 키가 영문 상태
+      if (expect.h && !got.h && /^[A-Za-z]$/.test(got.k)) eng = true;
+      break;
+    }
+
+    var charDone, partial;
+    if (p >= flat.length) { charDone = groups.length; partial = 0; }
+    else { charDone = flat[p].g; partial = p - starts[flat[p].g]; }
 
     return {
       ok: bad === -1,
       matched: matched,
-      totalKeys: total,
-      charDone: gi,
-      partial: ki,               // 현재 글자에서 몇 키까지 쳤나
+      totalKeys: flat.length,
+      charDone: charDone,
+      partial: partial,          // 현재 글자에서 몇 키까지 쳤나
       badFrom: bad,
       engMode: eng,              // 한/영 키를 안 눌렀을 때 true
-      complete: bad === -1 && gi >= groups.length
+      complete: bad === -1 && charDone >= groups.length
     };
   }
 
