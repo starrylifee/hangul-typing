@@ -462,8 +462,11 @@
       var d = String(row[0]);              // YYMMDD
       if (d.length !== 6) return;
       var key = '20' + d.slice(0, 2) + '-' + d.slice(2, 4) + '-' + d.slice(4, 6);
-      // 이 컴퓨터에 원래 있던 그날 기록이 우선
-      if (APP.rec.days[key]) return;
+      // 이 컴퓨터에서 실제로 연습한 날은 그 기록이 우선.
+      // 리포트 화면만 열어도 빈 기록이 생기므로, 빈 날은 PDF 기록으로 채운다.
+      var local = APP.rec.days[key];
+      if (local && ((local.practice && local.practice.length) ||
+        (local.games && local.games.length))) return;
       if (!APP.rec.imported[key]) added++;
       APP.rec.imported[key] = {
         sec: row[1] | 0, keys: row[2] | 0, err: row[3] | 0,
@@ -494,7 +497,7 @@
         APP.renderHome();
         APP.toast(r.added
           ? '지난 기록 ' + r.added + '일치를 이어 붙였습니다.'
-          : '이미 들어 있는 기록입니다.');
+          : '지난 기록이 이미 이 컴퓨터에 다 있습니다. 올리지 않아도 되니 그대로 연습하면 됩니다.');
       })
       .catch(function (e) {
         APP.toast(e.message || '리포트를 읽지 못했습니다.');
