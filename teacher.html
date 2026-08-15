@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>교사 대시보드 · 한글 타자 연습</title>
+<meta name="description" content="한글 타자 연습 교사 대시보드 — 반 만들기, 학생 현황, 오늘의 목표, 그라운드 연동">
+<meta name="robots" content="noindex">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/style.css?v=4">
+<link rel="stylesheet" href="css/teacher.css?v=1">
+</head>
+<body class="teacher">
+
+<div id="app">
+
+  <!-- ================= 로그인 전 ================= -->
+  <section class="screen on" id="t-login">
+    <header class="topbar">
+      <div class="brand"><span class="dot"></span>한글 타자 연습 <small>교사 대시보드</small></div>
+      <div class="spacer"></div>
+      <a class="btn ghost sm" href="index.html">학생 화면으로</a>
+    </header>
+    <div class="t-login-wrap">
+      <h1>교사 대시보드</h1>
+      <p class="t-sub">반을 만들고 학급코드를 나눠 주면, 학생들의 타자 기록이 자동으로 모입니다.<br>
+        학생은 별명과 핀 번호만 사용하고, 실명은 저장되지 않습니다.</p>
+      <button class="btn primary big" id="btn-google">Google 계정으로 로그인</button>
+      <p class="t-note" id="login-msg"></p>
+    </div>
+  </section>
+
+  <!-- ================= 대시보드 ================= -->
+  <section class="screen" id="t-main">
+    <header class="topbar">
+      <div class="brand"><span class="dot"></span>교사 대시보드</div>
+      <select id="class-select" class="t-select"></select>
+      <button class="btn sm" id="btn-new-class">+ 새 반</button>
+      <div class="spacer"></div>
+      <span class="t-me" id="me-email"></span>
+      <button class="btn ghost sm" id="btn-logout">로그아웃</button>
+    </header>
+
+    <div class="t-body">
+      <!-- 학급코드 안내 -->
+      <div class="t-codebar">
+        <div class="t-codebox">
+          <span class="lb">학급코드</span>
+          <b id="class-code">------</b>
+          <button class="btn ghost sm" id="btn-copy-code">복사</button>
+        </div>
+        <span class="t-codehint">학생은 첫 화면의 "우리 반으로 시작"에서 이 코드를 입력합니다.</span>
+      </div>
+
+      <!-- 탭 -->
+      <div class="t-tabs">
+        <button class="t-tab on" data-tab="students">학생 현황</button>
+        <button class="t-tab" data-tab="goal">오늘의 목표</button>
+        <button class="t-tab" data-tab="grownd">그라운드 연동</button>
+      </div>
+
+      <!-- 학생 현황 -->
+      <div class="t-pane on" id="pane-students">
+        <div class="t-toolbar">
+          <span id="stu-count" class="t-note"></span>
+          <div class="spacer"></div>
+          <button class="btn sm" id="btn-refresh">새로고침</button>
+        </div>
+        <div class="t-tablewrap">
+          <table class="t-table" id="stu-table">
+            <thead>
+              <tr>
+                <th>별명</th><th>출석번호</th><th>오늘 연습</th><th>오늘 최고 타수</th>
+                <th>정확도</th><th>포인트</th><th>레벨</th><th>목표</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="stu-rows"></tbody>
+          </table>
+          <p class="t-empty" id="stu-empty">아직 학생이 없습니다. 학급코드를 나눠 주세요.</p>
+        </div>
+      </div>
+
+      <!-- 오늘의 목표 -->
+      <div class="t-pane" id="pane-goal">
+        <div class="t-card">
+          <h3>오늘의 활동 목표</h3>
+          <p class="t-note">목표를 이룬 학생은 학생 현황에 ✓ 표시가 되고, 그라운드 점수를 보낼 수 있습니다.</p>
+          <div class="t-form">
+            <label>목표 문구 <input type="text" id="goal-text" maxlength="60"
+              placeholder="예: 오늘 10분 이상, 정확도 90% 넘기기"></label>
+            <div class="t-row3">
+              <label>연습 시간(분) <input type="number" id="goal-min" min="0" max="120" value="10"></label>
+              <label>정확도(%) <input type="number" id="goal-acc" min="0" max="100" value="90"></label>
+              <label>최고 타수(타) <input type="number" id="goal-cpm" min="0" max="600" value="0"></label>
+            </div>
+            <label>달성 시 그라운드 점수 <input type="number" id="goal-points" min="1" max="100" value="10"></label>
+            <div class="t-btnrow">
+              <button class="btn primary" id="btn-save-goal">오늘 목표로 저장</button>
+              <span class="t-note" id="goal-saved"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 그라운드 연동 -->
+      <div class="t-pane" id="pane-grownd">
+        <div class="t-card">
+          <h3>그라운드(Grownd) 포인트 보내기</h3>
+          <p class="t-note">오늘의 목표를 이룬 학생에게, 그라운드 학급의 출석번호로 점수를 보냅니다.<br>
+            API 키는 이 컴퓨터에만 저장되고 학생 화면이나 서버 어디에도 남지 않습니다.</p>
+          <div class="t-form">
+            <label>그라운드 API 키 <input type="password" id="gr-key" placeholder="sk_live_..."></label>
+            <label>그라운드 학급 ID <input type="text" id="gr-class" placeholder="그라운드 API 문서의 classId"></label>
+            <div class="t-btnrow">
+              <button class="btn sm" id="btn-save-grownd">이 컴퓨터에 저장</button>
+              <span class="t-note" id="gr-saved"></span>
+            </div>
+            <hr class="t-hr">
+            <p class="t-note">학생의 출석번호는 학생이 처음 로그인할 때 입력한 번호를 씁니다.
+              출석번호가 없는 학생에게는 보내지 않습니다.</p>
+            <div class="t-btnrow">
+              <button class="btn primary" id="btn-send-grownd">오늘 목표 달성 학생에게 점수 보내기</button>
+            </div>
+            <p class="t-note" id="gr-result"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- 새 반 만들기 -->
+<div class="modal" id="newclass-modal" hidden>
+  <div class="modal-box">
+    <h3>새 반 만들기</h3>
+    <p class="modal-sub">반 이름을 정하면 6자리 학급코드가 만들어집니다.</p>
+    <input type="text" id="newclass-name" class="name-in" maxlength="20" placeholder="예: 4학년 2반">
+    <div class="modal-btns">
+      <button class="btn ghost" id="newclass-cancel">취소</button>
+      <button class="btn primary" id="newclass-ok">만들기</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="js/fb-config.js?v=1"></script>
+<script src="js/teacher.js?v=1"></script>
+</body>
+</html>

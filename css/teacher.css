@@ -1,0 +1,98 @@
+/* =========================================================
+   teacher.css — 교사 대시보드 전용
+   전자칠판(스크롤 최소, 큰 글씨) 기준. 표만 안에서 스크롤.
+   ========================================================= */
+
+body.teacher { overflow: auto; }
+
+/* ---------- 로그인 ---------- */
+.t-login-wrap {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 18px; padding: 24px;
+  text-align: center;
+}
+.t-login-wrap h1 { font-size: 40px; font-weight: 900; letter-spacing: -0.03em; }
+.t-sub { color: var(--dim); font-size: 17px; line-height: 1.6; }
+.btn.big { font-size: 19px; padding: 14px 28px; border-radius: 12px; }
+.t-note { color: var(--dim2); font-size: 13px; line-height: 1.5; }
+.t-me { color: var(--dim); font-size: 13px; }
+
+/* ---------- 본문 ---------- */
+.t-body {
+  flex: 1; display: flex; flex-direction: column; gap: 14px;
+  padding: 18px 28px 24px; min-height: 0;
+  max-width: 1280px; width: 100%; margin: 0 auto;
+}
+
+.t-select {
+  background: var(--panel); color: var(--text);
+  border: 1px solid var(--line); border-radius: 10px;
+  padding: 8px 12px; font-size: 15px; font-weight: 700; outline: none;
+}
+
+/* 학급코드 */
+.t-codebar { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.t-codebox {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: 14px; padding: 12px 18px;
+}
+.t-codebox .lb { color: var(--dim); font-size: 14px; font-weight: 700; }
+.t-codebox b { font-size: 34px; font-weight: 900; letter-spacing: 0.14em; color: var(--accent); }
+.t-codehint { color: var(--dim2); font-size: 13px; }
+
+/* 탭 */
+.t-tabs { display: flex; gap: 8px; border-bottom: 1px solid var(--line); }
+.t-tab {
+  padding: 10px 18px; font-size: 16px; font-weight: 800; color: var(--dim);
+  border-bottom: 3px solid transparent; margin-bottom: -1px;
+}
+.t-tab.on { color: var(--text); border-bottom-color: var(--accent); }
+.t-pane { display: none; flex: 1; min-height: 0; flex-direction: column; gap: 12px; }
+.t-pane.on { display: flex; }
+
+/* 학생 표 */
+.t-toolbar { display: flex; align-items: center; gap: 10px; }
+.t-tablewrap {
+  flex: 1; min-height: 0; overflow: auto;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+}
+.t-table { width: 100%; border-collapse: collapse; font-size: 15px; }
+.t-table th {
+  position: sticky; top: 0; background: var(--panel2);
+  color: var(--dim); font-size: 13px; font-weight: 800;
+  text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--line);
+}
+.t-table td { padding: 11px 14px; border-bottom: 1px solid var(--line); }
+.t-table tr:last-child td { border-bottom: none; }
+.t-table .num { font-variant-numeric: tabular-nums; }
+.t-table .goal-ok { color: var(--ok); font-weight: 900; font-size: 17px; }
+.t-table .goal-no { color: var(--dim2); }
+.t-table .rowbtns { display: flex; gap: 6px; justify-content: flex-end; }
+.t-empty { text-align: center; color: var(--dim2); padding: 40px 0; display: none; }
+
+/* 카드 폼 */
+.t-card {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: 14px; padding: 22px; max-width: 640px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.t-card h3 { font-size: 20px; font-weight: 900; }
+.t-form { display: flex; flex-direction: column; gap: 12px; margin-top: 6px; }
+.t-form label {
+  display: flex; flex-direction: column; gap: 6px;
+  color: var(--dim); font-size: 13px; font-weight: 700;
+}
+.t-form input {
+  background: var(--bg2); border: 1px solid var(--line); border-radius: 10px;
+  padding: 10px 12px; color: var(--text); font-size: 16px; outline: none;
+}
+.t-form input:focus { border-color: var(--accent-d); }
+.t-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.t-btnrow { display: flex; align-items: center; gap: 12px; }
+.t-hr { border: none; border-top: 1px solid var(--line); margin: 6px 0; }
+
+@media (max-width: 800px) {
+  .t-row3 { grid-template-columns: 1fr; }
+  .t-codebox b { font-size: 26px; }
+}
