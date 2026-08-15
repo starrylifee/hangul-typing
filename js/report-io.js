@@ -479,6 +479,20 @@
     return { added: added, total: data.r.length, name: data.n || '' };
   }
 
+  /** 올린 리포트의 주인과 이 컴퓨터의 주인이 다르면 학생을 바꿀지 물어본다 */
+  function confirmSwitch(pdfName, localName) {
+    return new Promise(function (res) {
+      var m = $('switch-modal');
+      $('switch-desc').textContent =
+        '이 컴퓨터에는 ' + localName + ' 학생의 기록이 있는데, 올린 리포트는 ' +
+        pdfName + ' 학생의 것입니다. ' + localName + ' 학생의 기록은 이 컴퓨터에 그대로 ' +
+        '보관해 두고, ' + pdfName + ' 학생의 기록으로 바꿀까요?';
+      $('switch-ok').onclick = function () { m.hidden = true; res(true); };
+      $('switch-cancel').onclick = function () { m.hidden = true; res(false); };
+      m.hidden = false;
+    });
+  }
+
   function handleUpload(file) {
     if (!file) return;
     APP.toast('리포트를 읽는 중…');
@@ -490,8 +504,22 @@
         }
         return decodeData(payload);
       })
-      .then(mergeHistory)
-      .then(function (r) {
+      .then(function (data) {
+        var pdfName = (data.n || '').trim();
+        var localName = (APP.rec.name || '').trim();
+        if (pdfName && localName && pdfName !== localName) {
+          return confirmSwitch(pdfName, localName).then(function (yes) {
+            if (!yes) { APP.toast('불러오기를 취소했습니다.'); return null; }
+            // 기존 학생 기록은 이름표를 붙여 보관되고, 이 학생 것으로 바뀐다
+            APP.switchStudent(pdfName);
+            return data;
+          });
+        }
+        return data;
+      })
+      .then(function (data) {
+        if (!data) return;
+        var r = mergeHistory(data);
         REPORT.resetComment();
         REPORT.render();
         APP.renderHome();

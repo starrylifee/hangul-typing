@@ -1248,6 +1248,12 @@ ul.notyet li {
 .goal-cpm input { width: 100%; }
 .dimtext { color: var(--dim2); font-size: 12px; }
 .modal-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 6px; }
+.name-in {
+  width: 100%; padding: 12px 14px; font-size: 20px; font-weight: 700;
+  background: var(--bg2); border: 1px solid var(--line); border-radius: 10px;
+  color: var(--text); outline: none;
+}
+.name-in:focus { border-color: var(--accent-d); }
 
 @media (max-width: 900px) {
   .rep-cards { grid-template-columns: repeat(2, 1fr); }

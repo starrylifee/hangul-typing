@@ -69,6 +69,37 @@ var APP = (function () {
   function save() {
     try { localStorage.setItem(STORE_KEY, JSON.stringify(rec)); } catch (e) { }
   }
+
+  /* ---------- 학생별 기록 보관 ----------
+     한 크롬북을 여러 학생이 번갈아 쓸 때를 대비해, 학생을 바꾸면
+     지금 기록을 이름표를 붙여 보관해 두고 그 학생 것을 꺼내 온다. */
+  var PROFILE_PREFIX = 'hangul_typing_profile_';
+
+  function stashCurrent() {
+    if (!rec.name) return;
+    try { localStorage.setItem(PROFILE_PREFIX + rec.name, JSON.stringify(rec)); } catch (e) { }
+  }
+  function loadProfile(name) {
+    try {
+      var raw = localStorage.getItem(PROFILE_PREFIX + name);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+  /** 학생을 바꾼다. 이 컴퓨터에 보관된 그 학생 기록이 있으면 되살린다. */
+  function switchStudent(name) {
+    name = (name || '').trim();
+    if (!name) return null;
+    if (name === rec.name) { save(); return { same: true, restored: false }; }
+    stashCurrent();
+    var p = loadProfile(name);
+    if (p) replaceRec(p);                  // 보관해 둔 그 학생 기록 복원
+    else if (rec.name) replaceRec(null);   // 다른 학생이 쓰던 자리 → 새로 시작
+    // 이름이 없던 기록은 이 학생 것으로 보고 그대로 잇는다
+    rec.name = name;
+    save();
+    renderHome();
+    return { same: false, restored: !!p };
+  }
   function bestOf(key) { return rec.best[key] || null; }
   function putBest(key, cpm, acc) {
     var cur = rec.best[key];
@@ -109,6 +140,9 @@ var APP = (function () {
      홈
      ========================================================= */
   function renderHome() {
+    var sn = $('student-name');
+    if (sn) sn.textContent = rec.name || '이름 넣기';
+
     ['place', 'word', 'short', 'long'].forEach(function (m) {
       var el = document.querySelector('[data-best="' + m + '"]');
       var b = bestByMode(m);
@@ -659,11 +693,45 @@ var APP = (function () {
 
     $('btn-reset-rec').onclick = function () {
       if (!confirm('저장된 기록을 모두 지울까요?')) return;
+      // 보관해 둔 이 학생 기록도 함께 지운다
+      if (rec.name) { try { localStorage.removeItem(PROFILE_PREFIX + rec.name); } catch (e) { } }
       replaceRec(null);
       renderHome(); toast('기록을 지웠습니다');
     };
 
+    /* ---------- 학생 이름 ---------- */
+    $('btn-student').onclick = function () { openNameModal(false); };
+    $('name-ok').onclick = submitName;
+    $('name-later').onclick = function () { $('name-modal').hidden = true; };
+    $('name-input').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); submitName(); }
+    });
+
     renderHome();
+
+    // 이름이 아직 없으면 첫 화면에서 바로 물어본다
+    if (!rec.name) openNameModal(true);
+  }
+
+  function openNameModal(startup) {
+    $('name-modal-title').textContent = startup ? '이름을 알려 주세요' : '누가 연습하나요?';
+    $('name-later').textContent = startup ? '나중에 할게요' : '취소';
+    var inp = $('name-input');
+    inp.value = startup ? '' : (rec.name || '');
+    $('name-modal').hidden = false;
+    setTimeout(function () { inp.focus(); inp.select(); }, 30);
+  }
+
+  function submitName() {
+    var name = $('name-input').value.trim();
+    if (!name) { toast('이름을 적어 주세요'); return; }
+    var prev = rec.name;
+    var r = switchStudent(name);
+    $('name-modal').hidden = true;
+    if (r.same) toast(name + ' 기록으로 계속 연습합니다');
+    else if (r.restored) toast(name + ' 학생의 기록을 다시 불러왔습니다');
+    else if (prev) toast(name + ' 학생으로 새로 시작합니다. ' + prev + ' 기록은 이 컴퓨터에 보관했어요.');
+    else toast(name + ' 학생으로 시작합니다');
   }
 
   /** rec 을 통째로 갈아끼운다. 다른 모듈이 잡고 있는 참조가 끊기지 않도록
@@ -671,13 +739,15 @@ var APP = (function () {
   function replaceRec(next) {
     var b = blank();
     for (var k in rec) delete rec[k];
-    for (var k2 in b) rec[k2] = (next && next[k2] !== undefined) ? next[k2] : b[k2];
+    for (var k2 in b) rec[k2] = b[k2];
+    // blank 에 없는 칸(imported·student 등)도 잃어버리지 않게 전부 옮긴다
+    if (next) for (var k3 in next) rec[k3] = next[k3];
     save();
   }
 
   return {
     init: init, show: show, toast: toast,
-    rec: rec, save: save, replaceRec: replaceRec,
+    rec: rec, save: save, replaceRec: replaceRec, switchStudent: switchStudent,
     startPractice: startPractice, startLong: startLong,
     MODE_NAME: MODE_NAME,
     isVowel: isVowel, compose: compose,

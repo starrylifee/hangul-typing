@@ -28,7 +28,7 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="stylesheet" href="css/style.css?v=3">
+<link rel="stylesheet" href="css/style.css?v=4">
 </head>
 <body>
 
@@ -39,6 +39,7 @@
     <header class="topbar">
       <div class="brand"><span class="dot"></span>한글 타자 연습 <small>단계별 자리 훈련</small></div>
       <div class="spacer"></div>
+      <button class="btn ghost sm" id="btn-student">👤 <span id="student-name">이름 넣기</span></button>
       <button class="btn ghost sm" id="btn-reset-rec">기록 지우기</button>
     </header>
     <div class="home-wrap">
@@ -338,15 +339,42 @@
 
 </div>
 
+<!-- 학생 이름 넣기 / 바꾸기 -->
+<div class="modal" id="name-modal" hidden>
+  <div class="modal-box">
+    <h3 id="name-modal-title">이름을 알려 주세요</h3>
+    <p class="modal-sub">리포트에 실릴 이름입니다. 이 컴퓨터에만 저장되고 밖으로 나가지 않습니다.
+      자리를 바꿔 앉았으면 자기 이름으로 바꿔 주세요. 전에 이 컴퓨터에서 연습했다면 그 기록을 다시 불러옵니다.</p>
+    <input type="text" id="name-input" class="name-in" maxlength="12" placeholder="이름"
+           autocomplete="off" spellcheck="false" lang="ko">
+    <div class="modal-btns">
+      <button class="btn ghost" id="name-later">나중에 할게요</button>
+      <button class="btn primary" id="name-ok">시작하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 올린 리포트의 주인이 다를 때 -->
+<div class="modal" id="switch-modal" hidden>
+  <div class="modal-box">
+    <h3>다른 학생의 기록이 있는 컴퓨터입니다</h3>
+    <p class="modal-sub" id="switch-desc"></p>
+    <div class="modal-btns">
+      <button class="btn ghost" id="switch-cancel">취소</button>
+      <button class="btn primary" id="switch-ok">내 기록으로 시작</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="js/hangul.js?v=3"></script>
 <script src="js/data.js?v=3"></script>
 <script src="js/keyboard.js?v=3"></script>
-<script src="js/app.js?v=3"></script>
+<script src="js/app.js?v=4"></script>
 <script src="js/games.js?v=3"></script>
 <script src="js/report.js?v=3"></script>
-<script src="js/report-io.js?v=3"></script>
+<script src="js/report-io.js?v=4"></script>
 <!-- jsPDF·pdf.js·한글 폰트는 리포트에서 필요할 때만 불러온다 (js/report-io.js) -->
 </body>
 </html>
