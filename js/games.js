@@ -381,6 +381,8 @@ var GAMES = (function () {
   /* =========================================================
      1) 낱말 방어전
      ========================================================= */
+  var DEF_TIME = 120;    // "언제 끝나요?" — 2분 버티면 승리
+
   function startDefense() {
     prepare('defense');
     var st = $('stage');
@@ -391,6 +393,12 @@ var GAMES = (function () {
     hp.innerHTML = '<i style="width:100%"></i><span>방어선 100%</span>';
     st.appendChild(shield);
     st.appendChild(hp);
+
+    var tm = document.createElement('div');
+    tm.className = 'deftime';
+    tm.id = 'def-time';
+    tm.textContent = '남은 시간 ' + DEF_TIME + '초';
+    st.appendChild(tm);
 
     var buff = document.createElement('div');
     buff.className = 'buffbar';
@@ -409,6 +417,13 @@ var GAMES = (function () {
   }
 
   function stepDefense(dt) {
+    // 시간을 다 버티면 승리
+    var leftSec = Math.max(0, DEF_TIME - G.elapsed);
+    var te = $('def-time');
+    if (te) te.textContent = '남은 시간 ' + Math.ceil(leftSec) + '초';
+    $('g-prog').style.width = Math.min(100, G.elapsed / DEF_TIME * 100) + '%';
+    if (G.elapsed >= DEF_TIME) { gameOver('🏆 2분을 버텨냈어요! 방어 성공', true); return; }
+
     var d = G.diff;
     var ramp = 1 + Math.min(G.elapsed / 120, 1) * d.ramp;
     var speed = BASE_FALL * d.fall * ramp;                 // %/초
@@ -460,7 +475,7 @@ var GAMES = (function () {
   function updateHp() {
     G.hpEl.style.width = G.hp + '%';
     G.hpTx.textContent = '방어선 ' + G.hp + '%';
-    $('g-prog').style.width = (100 - G.hp) + '%';
+    // 위쪽 진행바는 남은 시간이 담당한다 (stepDefense)
   }
 
   function spawnFalling() {
