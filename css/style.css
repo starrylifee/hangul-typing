@@ -1254,6 +1254,12 @@ ul.notyet li {
   color: var(--text); outline: none;
 }
 .name-in:focus { border-color: var(--accent-d); }
+.big-choice {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
+  width: 100%; padding: 14px 18px; font-size: 18px; font-weight: 800;
+  border: 1px solid var(--line); border-radius: 12px; text-align: left;
+}
+.big-choice small { font-size: 13px; font-weight: 600; opacity: .75; }
 
 @media (max-width: 900px) {
   .rep-cards { grid-template-columns: repeat(2, 1fr); }

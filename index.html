@@ -28,7 +28,7 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="stylesheet" href="css/style.css?v=4">
+<link rel="stylesheet" href="css/style.css?v=5">
 </head>
 <body>
 
@@ -39,7 +39,7 @@
     <header class="topbar">
       <div class="brand"><span class="dot"></span>한글 타자 연습 <small>단계별 자리 훈련</small></div>
       <div class="spacer"></div>
-      <a class="btn ghost sm" href="teacher.html">🧑‍🏫 교사용</a>
+      <button class="btn sm" id="btn-login">🔑 로그인</button>
       <button class="btn ghost sm" id="btn-student">👤 <span id="student-name">이름 넣기</span></button>
       <button class="btn ghost sm" id="btn-reset-rec">기록 지우기</button>
     </header>
@@ -88,7 +88,6 @@
       </div>
       <div class="home-foot">
         <button class="btn primary" id="btn-open-report">📋 오늘 학습 리포트 보기</button>
-        <button class="btn" id="btn-cloud">🏫 우리 반으로 시작</button>
         <span class="foot-note" id="cloud-badge"></span>
         <span class="foot-note" id="today-brief"></span>
       </div>
@@ -357,6 +356,21 @@
   </div>
 </div>
 
+<!-- 로그인 고르기 -->
+<div class="modal" id="login-modal" hidden>
+  <div class="modal-box">
+    <h3>로그인</h3>
+    <p class="modal-sub">누구로 들어갈까요?</p>
+    <button class="btn primary big-choice" id="login-student">🎒 학생 로그인
+      <small>학급코드 · 별명 · 핀 번호</small></button>
+    <button class="btn big-choice" id="login-teacher">🧑‍🏫 교사 로그인
+      <small>Google 계정으로 대시보드에 들어갑니다</small></button>
+    <div class="modal-btns">
+      <button class="btn ghost" id="login-cancel">취소</button>
+    </div>
+  </div>
+</div>
+
 <!-- 우리 반으로 시작 -->
 <div class="modal" id="cloud-modal" hidden>
   <div class="modal-box">
@@ -401,7 +415,7 @@
 <script src="js/report.js?v=3"></script>
 <script src="js/report-io.js?v=4"></script>
 <script src="js/fb-config.js?v=1"></script>
-<script src="js/cloud.js?v=1"></script>
+<script src="js/cloud.js?v=2"></script>
 <!-- jsPDF·pdf.js·한글 폰트는 리포트에서 필요할 때만 불러온다 (js/report-io.js) -->
 <!-- Firebase SDK 는 "우리 반" 기능을 쓸 때만 내려받는다 (js/cloud.js) -->
 </body>

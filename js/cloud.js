@@ -162,14 +162,14 @@ var CLOUD = (function () {
      홈 화면 표시
      ========================================================= */
   function renderBadge() {
-    var btn = $('btn-cloud'), badge = $('cloud-badge');
+    var btn = $('btn-login'), badge = $('cloud-badge');
     if (!btn || !badge) return;
     var c = sess();
     if (c) {
-      btn.textContent = '🏫 ' + (c.className || '우리 반');
-      badge.textContent = c.nick + ' · ' + (c.points || 0) + 'P · Lv.' + (c.level || 1);
+      btn.textContent = '🏫 ' + (c.className || '우리 반') + ' · ' + c.nick;
+      badge.textContent = '🏫 ' + c.nick + ' · ' + (c.points || 0) + 'P · Lv.' + (c.level || 1);
     } else {
-      btn.textContent = '🏫 우리 반으로 시작';
+      btn.textContent = '🔑 로그인';
       badge.textContent = '';
     }
   }
@@ -178,8 +178,6 @@ var CLOUD = (function () {
      연결
      ========================================================= */
   function openModal() {
-    var c = sess();
-    if (c) { leave(); return; }
     $('cloud-code').value = '';
     $('cloud-nick').value = APP.rec.name || '';
     $('cloud-pin').value = '';
@@ -212,8 +210,18 @@ var CLOUD = (function () {
   }
 
   function init() {
-    if (!$('btn-cloud')) return;
-    $('btn-cloud').onclick = openModal;
+    if (!$('btn-login')) return;
+    // 로그인 버튼: 연결 전에는 교사/학생 고르기, 연결 뒤에는 끊기
+    $('btn-login').onclick = function () {
+      if (sess()) { leave(); return; }
+      $('login-modal').hidden = false;
+    };
+    $('login-cancel').onclick = function () { $('login-modal').hidden = true; };
+    $('login-student').onclick = function () {
+      $('login-modal').hidden = true;
+      openModal();
+    };
+    $('login-teacher').onclick = function () { location.href = 'teacher.html'; };
     $('cloud-ok').onclick = submit;
     $('cloud-cancel').onclick = function () { $('cloud-modal').hidden = true; };
     ['cloud-code', 'cloud-nick', 'cloud-pin', 'cloud-no'].forEach(function (id) {
