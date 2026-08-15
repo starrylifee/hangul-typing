@@ -26,22 +26,36 @@ var VILLAGE = (function () {
     { p: 800, key: 'school',   name: '학교' }
   ];
 
-  /* 자리 배치 — left / bottom / width (%) */
+  /* 자리 배치 — left / bottom / width (%)
+     뒷줄 건물(b 25~27) → 중간 나무 → 앞줄 동물·분수(크게, 원근).
+     분수를 중앙 광장으로 삼고 동물들이 그 주변에 모이게 했다. */
   var SLOTS = {
-    house1:   { l: 3,    b: 26, w: 12 },
-    tree1:    { l: 16,   b: 27, w: 8 },
-    flower:   { l: 25,   b: 22, w: 7 },
-    cat:      { l: 19,   b: 12, w: 5.5 },
-    rabbit:   { l: 33,   b: 14, w: 5.5 },
+    house1:   { l: 6,    b: 26, w: 12 },
+    tree1:    { l: 15,   b: 24, w: 8.5 },
+    flower:   { l: 62,   b: 8,  w: 8 },
+    cat:      { l: 18,   b: 5,  w: 6.5 },
+    rabbit:   { l: 36,   b: 6,  w: 6.5 },
     house2:   { l: 37,   b: 26, w: 13 },
-    tree2:    { l: 51,   b: 27, w: 8 },
-    bird:     { l: 68,   b: 13, w: 4.5 },
-    shop:     { l: 61,   b: 26, w: 11 },
-    fountain: { l: 44,   b: 5,  w: 10 },
-    dog:      { l: 57,   b: 6,  w: 5.5 },
-    house3:   { l: 74,   b: 25, w: 13 },
-    school:   { l: 87.5, b: 25, w: 12 }
+    tree2:    { l: 49.5, b: 24.5, w: 8 },
+    bird:     { l: 68,   b: 9,  w: 5 },
+    shop:     { l: 58,   b: 26, w: 11 },
+    fountain: { l: 44,   b: 3,  w: 12 },
+    dog:      { l: 55,   b: 5,  w: 6.5 },
+    house3:   { l: 72,   b: 25, w: 13.5 },
+    school:   { l: 86,   b: 25, w: 12 }
   };
+
+  /* 풀밭 전체를 덮는 언덕 — 하늘과 맞닿는 능선이 곡선이 된다.
+     height:100% 인라인 스타일은 전역 .vg-item svg { height:auto } 를 이기기 위한 것 */
+  var HILL_SVG = '<svg viewBox="0 0 100 40" preserveAspectRatio="none" style="height:100%" xmlns="http://www.w3.org/2000/svg">'
+    + '<path d="M0 10 Q12 2 26 7 Q40 12 52 6 Q66 0 80 7 Q90 11 100 6 L100 40 L0 40 Z" fill="#a8e6a3"/>'
+    + '<path d="M0 18 Q20 12 45 16 Q70 20 100 14 L100 40 L0 40 Z" fill="#98dd93"/>'
+    + '<path d="M0 30 Q30 26 60 29 Q80 31 100 28 L100 40 L0 40 Z" fill="#8fd98a"/></svg>';
+
+  /* 광장에서 좌우 화면 밖까지 이어지는 흙길 */
+  var PATH_SVG = '<svg viewBox="0 0 100 26" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">'
+    + '<path d="M0 24 Q20 21 38 15 Q48 12 58 14 Q76 17 92 12 Q97 10.8 100 10 L100 14 '
+    + 'Q97 14.8 92 16 Q76 21 58 18 Q48 16 40 19 Q22 25 0 26 Z" fill="#e8dcc0" opacity="0.85"/></svg>';
 
   function sess() { return APP.rec.cloud || null; }
   function points() { var c = sess(); return c ? (c.points || 0) : 0; }
@@ -73,13 +87,18 @@ var VILLAGE = (function () {
     var scene = $('vg-scene');
     var html = '';
     // 하늘 장식은 처음부터
-    html += item('sun', { l: 88, t: 6, w: 7 });
-    html += item('cloud', { l: 6, t: 8, w: 11 });
-    html += item('cloud', { l: 30, t: 4, w: 8 });
+    html += item('sun', { l: 88, t: 6, w: 7 }, null, 'vg-sky');
+    html += item('cloud', { l: 6, t: 8, w: 11 }, null, 'vg-sky');
+    html += item('cloud', { l: 30, t: 4, w: 8 }, null, 'vg-sky');
+    // 뒷동산 — 직선 지평선을 언덕 실루엣으로 가린다
+    html += '<div class="vg-item vg-sky" style="left:0;bottom:0;width:100%;height:56%">' + HILL_SVG + '</div>';
+    // 길
+    html += '<div class="vg-item vg-sky" style="left:0;bottom:0;width:100%">' + PATH_SVG + '</div>';
     unlocked(p).forEach(function (m) {
       var s = SLOTS[m.key];
-      if (s) html += item(m.key, s, m.name);
+      if (s) html += item(m.key, s, m.name, m.key === justKey ? 'pop' : '');
     });
+    justKey = null;
     scene.innerHTML = html;
 
     /* 다음 목표 */
@@ -96,20 +115,24 @@ var VILLAGE = (function () {
     }
   }
 
-  function item(key, s, title) {
+  function item(key, s, title, cls) {
     var pos = s.t != null
       ? 'top:' + s.t + '%;'
       : 'bottom:' + s.b + '%;';
-    return '<div class="vg-item" style="left:' + s.l + '%;' + pos + 'width:' + s.w + '%"'
+    return '<div class="vg-item' + (cls ? ' ' + cls : '') + '" style="left:' + s.l + '%;'
+      + pos + 'width:' + s.w + '%"'
       + (title ? ' title="' + title + '"' : '') + '>'
       + (VILLAGE_ART[key] || '') + '</div>';
   }
+
+  var justKey = null;      // 방금 새로 열린 것 — 등장 연출용
 
   /* ---------- 포인트가 오를 때 (cloud.js 가 불러 준다) ---------- */
   function onPoints(before, after) {
     var fresh = MILESTONES.filter(function (m) { return m.p > before && m.p <= after && m.p > 0; });
     fresh.forEach(function (m) {
       APP.toast('🏘️ 마을에 「' + m.name + '」이 생겼어요! 내 마을에서 확인해 보세요.');
+      justKey = m.key;
     });
     // 마을 화면을 보는 중이면 바로 다시 그린다
     var sec = $('s-village');

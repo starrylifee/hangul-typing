@@ -1271,10 +1271,24 @@ ul.notyet li {
   flex: 1; position: relative; min-height: 0; overflow: hidden;
   border-radius: 18px; border: 1px solid var(--line);
   background:
-    linear-gradient(#bfe3ff 0%, #dff1ff 52%, #a8e6a3 52%, #8fd98a 84%, #7fc97a 100%);
+    linear-gradient(#bfe3ff 0%, #dff1ff 44%, #a8e6a3 44%, #8fd98a 84%, #7fc97a 100%);
 }
 .vg-item { position: absolute; }
-.vg-item svg { width: 100%; height: auto; display: block; }
+.vg-item svg { position: relative; z-index: 1; width: 100%; height: auto; display: block; }
+/* 접지 그림자 — 하늘·언덕·길(vg-sky)은 제외 */
+.vg-item::after {
+  content: ''; position: absolute; z-index: 0;
+  left: 6%; right: 6%; bottom: 1%; height: 12%;
+  background: rgba(45, 95, 45, .28); border-radius: 50%;
+}
+.vg-item.vg-sky::after { display: none; }
+/* 새로 열린 건물 등장 연출 */
+@keyframes vg-pop {
+  0% { transform: scale(0); }
+  70% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+.vg-item.pop { animation: vg-pop .5s ease-out; transform-origin: bottom center; }
 .vg-foot {
   flex: 0 0 auto; display: flex; align-items: center; gap: 14px;
   background: var(--panel); border: 1px solid var(--line);
