@@ -407,6 +407,8 @@ var APP = (function () {
       items: cfg.items, recKey: cfg.recKey, title: cfg.title,
       idx: 0,
       startAt: 0, endAt: 0,
+      activeMs: 0,      // 실제 친 시간만 누적 (줄 사이 대기·읽는 시간 제외)
+      lineStart: 0,     // 지금 줄의 첫 키를 친 시각
       doneKeys: 0,      // 완료한 문제의 총 타건 수
       errors: 0,
       miss: {},         // 이번 연습에서 틀린 자리
@@ -506,6 +508,8 @@ var APP = (function () {
     }
 
     if (!S.startAt && v.length) S.startAt = Date.now();
+    // 타수는 줄마다 첫 키를 친 순간부터 잰다 — 다음 줄을 읽는 시간은 안 들어간다
+    if (!S.lineStart && v.length) S.lineStart = Date.now();
 
     var j = paintTarget(v);
 
@@ -554,6 +558,7 @@ var APP = (function () {
     S.locked = true;
     S.doneKeys += keys;
     S.curMatched = 0;
+    if (S.lineStart) { S.activeMs += Date.now() - S.lineStart; S.lineStart = 0; }
 
     // 한글 IME 가 조합 중이던 글자를 입력창을 비운 뒤에 밀어 넣는 일이 있다.
     // 방금 끝낸 줄의 꼬리 글자를 기억해 두었다가 걷어낸다.
@@ -577,9 +582,9 @@ var APP = (function () {
 
   function updateStats() {
     if (!S) return;
-    var elapsed = S.startAt ? Date.now() - S.startAt : 0;
+    var typingMs = S.activeMs + (S.lineStart ? Date.now() - S.lineStart : 0);
     var keys = S.doneKeys + (S.curMatched || 0);
-    var cpm = elapsed > 800 ? HG.calcCPM(keys, elapsed) : 0;
+    var cpm = typingMs > 800 ? HG.calcCPM(keys, typingMs) : 0;
     var acc = keys + S.errors > 0
       ? Math.round(keys / (keys + S.errors) * 100) : 100;
 
@@ -592,8 +597,10 @@ var APP = (function () {
 
   function finish() {
     clearInterval(S.timer);
+    // 연습 시간(리포트의 '오늘 몇 분')은 실제 걸린 시간으로,
+    // 타수는 줄 사이 대기를 뺀 순수 타이핑 시간으로 잰다
     var elapsed = S.startAt ? Date.now() - S.startAt : 1;
-    var cpm = HG.calcCPM(S.doneKeys, elapsed);
+    var cpm = HG.calcCPM(S.doneKeys, S.activeMs || elapsed);
     var acc = S.doneKeys + S.errors > 0
       ? Math.round(S.doneKeys / (S.doneKeys + S.errors) * 100) : 100;
 
