@@ -119,10 +119,12 @@ var CLOUD = (function () {
     if (c.pt.first) { p += PT.firstBonus; c.pt.first = false; }
     p = Math.max(0, Math.min(p, PT.dailyMax - c.pt.earned));   // 하루 상한
 
+    var before = c.points || 0;
     c.pt.earned += p;
-    c.points = (c.points || 0) + p;
+    c.points = before + p;
     c.level = 1 + Math.floor(c.points / PT.perLevel);
     APP.save();
+    if (window.VILLAGE) VILLAGE.onPoints(before, c.points);
     if (p > 0) APP.toast('+' + p + ' 타자 포인트!  (모두 ' + c.points + 'P)');
     renderBadge();
     scheduleSync();
@@ -172,6 +174,7 @@ var CLOUD = (function () {
       btn.textContent = '🔑 로그인';
       badge.textContent = '';
     }
+    if (window.VILLAGE) VILLAGE.updateButton();
   }
 
   /* =========================================================

@@ -1261,6 +1261,35 @@ ul.notyet li {
 }
 .big-choice small { font-size: 13px; font-weight: 600; opacity: .75; }
 
+/* ---------- 내 마을 ---------- */
+.vg-wrap {
+  flex: 1; display: flex; flex-direction: column; gap: 12px;
+  padding: 16px 28px 20px; min-height: 0;
+  max-width: 1280px; width: 100%; margin: 0 auto;
+}
+.vg-scene {
+  flex: 1; position: relative; min-height: 0; overflow: hidden;
+  border-radius: 18px; border: 1px solid var(--line);
+  background:
+    linear-gradient(#bfe3ff 0%, #dff1ff 52%, #a8e6a3 52%, #8fd98a 84%, #7fc97a 100%);
+}
+.vg-item { position: absolute; }
+.vg-item svg { width: 100%; height: auto; display: block; }
+.vg-foot {
+  flex: 0 0 auto; display: flex; align-items: center; gap: 14px;
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: 14px; padding: 12px 18px;
+}
+.vg-foot span { font-size: 15px; font-weight: 700; color: var(--text); }
+.vg-bar {
+  flex: 1; height: 10px; border-radius: 5px; background: var(--bg2); overflow: hidden;
+}
+.vg-bar i {
+  display: block; height: 100%; width: 0;
+  background: linear-gradient(90deg, var(--accent-d), var(--accent));
+  border-radius: 5px; transition: width .4s;
+}
+
 @media (max-width: 900px) {
   .rep-cards { grid-template-columns: repeat(2, 1fr); }
   .rep-two { grid-template-columns: 1fr; }
