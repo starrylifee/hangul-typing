@@ -60,11 +60,13 @@ var APP = (function () {
   function logPractice(entry) {
     dayLog().practice.push(entry);
     save();
+    if (window.CLOUD) CLOUD.onActivity('practice', entry);
   }
 
   function logGame(entry) {
     dayLog().games.push(entry);
     save();
+    if (window.CLOUD) CLOUD.onActivity('game', entry);
   }
   function save() {
     try { localStorage.setItem(STORE_KEY, JSON.stringify(rec)); } catch (e) { }
@@ -142,6 +144,7 @@ var APP = (function () {
   function renderHome() {
     var sn = $('student-name');
     if (sn) sn.textContent = rec.name || '이름 넣기';
+    if (window.CLOUD) CLOUD.renderBadge();
 
     ['place', 'word', 'short', 'long'].forEach(function (m) {
       var el = document.querySelector('[data-best="' + m + '"]');

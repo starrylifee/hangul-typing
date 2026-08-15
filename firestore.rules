@@ -24,7 +24,9 @@ service cloud.firestore {
         allow read: if true;
         allow create: if exists(/databases/$(database)/documents/classes/$(code))
           && request.resource.data.pinHash is string;
+        // 핀이 비어 있으면(교사가 초기화) 다음 로그인 때 새 핀을 정할 수 있다
         allow update: if request.resource.data.pinHash == resource.data.pinHash
+          || resource.data.pinHash == ''
           || isTeacher();
         allow delete: if isTeacher();
       }
