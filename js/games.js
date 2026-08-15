@@ -439,7 +439,7 @@ var GAMES = (function () {
           it.el.classList.add('boom');
           var el = it.el;
           setTimeout(function () { el.remove(); }, 260);
-          G.hp -= 10;
+          G.hp -= (window.CLOUD ? CLOUD.perks().defenseDmg : 10);   // 레벨 특전: 피해 감소
           leaked = true;
         }
       });
@@ -617,7 +617,8 @@ var GAMES = (function () {
   function stepRace(dt) {
     // 처음 5초는 컴퓨터가 기다려 준다 — 아이가 화면을 읽을 시간
     var slow = G.aiSlowUntil > G.elapsed ? 0.4 : 1;
-    if (G.elapsed > 5) G.aiKeys += (G.diff.aiCpm * slow / 60) * dt;
+    if (G.elapsed > 5) G.aiKeys += (G.diff.aiCpm * slow / 60) * dt
+      * (window.CLOUD ? CLOUD.perks().raceSlow : 1);   // 레벨 특전: 컴퓨터 감속
     if (G.aiSlowUntil && G.aiSlowUntil <= G.elapsed && G.slowOn) { G.slowOn = false; showBuff(); }
 
     var mp = Math.min(100, G.myKeys / G.totalKeys * 100);
@@ -922,7 +923,8 @@ var GAMES = (function () {
   function stepMole(dt) {
     var d = G.diff;
     var ramp = 1 + Math.min(G.elapsed / 90, 1) * d.ramp;
-    var life = Math.max(2.4, d.life / ramp);
+    var life = Math.max(2.4, d.life / ramp)
+      * (window.CLOUD ? CLOUD.perks().moleLife : 1);   // 레벨 특전: 낱말이 오래 보임
     var interval = Math.max(1.0, (d.spawn * 0.7) / ramp);
     var maxUp = d.maxUp + (G.elapsed > 40 ? 1 : 0);
 
@@ -1127,7 +1129,8 @@ var GAMES = (function () {
 
     G.total = G.cards.length;
     G.solved = 0;
-    G.left = CARD_TIME[G.diff.id] || 110;
+    G.left = (CARD_TIME[G.diff.id] || 110)
+      + (window.CLOUD ? CLOUD.perks().eraseBonus : 0);   // 레벨 특전: 추가 시간
     G.stuck = 0;                       // 못 맞힌 채 흐른 시간
     G.note = (MIX_NOTE[G.diff.id] || '') + ' · 낱말을 알아내 치고 엔터';
     var cn = $('c-note');
@@ -1334,7 +1337,7 @@ var GAMES = (function () {
 
   function bossAttack() {
     var e = ELEMS[G.elem];
-    G.myHp -= 12;
+    G.myHp -= Math.round(12 * (window.CLOUD ? CLOUD.perks().spellGuard : 1));   // 레벨 특전: 피해 감소
     breakCombo();
 
     var st = $('stage');

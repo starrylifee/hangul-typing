@@ -43,6 +43,42 @@ var CLOUD = (function () {
   }
 
   function sess() { return APP.rec.cloud || null; }
+
+  /* ---------- 레벨 특전 ----------
+     반에 로그인한 학생은 레벨이 오르면 기존 게임이 조금씩 유리해진다. */
+  var PERK_LIST = [
+    { lv: 2, label: '🛡️ 방어전: 방어선이 튼튼해져요' },
+    { lv: 3, label: '🕳️ 두더지: 낱말이 더 오래 보여요' },
+    { lv: 4, label: '🏃 달리기: 컴퓨터가 살짝 느려져요' },
+    { lv: 5, label: '🧩 낱말 맞추기: 시간 +15초' },
+    { lv: 6, label: '🪄 마법사: 받는 피해가 줄어요' }
+  ];
+  function myLevel() {
+    var c = sess();
+    return c ? (c.level || 1) : 1;
+  }
+  /** 게임들이 시작 값을 정할 때 물어본다 */
+  function perks() {
+    var lv = myLevel();
+    return {
+      level: lv,
+      defenseDmg: lv >= 2 ? 8 : 10,     // 방어선 피해 10 → 8
+      moleLife: lv >= 3 ? 1.15 : 1,     // 두더지 낱말 수명 +15%
+      raceSlow: lv >= 4 ? 0.94 : 1,     // 달리기 컴퓨터 속도 -6%
+      eraseBonus: lv >= 5 ? 15 : 0,     // 낱말 맞추기 +15초
+      spellGuard: lv >= 6 ? 0.8 : 1     // 마법사 받는 피해 -20%
+    };
+  }
+  function perkLine() {
+    var c = sess();
+    if (!c) return '우리 반으로 로그인하면 레벨이 오를 때마다 게임 특전이 열려요.';
+    var lv = myLevel();
+    var got = PERK_LIST.filter(function (p) { return lv >= p.lv; });
+    var next = PERK_LIST.filter(function (p) { return lv < p.lv; })[0];
+    var s = got.length ? got.map(function (p) { return p.label; }).join('   ') : '아직 없어요.';
+    if (next) s += '   (다음: Lv.' + next.lv + '에 ' + next.label + ')';
+    return s;
+  }
   function stuRef(c) {
     return db.collection('classes').doc(c.code).collection('students').doc(c.nick);
   }
@@ -120,11 +156,19 @@ var CLOUD = (function () {
     p = Math.max(0, Math.min(p, PT.dailyMax - c.pt.earned));   // 하루 상한
 
     var before = c.points || 0;
+    var beforeLv = 1 + Math.floor(before / PT.perLevel);
     c.pt.earned += p;
     c.points = before + p;
     c.level = 1 + Math.floor(c.points / PT.perLevel);
     APP.save();
     if (window.VILLAGE) VILLAGE.onPoints(before, c.points);
+    if (c.level > beforeLv) {
+      var lvNow = c.level;
+      setTimeout(function () {
+        var perk = PERK_LIST.filter(function (x) { return x.lv === lvNow; })[0];
+        APP.toast('🎉 레벨 ' + lvNow + '이 됐어요!' + (perk ? ' 새 특전 — ' + perk.label : ''));
+      }, 2000);
+    }
     if (p > 0) APP.toast('+' + p + ' 타자 포인트!  (모두 ' + c.points + 'P)');
     renderBadge();
     scheduleSync();
@@ -175,6 +219,8 @@ var CLOUD = (function () {
       badge.textContent = '';
     }
     if (window.VILLAGE) VILLAGE.updateButton();
+    var pl = $('perk-line');
+    if (pl) pl.textContent = perkLine();
   }
 
   /* =========================================================
@@ -239,5 +285,5 @@ var CLOUD = (function () {
 
   document.addEventListener('DOMContentLoaded', init);
 
-  return { onActivity: onActivity, renderBadge: renderBadge, sync: sync, join: join };
+  return { onActivity: onActivity, renderBadge: renderBadge, sync: sync, join: join, perks: perks };
 })();
