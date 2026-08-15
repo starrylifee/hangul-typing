@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 반 문서: 코드를 아는 사람만 낱개로 읽을 수 있다(반 이름 표시용).
+    // 목록 조회는 교사가 자기 반을 찾을 때만(teacherUid 조건 쿼리) 허용.
+    match /classes/{code} {
+      function isTeacher() {
+        return request.auth != null
+          && get(/databases/$(database)/documents/classes/$(code)).data.teacherUid == request.auth.uid;
+      }
+
+      allow get: if true;
+      allow list: if request.auth != null
+        && resource.data.teacherUid == request.auth.uid;
+      allow create: if request.auth != null
+        && request.resource.data.teacherUid == request.auth.uid;
+      allow update, delete: if request.auth != null
+        && resource.data.teacherUid == request.auth.uid;
+
+      // 학생 문서: 별명·핀해시·누적 기록. 실명은 저장하지 않는다.
+      // 핀 검증은 클라이언트에서 하고, 규칙은 핀해시 변경만 막는다(핀 초기화는 교사만).
+      match /students/{nick} {
+        allow read: if true;
+        allow create: if exists(/databases/$(database)/documents/classes/$(code))
+          && request.resource.data.pinHash is string;
+        allow update: if request.resource.data.pinHash == resource.data.pinHash
+          || isTeacher();
+        allow delete: if isTeacher();
+      }
+    }
+  }
+}
