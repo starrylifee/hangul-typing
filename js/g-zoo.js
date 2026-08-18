@@ -35,7 +35,11 @@
   var STREAK_PT = 10;      // 규칙 6 — 보너스 +10
 
   /* ---------- 화면 값 ---------- */
-  var LANES = [26, 41, 56, 71, 86];   // 세로 줄 5개 (팻말이 겹치지 않게 넓게 벌렸다)
+  /* 줄(레인) 5개. 값은 "동물의 발이 닿는 자리" 다(판 높이의 %).
+     지평선이 15% 이므로 다섯 줄 모두 땅 위에 있다 — 하늘을 뛰지 않는다.
+     먼 줄(위)일수록 작게 그려 원근을 낸다. */
+  var LANES = [40, 54, 68, 82, 95];
+  var LANE_SC = [0.86, 0.93, 1.00, 1.07, 1.14];
   var START_X = 13;                   // 울타리 터진 자리
   var GOAL_X = 80;                    // 사육사 앞 — 여기까지 가면 놓친다
   /* 속도 · 등장 간격 · 화면에 동시에 있는 동물 수는 기획서에 없다. 여기서 난이도를 맞췄다.
@@ -233,48 +237,59 @@
   ];
   var diffIdx = 0;        // 다시 하기 · 다음 단계에서 이어지도록 파일 전역에 둔다
 
-  /* 왼쪽에 터진 빨간 울타리 (기획서 3쪽) — 가운데가 뚫려 동물이 그리로 나온다 */
+  /* 왼쪽에 터진 빨간 울타리 (기획서 3쪽) — 가운데가 뚫려 동물이 그리로 나온다.
+     선 규칙: 외곽선 #2b241d. viewBox 높이가 620 이라 동물(100)보다 6배 크므로
+     화면에 찍히는 굵기가 동물과 같아지도록 2.4 로 낮췄다. */
   var FENCE_SVG =
     '<svg class="zoo-fence" viewBox="0 0 150 620" aria-hidden="true">' +
-    '  <path d="M30 8 C88 74 124 154 120 258 L98 258 C102 162 66 90 8 26 Z" fill="#c25a3f" stroke="#8e3b26" stroke-width="4" stroke-linejoin="round"/>' +
-    '  <path d="M18 44 L45 21 M43 79 L71 56 M72 133 L100 114 M90 193 L118 179 M94 253 L123 247" fill="none" stroke="#8e3b26" stroke-width="4"/>' +
-    '  <path d="M104 236 L132 256 L118 302 L92 282 Z" fill="#c25a3f" stroke="#8e3b26" stroke-width="4" stroke-linejoin="round"/>' +
-    '  <path d="M108 330 L136 312 L124 358 L98 372 Z" fill="#c25a3f" stroke="#8e3b26" stroke-width="4" stroke-linejoin="round"/>' +
-    '  <path d="M120 372 C116 462 78 546 24 612 L4 598 C58 530 94 452 98 372 Z" fill="#c25a3f" stroke="#8e3b26" stroke-width="4" stroke-linejoin="round"/>' +
-    '  <path d="M94 380 L123 387 M88 415 L117 428 M71 470 L99 492 M44 525 L71 550 M16 570 L42 590" fill="none" stroke="#8e3b26" stroke-width="4"/>' +
-    '  <path d="M126 288 l14 -10 M132 316 l16 4" fill="none" stroke="#8e3b26" stroke-width="3"/>' +
+    '  <path d="M30 8 C88 74 124 154 120 258 L98 258 C102 162 66 90 8 26 Z" fill="#c25a3f" stroke="#2b241d" stroke-width="2.4" stroke-linejoin="round"/>' +
+    '  <path d="M18 44 L45 21 M43 79 L71 56 M72 133 L100 114 M90 193 L118 179 M94 253 L123 247" fill="none" stroke="#2b241d" stroke-width="2.4" stroke-linecap="round"/>' +
+    '  <path d="M104 236 L132 256 L118 302 L92 282 Z" fill="#c25a3f" stroke="#2b241d" stroke-width="2.4" stroke-linejoin="round"/>' +
+    '  <path d="M108 330 L136 312 L124 358 L98 372 Z" fill="#c25a3f" stroke="#2b241d" stroke-width="2.4" stroke-linejoin="round"/>' +
+    '  <path d="M120 372 C116 462 78 546 24 612 L4 598 C58 530 94 452 98 372 Z" fill="#c25a3f" stroke="#2b241d" stroke-width="2.4" stroke-linejoin="round"/>' +
+    '  <path d="M94 380 L123 387 M88 415 L117 428 M71 470 L99 492 M44 525 L71 550 M16 570 L42 590" fill="none" stroke="#2b241d" stroke-width="2.4" stroke-linecap="round"/>' +
+    '  <path d="M126 288 l14 -10 M132 316 l16 4" fill="none" stroke="#2b241d" stroke-width="2" stroke-linecap="round"/>' +
     '</svg>';
 
-  /* 오른쪽 끝 올가미를 든 사육사 (기획서 3쪽) */
+  /* 오른쪽 끝 올가미를 든 사육사 (기획서 3쪽).
+     원래는 낱말 팻말의 24배 면적으로 화면에서 제일 큰 물체였다 → CSS 에서 크게 줄였다.
+     흰 셔츠(#eef3f8)가 잔디 위에 붕 떠 보인다는 지적이 있어 카키색 근무복으로 바꿨다.
+     선 규칙: 외곽선 #2b241d, viewBox 높이 300 이라 동물과 같은 굵기가 되도록 2.2. */
   var KEEPER_SVG =
     '<svg class="zoo-keeper" viewBox="0 0 130 300" aria-hidden="true">' +
-    '  <path d="M40 150 C34 200 36 228 40 240 L92 240 C96 228 98 200 92 150 Z" fill="#eef3f8" stroke="#3a2c22" stroke-width="4" stroke-linejoin="round"/>' +
-    '  <path d="M46 240 v40 M86 240 v40" fill="none" stroke="#3a2c22" stroke-width="5"/>' +
-    '  <path d="M32 278 h28 v14 h-28 z M74 278 h28 v14 h-28 z" fill="#f6efe2" stroke="#3a2c22" stroke-width="4" stroke-linejoin="round"/>' +
+    /* 바지 · 신발 */
+    '  <path d="M44 232 h16 v50 h-16 z M72 232 h16 v50 h-16 z" fill="#6f7f4a" stroke="#2b241d" stroke-width="2.2" stroke-linejoin="round"/>' +
+    '  <path d="M32 278 h30 v14 h-30 z M70 278 h30 v14 h-30 z" fill="#6b4a2a" stroke="#2b241d" stroke-width="2.2" stroke-linejoin="round"/>' +
+    /* 몸통 — 카키 근무복 */
+    '  <path d="M40 150 C34 200 36 226 40 240 L92 240 C96 226 98 200 92 150 Z" fill="#c9a86c" stroke="#2b241d" stroke-width="2.2" stroke-linejoin="round"/>' +
+    '  <path d="M66 152 v88" fill="none" stroke="#2b241d" stroke-width="1.6"/>' +
     /* 팔 — 몸통 밖으로 충분히 나와야 "셔츠 줄무늬" 가 아니라 팔로 읽힌다 */
-    '  <path d="M14 158 h102" fill="none" stroke="#3a2c22" stroke-width="4.4" stroke-linecap="round"/>' +
-    '  <circle cx="66" cy="120" r="26" fill="#fdf6ee" stroke="#3a2c22" stroke-width="4"/>' +
-    '  <circle cx="58" cy="116" r="3.2" fill="#3a2c22"/>' +
-    '  <circle cx="74" cy="116" r="3.2" fill="#3a2c22"/>' +
-    '  <path d="M58 130 C63 135 69 135 74 130" fill="none" stroke="#3a2c22" stroke-width="3"/>' +
-    '  <path d="M40 100 h52 v8 h-52 z M48 84 h36 v16 h-36 z" fill="#5c8a3a" stroke="#3a2c22" stroke-width="4" stroke-linejoin="round"/>' +
-    '  <path d="M94 118 h11 v104 h-11 z" fill="#f6efe2" stroke="#3a2c22" stroke-width="4"/>' +
-    '  <circle cx="99" cy="112" r="8" fill="#3a2c22"/>' +
-    '  <path d="M99 106 C99 74 57 68 57 48 C57 30 83 30 83 48 C83 62 65 62 65 50"' +
-    '        fill="none" stroke="#3a2c22" stroke-width="5" stroke-linecap="round"/>' +
+    '  <path d="M20 148 C13 148 13 170 20 170 L110 170 C117 170 117 148 110 148 Z" fill="#c9a86c" stroke="#2b241d" stroke-width="2.2" stroke-linejoin="round"/>' +
+    '  <circle cx="20" cy="159" r="8" fill="#fdf6ee" stroke="#2b241d" stroke-width="2.2"/>' +
+    '  <circle cx="106" cy="159" r="8" fill="#fdf6ee" stroke="#2b241d" stroke-width="2.2"/>' +
+    '  <circle cx="66" cy="120" r="26" fill="#fdf6ee" stroke="#2b241d" stroke-width="2.2"/>' +
+    '  <circle cx="58" cy="116" r="3.2" fill="#2b241d"/>' +
+    '  <circle cx="74" cy="116" r="3.2" fill="#2b241d"/>' +
+    '  <path d="M58 130 C63 135 69 135 74 130" fill="none" stroke="#2b241d" stroke-width="2.2" stroke-linecap="round"/>' +
+    '  <path d="M40 100 h52 v8 h-52 z M48 84 h36 v16 h-36 z" fill="#5c8a3a" stroke="#2b241d" stroke-width="2.2" stroke-linejoin="round"/>' +
+    /* 올가미 막대 — 나무색 */
+    '  <path d="M96 118 h10 v100 h-10 z" fill="#c98a4a" stroke="#2b241d" stroke-width="2.2" stroke-linejoin="round"/>' +
+    '  <circle cx="101" cy="112" r="7" fill="#2b241d"/>' +
+    '  <path d="M101 106 C101 74 57 68 57 48 C57 30 83 30 83 48 C83 62 65 62 65 50"' +
+    '        fill="none" stroke="#2b241d" stroke-width="2.6" stroke-linecap="round"/>' +
     '</svg>';
 
   /* 인트로 — 거북이 등딱지에 제목이 적혀 있다 (기획서 4쪽) */
   var TURTLE_TITLE_SVG =
     '<svg class="zoo-bigturtle" viewBox="0 0 440 250" aria-hidden="true">' +
-    '  <path d="M96 168 h30 v58 h-30 z" fill="#e6d4a4" stroke="#3a2c22" stroke-width="5" stroke-linejoin="round"/>' +
-    '  <path d="M232 168 h30 v58 h-30 z" fill="#e6d4a4" stroke="#3a2c22" stroke-width="5" stroke-linejoin="round"/>' +
-    '  <path d="M300 96 h44 v72 h-44 z" fill="#e6d4a4" stroke="#3a2c22" stroke-width="5" stroke-linejoin="round"/>' +
-    '  <ellipse cx="358" cy="82" rx="56" ry="42" fill="#e6d4a4" stroke="#3a2c22" stroke-width="5"/>' +
-    '  <circle cx="388" cy="66" r="5" fill="#3a2c22"/>' +
-    '  <path d="M392 96 C400 100 404 104 400 108" fill="none" stroke="#3a2c22" stroke-width="4"/>' +
-    '  <path d="M46 168 C46 78 118 26 190 26 C264 26 322 82 322 168 Z" fill="#cfe0a6" stroke="#3a2c22" stroke-width="6" stroke-linejoin="round"/>' +
-    '  <path d="M34 166 h300 v22 h-300 z" rx="10" fill="#e6d4a4" stroke="#3a2c22" stroke-width="5" stroke-linejoin="round"/>' +
+    '  <path d="M96 168 h30 v58 h-30 z" fill="#e6d4a4" stroke="#2b241d" stroke-width="3.4" stroke-linejoin="round"/>' +
+    '  <path d="M232 168 h30 v58 h-30 z" fill="#e6d4a4" stroke="#2b241d" stroke-width="3.4" stroke-linejoin="round"/>' +
+    '  <path d="M300 96 h44 v72 h-44 z" fill="#e6d4a4" stroke="#2b241d" stroke-width="3.4" stroke-linejoin="round"/>' +
+    '  <ellipse cx="358" cy="82" rx="56" ry="42" fill="#e6d4a4" stroke="#2b241d" stroke-width="3.4"/>' +
+    '  <circle cx="388" cy="66" r="5" fill="#2b241d"/>' +
+    '  <path d="M392 96 C400 100 404 104 400 108" fill="none" stroke="#2b241d" stroke-width="2.8"/>' +
+    '  <path d="M46 168 C46 78 118 26 190 26 C264 26 322 82 322 168 Z" fill="#cfe0a6" stroke="#2b241d" stroke-width="4" stroke-linejoin="round"/>' +
+    '  <path d="M34 166 h300 v22 h-300 z" rx="10" fill="#e6d4a4" stroke="#2b241d" stroke-width="3.4" stroke-linejoin="round"/>' +
     '  <text class="zoo-tt" x="184" y="98" transform="rotate(-6 184 98)">탈출하는 동물을</text>' +
     '  <text class="zoo-tt" x="176" y="146" transform="rotate(-6 176 146)">잡아라!</text>' +
     '</svg>';
@@ -302,7 +317,8 @@
       diffs += '<button type="button" class="zoo-dchip' + (d === diffIdx ? ' sel' : '') +
         '" data-d="' + d + '">' + DIFFS[d].name + '<small>' + DIFFS[d].hint + '</small></button>';
     }
-    return '<div class="zoo-introbg"></div>' +
+    return '<div class="zoo-introwrap">' +
+      '<div class="zoo-introbg"></div>' +
       '<div class="zoo-intro">' +
       '  <div class="zoo-introleft">' +
       TURTLE_TITLE_SVG +
@@ -318,6 +334,7 @@
       '      10초마다 한 마리가 저절로 달아나요(-10점) · 안 틀리고 연속 5번 잡으면 +10점</p>' +
       '    <div class="zoo-diffrow"><span>난이도</span>' + diffs + '</div>' +
       '  </div>' +
+      '</div>' +
       '</div>';
   }
 
@@ -352,9 +369,14 @@
       FENCE_SVG +
       '<div class="zoo-keeperbox">' + KEEPER_SVG + '</div>' +
       '<div class="zoo-field" id="zoo-field"></div>' +
+      /* HUD 의 주인공은 "잡은 동물 N마리" 다.
+         점수는 0 밑으로 안 내려가서 처음 몇 분 동안 「포인트: 0점」에 붙어 있는데,
+         그것만 보고 있으면 아이가 자기가 아무것도 못 하고 있다고 느낀다.
+         한 마리 잡을 때마다 확실히 올라가는 숫자를 크게 두고 점수는 그 옆에 작게 뒀다. */
       '<div class="zoo-hud">' +
-      '  <span class="zoo-time">남은 시간: <b id="zoo-sec">' + TIME + '</b>초</span>' +
-      '  <span class="zoo-ptbox">포인트: <b id="zoo-pt">0</b>점</span>' +
+      '  <span class="zoo-catch" id="zoo-catchbox">잡은 동물 <b id="zoo-caught">0</b>마리</span>' +
+      '  <span class="zoo-time">남은 시간 <b id="zoo-sec">' + TIME + '</b>초</span>' +
+      '  <span class="zoo-ptbox" id="zoo-ptbox">포인트 <b id="zoo-pt">0</b>점</span>' +
       '</div>' +
       '<div class="zoo-sub">' +
       '  <span class="zoo-diffbadge" id="zoo-diff">쉬움 · 기본자리</span>' +
@@ -369,9 +391,11 @@
     };
     G.zoo = Z;
     G.items = [];
+    A.recKey(DIFFS[diffIdx].name);   // 최고 기록을 난이도별로 나눠 준다
 
     showDiff();
     showStreak();
+    showCaught(false);
     bindIntroDiff();
     spawn();
   }
@@ -384,9 +408,30 @@
     var e = A.el('zoo-streak');
     if (e) e.textContent = '연속 ' + Z.streak + ' / ' + STREAK_N;
   }
-  function showPt() {
+  function showPt(down) {
     var e = A.el('zoo-pt');
     if (e) e.textContent = G.score;
+    // 왜 깎였는지 눈에 보이게 — 포인트 상자가 한 번 붉게 내려앉는다
+    if (down) {
+      var b = A.el('zoo-ptbox');
+      if (b) {
+        b.classList.remove('down');
+        void b.offsetWidth;
+        b.classList.add('down');
+      }
+    }
+  }
+  function showCaught(pop) {
+    var e = A.el('zoo-caught');
+    if (e) e.textContent = Z.caught;
+    if (pop) {
+      var b = A.el('zoo-catchbox');
+      if (b) {
+        b.classList.remove('pop');
+        void b.offsetWidth;
+        b.classList.add('pop');
+      }
+    }
   }
 
   /* ---------- 규칙 5 — 난이도별 낱말 ---------- */
@@ -436,7 +481,10 @@
     var el = document.createElement('div');
     el.className = 'zoo-an' + (k.trap ? ' trap' : '');
     el.style.left = START_X + '%';
+    // top 은 "발이 닿는 자리". CSS 에서 translateY(-100%) 로 그 위에 세운다.
     el.style.top = LANES[lane] + '%';
+    // 먼 줄일수록 작게 — 원근
+    el.style.setProperty('--sc', LANE_SC[lane]);
     // 아래 줄일수록 앞에 그린다 — 윗줄 동물 몸에 아랫줄 팻말이 가리지 않게
     el.style.zIndex = 10 + lane;
     el.innerHTML =
@@ -447,7 +495,7 @@
     var n = A.keyLen(word);
     var it = {
       word: word, el: el, wEl: el.querySelector('.zoo-w'),
-      lock: false, matched: 0, dead: false,
+      lock: false, matched: 0, dead: false, touched: false,
       kind: k.id, lane: lane, x: START_X,
       sp: k.sp, sf: Math.max(0.55, Math.min(1.15, 6 / (n + 1.2)))
     };
@@ -477,8 +525,12 @@
     A.progress(left / TIME);
     if (left <= 0) { finish(); return; }
 
-    // 규칙 6 — 오타를 내면 연속이 끊긴다
-    if (G.errors > Z.lastErr) { Z.lastErr = G.errors; Z.streak = 0; showStreak(); }
+    // 규칙 6 — 오타를 내면 연속이 끊긴다. 틀린 게 몸으로 느껴지도록 판이 한 번 흔들린다.
+    if (G.errors > Z.lastErr) {
+      Z.lastErr = G.errors;
+      Z.streak = 0; showStreak();
+      shake();
+    }
 
     // 규칙 5 — 점점 빨라진다
     var ramp = 1 + Math.min(G.elapsed / TIME, 1) * RAMP;
@@ -486,12 +538,16 @@
     var alive = 0;
     for (var i = 0; i < Z.list.length; i++) if (!Z.list[i].dead) alive++;
 
+    /* 등장 간격 — 판이 비어 있으면 바로 다음 동물이 나온다.
+       간격이 고정이면 빨리 치는 아이는 150초 중 100초 넘게 빈 화면을 보고 서 있다.
+       화면에 몇 마리 있는지에 따라 간격을 줄인다 (0마리면 0.6초). */
     var d = DIFFS[diffIdx];
     Z.spawnAcc += dt;
-    var interval = Math.max(d.spawn * 0.62, d.spawn / ramp);
-    if (Z.spawnAcc >= interval) {
+    var base = Math.max(d.spawn * 0.62, d.spawn / ramp);
+    var interval = Math.max(0.6, base * (alive / d.alive));
+    if (Z.spawnAcc >= interval && alive < d.alive) {
       Z.spawnAcc = 0;
-      if (alive < d.alive) spawn();
+      spawn();
     }
 
     // 규칙 3 — 10초마다 한 마리가 저절로 달아난다 (-10점)
@@ -526,17 +582,28 @@
       Z.streak = 0;
       showStreak();
       shake();
+      A.sfx('bad');
       item.el.classList.add('bad');
       A.flashItem({ icon: '🚫', name: '하이에나는 함정! ' + HYENA_PT + '포인트', color: '#ff6b81' });
+      showPt(true);
     } else {
       // 규칙 1 — 동물마다 정해진 점수
       A.bump(k.pt);
       Z.caught++;
+      showCaught(true);
       G.combo++;
       if (G.combo > G.bestCombo) G.bestCombo = G.combo;
       A.el('g-combo').textContent = G.combo;
       item.el.classList.add('caught');
-      A.flashItem({ icon: '🎯', name: k.name + '을 잡았어요! +' + k.pt, color: k.color });
+      /* 유니콘은 6종 중 제일 값진 한 마리(+100)다.
+         작은 토스트로는 10점 토끼와 화면상 똑같아서 큰 보상 연출을 건다. */
+      if (k.id === 'unicorn') {
+        /* 색은 유니콘의 연보라(#c9a7ff)가 아니라 진보라로 준다 —
+           밝은 잔디 위에서는 연보라 글씨가 배경에 묻힌다 */
+        A.cheer({ icon: '🦄', name: '유니콘을 잡았다!', sub: '+' + k.pt + '포인트 · 제일 값진 동물', color: '#6d28d9' });
+      } else {
+        A.flashItem({ icon: '🎯', name: k.name + '을 잡았어요! +' + k.pt, color: k.color });
+      }
 
       // 규칙 6 — 안 틀리고 연속 5번
       Z.streak++;
@@ -553,7 +620,12 @@
     removeSoon(item, 620);
   }
 
-  /* ---------- 규칙 2 — 동물을 놓치면 -50 ---------- */
+  /* ---------- 규칙 2 — 동물을 놓치면 -50 ----------
+     "놓쳤다" 를 두 가지로 나눈다(수치는 기획서 그대로 -50 · -10 이다).
+       · 한 글자라도 치던 동물이 지나갔다  → 진짜로 놓친 것 = -50 (규칙 2)
+       · 손도 못 댄 동물이 지나갔다        → 저절로 달아난 것과 같다 = -10 (규칙 3)
+     처음 치는 아이는 한 번에 한 마리밖에 못 치는데, 나머지 네 마리가 지나갈 때마다
+     -50 씩 붙으면 2분 30초 내내 「포인트: 0점」만 보게 된다. */
   function escaped(it) {
     it.dead = true;
     G.items = G.items.filter(function (x) { return x !== it; });
@@ -568,15 +640,24 @@
       return;
     }
 
-    Z.missed++;
-    A.bump(MISS_PT);
-    A.breakCombo();
-    Z.streak = 0;
-    showStreak();
-    showPt();
-    shake();
+    var name = KMAP[it.kind].name;
     it.el.classList.add('gone');
-    A.flashItem({ icon: '💨', name: KMAP[it.kind].name + '을 놓쳤어요! ' + MISS_PT + '포인트', color: '#ff8fab' });
+    if (it.touched) {
+      Z.missed++;
+      A.bump(MISS_PT);
+      A.breakCombo();
+      Z.streak = 0;
+      showStreak();
+      showPt(true);
+      shake();
+      A.sfx('bad');
+      A.flashItem({ icon: '💨', name: name + '을 놓쳤어요! ' + MISS_PT + '포인트', color: '#ff8fab' });
+    } else {
+      Z.fled++;
+      A.bump(FLEE_PT);
+      showPt(true);
+      A.flashItem({ icon: '🐾', name: name + '가 그냥 달아났어요 ' + FLEE_PT, color: '#9ec5ff' });
+    }
     removeSoon(it, 700);
   }
 
@@ -591,9 +672,10 @@
     Z.lanes[it.lane] = null;
     Z.fled++;
     A.bump(FLEE_PT);
-    showPt();
+    // 왜 깎였는지 화면에 보여 준다 — 안 그러면 점수가 저 혼자 줄어드는 것처럼 보인다
+    showPt(true);
     it.el.classList.add('gone');
-    A.flashItem({ icon: '⏱', name: '10초마다 한 마리가 달아나요 — ' + KMAP[it.kind].name + ' ' + FLEE_PT, color: '#9ec5ff' });
+    A.flashItem({ icon: '⏱', name: '한 마리가 달아났어요 ' + FLEE_PT + ' (' + KMAP[it.kind].name + ')', color: '#9ec5ff' });
     removeSoon(it, 700);
   }
 
@@ -604,14 +686,21 @@
     }, ms);
   }
 
-  /** 사육사가 올가미를 던진다 */
+  /** 사육사가 올가미를 던진다 — 몸도 같이 앞으로 기울인다 */
   function lasso(it) {
     var field = A.el('zoo-field');
     if (!field) return;
+    var kb = A.stage().querySelector('.zoo-keeperbox');
+    if (kb) {
+      kb.classList.remove('throw');
+      void kb.offsetWidth;
+      kb.classList.add('throw');
+    }
     var rope = document.createElement('div');
     rope.className = 'zoo-rope';
     rope.style.left = '94%';
-    rope.style.top = LANES[it.lane] + '%';
+    // 발이 아니라 몸통 높이로 날아간다
+    rope.style.top = (LANES[it.lane] - 7) + '%';
     field.appendChild(rope);
     var x = it.x;
     setTimeout(function () {
@@ -633,6 +722,8 @@
     for (var i = 0; i < Z.list.length; i++) {
       var it = Z.list[i];
       if (it.dead) continue;
+      // 한 글자라도 친 적이 있는지 기억해 둔다 (놓쳤을 때 -50 / -10 을 가르는 기준)
+      if (it.lock && it.matched > 0) it.touched = true;
       it.wEl.innerHTML = A.wordHtml(it);
       it.el.classList.toggle('lock', !!it.lock);
     }
@@ -665,9 +756,10 @@
     ov.innerHTML =
       '<div class="zoo-endbox">' +
       '  <h2 class="zoo-endtitle">게임 끝!</h2>' +
+      '  <div class="zoo-endcatch">잡은 동물 ' + Z.caught + '마리</div>' +
       '  <div class="zoo-endpt">포인트: <b>' + pts + '</b>점</div>' +
-      '  <p class="zoo-endsub">잡은 동물 ' + Z.caught + '마리 · 놓친 동물 ' + Z.missed +
-      '마리 · 저절로 달아난 동물 ' + Z.fled + '마리</p>' +
+      '  <p class="zoo-endsub">놓친 동물 ' + Z.missed +
+      '마리 · 달아난 동물 ' + Z.fled + '마리</p>' +
       '  <div class="zoo-endbtns">' +
       '    <button type="button" class="zoo-ebtn" id="zoo-again">다시하기</button>' +
       '    <button type="button" class="zoo-ebtn next" id="zoo-next">다음단계</button>' +

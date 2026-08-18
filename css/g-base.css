@@ -3,12 +3,20 @@
      낱말이 적힌 야구공, 아래쪽 배트와 "단어를 입력하세요" 입력 상자, 왼쪽 위 스코어 2:0.
    기획서 4쪽(수비) — 왼쪽 위 해, 갈색 글러브와 그 위의 낱말 공,
      아래 "단어를 쓰시오" 입력 상자(파란 모서리·빨간 모서리), 오른쪽 위 스코어보드와 아웃 카운트.
+
+   크기 단위 규칙 (중요) ─────────────────────────────────────
+   게임 화면에 "⌨️ 자판" 안내가 생겼다. 자판을 켜면 게임판(.stage)이 낮아지는데
+   vh 는 창 높이라서 판이 낮아져도 그대로였다. 그래서 자판을 켜면 글러브·투수가
+   판 밖으로 잘려 나갔다. 판을 컨테이너로 잡고(container-type: size) 전부 cqh/cqw —
+   즉 "판 높이의 몇 %" 로 다시 잡았다. 판이 낮아지면 그림도 같이 작아진다.
    ========================================================= */
 
 .base-wrap {
   position: absolute; inset: 0; overflow: hidden;
+  container-type: size; container-name: bs;
   --me1: #3b82f6; --me2: #1d4ed8; --meink: #eaf2ff;
   --you1: #f4f6fa; --you2: #c8ced9; --youink: #1b2333;
+  --ink: #2b241d;                 /* 그림 외곽선 — 여섯 게임 공통 */
   font-family: inherit;
 }
 
@@ -18,6 +26,18 @@
 .base-wrap.defense .base-def { opacity: 1; }
 
 /* =========================================================
+   그림 규칙 — 외곽선 #2b241d, 두께 = viewBox 높이의 약 2.4%, 모서리는 둥글게.
+   팔·다리·빛살처럼 "칠하지 않고 굵은 선으로만 그린" 부분은 테두리를 줄 수가 없어서
+   js 의 ol() 이 같은 선을 .bol 묶음으로 한 번 더 깐다. 그 굵기를 여기서 정한다.
+   (사람 그림 viewBox 130 → 3.1 씩 양쪽 / 해 viewBox 100 → 2.4 씩 양쪽)
+   ========================================================= */
+.base-wrap .bol { stroke-linecap: round; stroke-linejoin: round; }
+.base-wrap .bol .bpa { stroke: var(--ink); stroke-width: 14.2; }   /* 팔 8 + 6.2 */
+.base-wrap .bol .bpk { stroke: var(--ink); stroke-width: 15.2; }   /* 다리 9 + 6.2 */
+.base-wrap .bol .bps { stroke: var(--ink); stroke-width: 13.2; }   /* 신발 7 + 6.2 */
+.base-wrap .bol .sray { stroke: var(--ink); stroke-width: 7.8; }   /* 빛살 3 + 4.8 */
+
+/* =========================================================
    공격 화면 — 야구장
    ========================================================= */
 .base-fieldsvg { position: absolute; inset: 0; width: 100%; height: 100%; }
@@ -25,24 +45,24 @@
 /* 투수 — 마운드 위 */
 .base-pitcher {
   position: absolute; left: 50%; top: 47%;
-  height: clamp(96px, 23vh, 200px);
+  height: clamp(62px, 24cqh, 200px);
   transform: translate(-50%, -86%);
 }
 .base-pitcher svg, .base-batter svg { height: 100%; width: auto; display: block; overflow: visible; }
-/* 유니폼은 상대 팀 색, 타자는 우리 팀 색 */
-.base-pitcher .bpj { fill: var(--you1); stroke: #2b2f3a; stroke-width: 2.4; }
-.base-pitcher .bpc { fill: var(--you2); stroke: #2b2f3a; stroke-width: 2.2; }
-.base-batter .bpj { fill: var(--me1); stroke: #2b2f3a; stroke-width: 2.4; }
-.base-batter .bpc { fill: var(--me2); stroke: #2b2f3a; stroke-width: 2.2; }
-.bpn { stroke: rgba(0, 0, 0, .18); stroke-width: 1.4; fill: none; }
-.bph { fill: #f3c9a0; stroke: #8a5a2c; stroke-width: 2.2; }
-.bpa { stroke: #f3c9a0; stroke-width: 8; stroke-linecap: round; fill: none; }
-.bpk { stroke: #2b3242; stroke-width: 9; stroke-linecap: round; fill: none; }
-.bps { stroke: #1a1d26; stroke-width: 7; stroke-linecap: round; fill: none; }
+/* 유니폼은 상대 팀 색, 타자는 우리 팀 색. 외곽선은 그림 규칙대로 #2b241d */
+.base-pitcher .bpj { fill: var(--you1); stroke: var(--ink); stroke-width: 3.1; }
+.base-pitcher .bpc { fill: var(--you2); stroke: var(--ink); stroke-width: 3.1; }
+.base-batter .bpj { fill: var(--me1); stroke: var(--ink); stroke-width: 3.1; }
+.base-batter .bpc { fill: var(--me2); stroke: var(--ink); stroke-width: 3.1; }
+.bpn { stroke: rgba(43, 36, 29, .3); stroke-width: 1.6; fill: none; }
+.bph { fill: #f3c9a0; stroke: var(--ink); stroke-width: 3.1; }
+.bpa { stroke: #f3c9a0; stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+.bpk { stroke: #3a4356; stroke-width: 9; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+.bps { stroke: #262b36; stroke-width: 7; stroke-linecap: round; stroke-linejoin: round; fill: none; }
 
 .base-batter {                 /* 왼쪽 타석(야구장 SVG 의 x 33~40) 안에 세운다 */
   position: absolute; left: 34%; top: 80%;
-  height: clamp(84px, 20vh, 172px);
+  height: clamp(54px, 21cqh, 172px);
   transform: translate(-50%, -88%);
   transform-origin: 60% 100%;
 }
@@ -73,7 +93,7 @@
 /* 주자 — 진루한 베이스에 사람이 선다 (투수·타자와 같은 그림체).
    좌표(88%/52%, 50%/14%, 12%/52%)는 야구장 SVG 의 베이스 자리라 건드리면 안 된다.
    translate 의 세로값(-84%)만 발이 베이스에 닿아 보이게 맞춘 것이다.
-   원근 — 1·3루보다 2루가 멀어서 더 작다. 타자(20vh)보다는 모두 작다. */
+   원근 — 1·3루보다 2루가 멀어서 더 작다. 타자(21cqh)보다는 모두 작다. */
 .base-runner {
   position: absolute;
   transform: translate(-50%, -84%) scale(.4);
@@ -85,21 +105,25 @@
 .base-runner svg { height: 100%; width: auto; display: block; overflow: visible; }
 .base-runner.on { opacity: 1; transform: translate(-50%, -84%) scale(1); }
 /* 공격 중이면 내 주자, 수비 중(.foe)이면 상대 주자가 서 있다 */
-.base-runner .bpj { fill: var(--me1); stroke: #2b2f3a; stroke-width: 2.8; }
-.base-runner .bpc { fill: var(--me2); stroke: #2b2f3a; stroke-width: 2.6; }
+.base-runner .bpj { fill: var(--me1); stroke: var(--ink); stroke-width: 3.1; }
+.base-runner .bpc { fill: var(--me2); stroke: var(--ink); stroke-width: 3.1; }
 .base-runner.foe .bpj { fill: var(--you1); }
 .base-runner.foe .bpc { fill: var(--you2); }
-.base-runner.r1 { left: 88%; top: 52%; height: clamp(30px, 7.2vh, 62px); }
-.base-runner.r3 { left: 12%; top: 52%; height: clamp(30px, 7.2vh, 62px); }
-.base-runner.r2 { left: 50%; top: 14%; height: clamp(24px, 5.6vh, 48px); }
+.base-runner.r1 { left: 88%; top: 52%; height: clamp(24px, 7.6cqh, 62px); }
+.base-runner.r3 { left: 12%; top: 52%; height: clamp(24px, 7.6cqh, 62px); }
+.base-runner.r2 { left: 50%; top: 14%; height: clamp(19px, 5.9cqh, 48px); }
 
-/* 왼쪽 위 스코어 2:0 (기획서 그림 그대로 네모 상자) */
+/* 왼쪽 위 스코어 2:0 (기획서 그림 그대로 네모 상자)
+   ── 글씨 크기 규칙 ────────────────────────────────────────
+   예전엔 "0:0" 이 44px, 정작 쳐야 할 낱말이 27px 였다. HUD 가 낱말을 이겼다.
+   화면에서 제일 큰 글자는 공에 적힌 낱말이어야 한다.
+   스코어·전광판은 낱말(최대 47px)의 0.7배(≈33px) 아래로 묶어 둔다. */
 .base-scorebox {
-  position: absolute; left: clamp(10px, 1.6vw, 22px); top: clamp(10px, 1.6vh, 20px);
-  background: rgba(255, 255, 255, .94); border: 3px solid #1b2333; border-radius: 10px;
-  padding: clamp(4px, .8vh, 10px) clamp(12px, 1.6vw, 22px);
-  display: flex; align-items: center; gap: clamp(6px, .8vw, 12px);
-  font-size: clamp(22px, 4.6vh, 44px); font-weight: 900; color: #14203a;
+  position: absolute; left: clamp(8px, 1.6cqw, 22px); top: clamp(8px, 1.8cqh, 18px);
+  background: rgba(255, 255, 255, .92); border: 3px solid var(--ink); border-radius: 10px;
+  padding: clamp(3px, .8cqh, 8px) clamp(9px, 1.4cqw, 18px);
+  display: flex; align-items: center; gap: clamp(5px, .8cqw, 10px);
+  font-size: clamp(15px, 3.4cqh, 30px); font-weight: 900; color: #14203a;
   box-shadow: 0 6px 18px -8px rgba(0, 0, 0, .6);
 }
 .base-scorebox i { font-style: normal; opacity: .55; }
@@ -112,15 +136,15 @@
 
 .base-run {
   position: absolute;
-  height: clamp(30px, 7.2vh, 62px);
+  height: clamp(24px, 7.6cqh, 62px);
   transform: translate(-50%, -84%);
   transition: left .36s linear, top .36s linear;
   filter: drop-shadow(0 3px 6px rgba(0, 0, 0, .3));
 }
 .base-run.flip { transform: translate(-50%, -84%) scaleX(-1); }
 .base-run svg { height: 100%; width: auto; display: block; overflow: visible; }
-.base-run .bpj { fill: var(--me1); stroke: #2b2f3a; stroke-width: 2.8; }
-.base-run .bpc { fill: var(--me2); stroke: #2b2f3a; stroke-width: 2.6; }
+.base-run .bpj { fill: var(--me1); stroke: var(--ink); stroke-width: 3.1; }
+.base-run .bpc { fill: var(--me2); stroke: var(--ink); stroke-width: 3.1; }
 .base-run.foe .bpj { fill: var(--you1); }
 .base-run.foe .bpc { fill: var(--you2); }
 /* 홈으로 들어온 주자는 반짝 커졌다 사라진다 */
@@ -129,15 +153,14 @@
   to { opacity: 0; transform: translate(-50%, -120%) scale(1.25); }
 }
 
-/* 달리는 모습 — 다리 두 묶음과 팔이 번갈아 흔들리고 몸이 위아래로 튄다 */
-.base-run .rlg, .base-run .bpa {
+/* 달리는 모습 — 다리 두 묶음(.rlg)과 팔 두 묶음(.rar)이 엇갈려 흔들리고 몸이 위아래로 튄다.
+   외곽선(.bol)도 그 묶음 안에 들어 있어서 같이 흔들린다. */
+.base-run .rlg, .base-run .rar {
   transform-box: view-box; transform-origin: 50px 78px;
 }
-.base-run .bpa { transform-origin: 50px 50px; }
-.base-run .rlg.a { animation: baseLegA .3s linear infinite; }
-.base-run .rlg.b { animation: baseLegB .3s linear infinite; }
-.base-run .bpa:nth-of-type(1) { animation: baseLegB .3s linear infinite; }
-.base-run .bpa:nth-of-type(2) { animation: baseLegA .3s linear infinite; }
+.base-run .rar { transform-origin: 50px 50px; }
+.base-run .rlg.a, .base-run .rar.a { animation: baseLegA .3s linear infinite; }
+.base-run .rlg.b, .base-run .rar.b { animation: baseLegB .3s linear infinite; }
 .base-run svg { animation: baseRunBob .3s linear infinite; }
 @keyframes baseLegA { 0%, 100% { transform: rotate(26deg); } 50% { transform: rotate(-26deg); } }
 @keyframes baseLegB { 0%, 100% { transform: rotate(-26deg); } 50% { transform: rotate(26deg); } }
@@ -151,13 +174,13 @@
 /* 왼쪽 아래 잔디에 누워 있는 배트. 타자도 배트를 쥐고 있어서 둘이 겹쳐 보이므로
    이쪽은 흐리게 깔아 둔다. 홈플레이트·타석 흰 네모는 가리지 않는 자리다. */
 .base-bat {
-  position: absolute; left: clamp(10px, 2vw, 34px); bottom: clamp(8px, 1.6vh, 20px);
+  position: absolute; left: clamp(8px, 2cqw, 34px); bottom: clamp(6px, 1.6cqh, 20px);
   z-index: 4; pointer-events: none;
   transform: rotate(-7deg); transform-origin: 0 100%;
 }
 .base-batsvg {
-  width: clamp(96px, 12vw, 190px); height: auto; display: block;
-  opacity: .55;
+  width: clamp(80px, 12cqw, 190px); height: auto; display: block;
+  opacity: .5;
   filter: drop-shadow(0 4px 8px rgba(0, 0, 0, .4));
 }
 
@@ -174,24 +197,28 @@
 .base-def > * { position: absolute; z-index: 2; }
 .base-def > .base-glove { z-index: 3; }
 .base-sun {
-  position: absolute; left: clamp(12px, 3vw, 46px); top: clamp(10px, 3vh, 34px);
-  width: clamp(74px, 15vh, 140px);
+  position: absolute; left: clamp(10px, 3cqw, 46px); top: clamp(8px, 3cqh, 30px);
+  width: clamp(48px, 14cqh, 140px);
 }
 .base-sunsvg { width: 100%; height: auto; display: block; }
+.sray { stroke: #ffd23f; stroke-width: 3; stroke-linecap: round; }
 .base-sun .rays { animation: baseSunSpin 26s linear infinite; transform-origin: 50% 50%; }
 @keyframes baseSunSpin { to { transform: rotate(360deg); } }
+/* 구름 — 흰 물체가 흰 공을 가려서 공이 어디 있는지 안 보였다.
+   기획서 그림에 있는 요소라 빼지는 않고 대비만 낮췄다. */
 .base-cloud {
-  position: absolute; background: rgba(255, 255, 255, .9); border-radius: 999px;
-  filter: blur(.4px);
+  position: absolute; background: rgba(255, 255, 255, .55); border-radius: 999px;
+  filter: blur(.6px);
 }
-.base-cloud.c1 { left: 24%; top: 12%; width: 16%; height: 6%; box-shadow: 3vw 1vh 0 -.4vh rgba(255,255,255,.9); }
-.base-cloud.c2 { left: 62%; top: 26%; width: 12%; height: 4.6%; box-shadow: 2.4vw .8vh 0 -.4vh rgba(255,255,255,.85); }
+.base-cloud.c1 { left: 24%; top: 12%; width: 16%; height: 6%; box-shadow: 3cqw 1cqh 0 -.4cqh rgba(255,255,255,.55); }
+.base-cloud.c2 { left: 62%; top: 26%; width: 12%; height: 4.6%; box-shadow: 2.4cqw .8cqh 0 -.4cqh rgba(255,255,255,.5); }
 
 /* 경기장 안 입력 상자를 없애 아래쪽이 비었다. 글러브를 조금 내리고 키웠다.
-   여기 값을 바꾸면 moveBall() 의 수비 도착점(43%,61%)도 같이 다시 잡아야 한다. */
+   여기 값을 바꾸면 moveBall() 의 수비 도착점(43%,61%)도 같이 다시 잡아야 한다.
+   높이를 cqh 로 잡아야 자판을 켜서 판이 낮아져도 글러브가 안 잘린다. */
 .base-glove {
   position: absolute; left: 42%; top: 56%;
-  height: clamp(210px, 56vh, 470px);
+  height: clamp(130px, 52cqh, 460px);
   transform: translate(-50%, -50%);
   filter: drop-shadow(0 12px 18px rgba(0, 0, 0, .28));
   transition: transform .18s;
@@ -206,28 +233,33 @@
 
 /* =========================================================
    야구공 — 낱말이 공에 쓰여 있다 (규칙 6)
+   공에 적힌 낱말이 이 화면에서 제일 큰 글자다. 공 크기(--bs)에 낱말 크기를 매달아 놔서
+   판이 낮아져도(자판 켜기) 낱말이 공 밖으로 삐져나오지 않는다.
    ========================================================= */
 .base-ball {
   position: absolute; left: 50%; top: 34%;
-  width: clamp(70px, 13vh, 130px); height: clamp(70px, 13vh, 130px);
+  --bs: clamp(64px, 17cqh, 158px);
+  width: var(--bs); height: var(--bs);
   --sc: 1;
   transform: translate(-50%, -50%) scale(var(--sc));
   opacity: 0; pointer-events: none; z-index: 6;
-  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, .35));
+  /* 흰 공이 흰 베이스·구름 위를 지나가도 보이게 — 짙은 테와 그림자를 함께 준다 */
+  filter: drop-shadow(0 0 4px rgba(20, 14, 8, .6)) drop-shadow(0 7px 13px rgba(0, 0, 0, .45));
 }
 .base-ball.on { opacity: 1; }
 .base-ballsvg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .base-word {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
   white-space: nowrap; font-weight: 900; letter-spacing: -.5px;
-  color: #14203a; background: rgba(255, 255, 255, .88);
-  border-radius: 999px; padding: .12em .5em;
-  border: 2px solid rgba(27, 35, 51, .35);
-  font-size: clamp(15px, 2.9vh, 27px);
+  color: #14203a; background: rgba(255, 255, 255, .95);
+  border-radius: 999px; padding: .1em .42em;
+  border: 3px solid var(--ink);
+  box-shadow: 0 3px 10px -3px rgba(0, 0, 0, .55);
+  font-size: calc(var(--bs) * .30);
 }
-.base-word.n5 { font-size: clamp(13px, 2.5vh, 24px); }
-.base-word.n6 { font-size: clamp(12px, 2.3vh, 22px); }
-.base-word.n7 { font-size: clamp(11px, 2.1vh, 20px); }
+.base-word.n5 { font-size: calc(var(--bs) * .255); }
+.base-word.n6 { font-size: calc(var(--bs) * .225); }
+.base-word.n7 { font-size: calc(var(--bs) * .20); }
 .base-word .hit { color: #0e9c78; }
 .base-ball.lock .base-word { border-color: #0e9c78; box-shadow: 0 0 0 3px rgba(14, 156, 120, .3); }
 
@@ -236,75 +268,76 @@
    날아올 때부터 색과 딱지로 무슨 공인지 보인다. 좋은 공일수록 빠르다.
    딱지는 공 위쪽에 붙어서 가운데 낱말을 가리지 않는다.
    --------------------------------------------------------- */
-.bl-face { fill: #fdfcf7; stroke: #b9b3a2; }
+.bl-face { fill: #fdfcf7; stroke: var(--ink); stroke-width: 2.4; }
 .bl-seam { stroke: #d3261a; }
 .bl-spark { display: none; }
 
 /* 공 색은 멀리서도 한눈에 갈려야 한다. 옅은 파스텔로 두면 넷이 다 흰 공으로 보인다. */
-.base-ball.k2 .bl-face { fill: #6ab0ff; stroke: #14449e; }
+.base-ball.k2 .bl-face { fill: #6ab0ff; }
 .base-ball.k2 .bl-seam { stroke: #0d3374; }
-.base-ball.k3 .bl-face { fill: #b98cff; stroke: #5b21b6; }
+.base-ball.k3 .bl-face { fill: #b98cff; }
 .base-ball.k3 .bl-seam { stroke: #43148f; }
-.base-ball.khr .bl-face { fill: #ffc32e; stroke: #9a5b00; }
+.base-ball.khr .bl-face { fill: #ffc32e; }
 .base-ball.khr .bl-seam { stroke: #8a4c00; }
 
 /* 상대가 친 공 (수비) — 종류 색은 그대로 두고 붉은 테를 둘러 "내 공이 아니다" 를 보여 준다.
    수비 공은 공격보다 빨리 오니 한눈에 알아봐야 한다. */
-.base-ball.foe .bl-face { stroke: #c0182f; stroke-width: 5; }
-.base-ball.foe { filter: drop-shadow(0 0 8px rgba(220, 40, 60, .75)) drop-shadow(0 6px 12px rgba(0, 0, 0, .35)); }
+.base-ball.foe .bl-face { stroke: #c0182f; stroke-width: 4.6; }
+.base-ball.foe { filter: drop-shadow(0 0 8px rgba(220, 40, 60, .75)) drop-shadow(0 6px 12px rgba(0, 0, 0, .45)); }
 .base-ball.foe .base-tag { border-color: #8e0f22; box-shadow: 0 0 0 2px rgba(220, 40, 60, .45); }
 .base-ball.khr .bl-spark { display: block; animation: baseSpark 1.1s ease-in-out infinite; }
 .base-ball.khr {
-  filter: drop-shadow(0 0 10px rgba(255, 200, 60, .95)) drop-shadow(0 6px 12px rgba(0, 0, 0, .35));
+  filter: drop-shadow(0 0 10px rgba(255, 200, 60, .95)) drop-shadow(0 6px 12px rgba(0, 0, 0, .45));
   animation: baseHrGlow 1.1s ease-in-out infinite;
 }
 @keyframes baseSpark { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
 @keyframes baseHrGlow {
-  0%, 100% { filter: drop-shadow(0 0 8px rgba(255, 200, 60, .8)) drop-shadow(0 6px 12px rgba(0, 0, 0, .35)); }
-  50% { filter: drop-shadow(0 0 18px rgba(255, 220, 110, 1)) drop-shadow(0 6px 12px rgba(0, 0, 0, .35)); }
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(255, 200, 60, .8)) drop-shadow(0 6px 12px rgba(0, 0, 0, .45)); }
+  50% { filter: drop-shadow(0 0 18px rgba(255, 220, 110, 1)) drop-shadow(0 6px 12px rgba(0, 0, 0, .45)); }
 }
 
 .base-tag {
   position: absolute; left: 50%; bottom: 100%; transform: translateX(-50%);
   margin-bottom: 3px; white-space: nowrap;
-  padding: 1px clamp(6px, .9vw, 11px); border-radius: 999px;
-  font-size: clamp(11px, 2vh, 18px); font-weight: 900; letter-spacing: -.5px;
-  border: 2px solid #1b2333; background: #fdfcf7; color: #14203a;
+  padding: 1px clamp(5px, .9cqw, 10px); border-radius: 999px;
+  font-size: clamp(10px, 2cqh, 17px); font-weight: 900; letter-spacing: -.5px;
+  border: 2px solid var(--ink); background: #fdfcf7; color: #14203a;
   box-shadow: 0 3px 8px -4px rgba(0, 0, 0, .8);
 }
-.base-ball.k2 .base-tag { background: #2563eb; color: #eaf2ff; border-color: #12306e; }
-.base-ball.k3 .base-tag { background: #7c3aed; color: #f5edff; border-color: #40157f; }
+.base-ball.k2 .base-tag { background: #2563eb; color: #eaf2ff; }
+.base-ball.k3 .base-tag { background: #7c3aed; color: #f5edff; }
 .base-ball.khr .base-tag {
-  background: linear-gradient(180deg, #ffe085, #f0a53c); color: #4a2a00; border-color: #8a5200;
+  background: linear-gradient(180deg, #ffe085, #f0a53c); color: #4a2a00;
 }
 
 /* =========================================================
    오른쪽 위 스코어보드 (기획서 4쪽) — 백/청 두 줄 표 + 진루 + 아웃
+   글씨는 낱말(최대 47px)의 0.7배 아래로. 전광판이 쳐야 할 낱말보다 크면 안 된다.
    ========================================================= */
 .base-board {
-  position: absolute; right: clamp(10px, 1.6vw, 22px); top: clamp(10px, 1.6vh, 20px);
+  position: absolute; right: clamp(8px, 1.6cqw, 22px); top: clamp(8px, 1.8cqh, 18px);
   z-index: 8;
-  display: flex; align-items: stretch; gap: clamp(6px, .8vw, 12px);
-  background: rgba(255, 255, 255, .95); border: 3px solid #1b2333; border-radius: 12px;
-  padding: clamp(5px, .9vh, 10px) clamp(8px, 1vw, 14px);
+  display: flex; align-items: stretch; gap: clamp(5px, .8cqw, 11px);
+  background: rgba(255, 255, 255, .95); border: 3px solid var(--ink); border-radius: 12px;
+  padding: clamp(4px, .9cqh, 9px) clamp(7px, 1cqw, 13px);
   box-shadow: 0 8px 22px -10px rgba(0, 0, 0, .7);
 }
 .base-btable { display: flex; flex-direction: column; justify-content: center; }
 .base-btable .row {
-  display: flex; align-items: center; gap: clamp(6px, .8vw, 12px);
-  padding: clamp(1px, .3vh, 4px) 0;
-  border-bottom: 2px solid #1b2333;
+  display: flex; align-items: center; gap: clamp(5px, .8cqw, 11px);
+  padding: clamp(1px, .3cqh, 4px) 0;
+  border-bottom: 2px solid var(--ink);
 }
 .base-btable .row:last-child { border-bottom: 0; }
 .base-btable .t {
   width: 1.6em; text-align: center; font-weight: 900; color: #14203a;
-  font-size: clamp(15px, 2.7vh, 26px);
-  border-right: 2px solid #1b2333;
+  font-size: clamp(12px, 2.5cqh, 21px);
+  border-right: 2px solid var(--ink);
 }
 .base-btable .row.blue .t { color: #1257c9; }
 .base-btable .n {
   min-width: 1.2em; text-align: center; font-weight: 900; color: #14203a;
-  font-size: clamp(18px, 3.4vh, 32px);
+  font-size: clamp(14px, 3cqh, 26px);
 }
 /* 내 팀 줄에 팀 색 띠 (기획서 그림의 파란 칠) */
 .base-board.mine-blue .row.blue, .base-board.mine-white .row.white {
@@ -313,38 +346,38 @@
 }
 
 .base-bside {
-  display: flex; flex-direction: column; justify-content: center; gap: clamp(2px, .5vh, 5px);
-  border-left: 2px solid #1b2333; padding-left: clamp(6px, .8vw, 12px);
+  display: flex; flex-direction: column; justify-content: center; gap: clamp(2px, .5cqh, 5px);
+  border-left: 2px solid var(--ink); padding-left: clamp(5px, .8cqw, 11px);
 }
 .base-inn {
   display: flex; align-items: baseline; gap: 2px;
-  font-weight: 900; color: #14203a; font-size: clamp(14px, 2.5vh, 24px);
+  font-weight: 900; color: #14203a; font-size: clamp(12px, 2.4cqh, 21px);
 }
 .base-inn i { font-style: normal; color: #e0223c; }
 .base-inn span { font-size: .7em; }
 .base-inn em {
-  font-style: normal; font-size: clamp(10px, 1.6vh, 15px);
+  font-style: normal; font-size: clamp(9px, 1.6cqh, 14px);
   font-weight: 800; color: #56607a; margin-left: 4px;
 }
 .base-onbase, .base-outs, .base-strikes {
-  display: flex; align-items: center; gap: clamp(3px, .4vw, 6px);
+  display: flex; align-items: center; gap: clamp(3px, .4cqw, 6px);
 }
 .base-bside .lb {
-  font-size: clamp(10px, 1.6vh, 15px); font-weight: 800; color: #56607a;
+  font-size: clamp(9px, 1.6cqh, 14px); font-weight: 800; color: #56607a;
   width: 4.4em; letter-spacing: -.5px;
 }
 .base-onbase .dia {
-  width: clamp(9px, 1.5vh, 15px); height: clamp(9px, 1.5vh, 15px);
-  transform: rotate(45deg); border: 2px solid #1b2333; background: #fff;
+  width: clamp(8px, 1.5cqh, 15px); height: clamp(8px, 1.5cqh, 15px);
+  transform: rotate(45deg); border: 2px solid var(--ink); background: #fff;
 }
 .base-onbase .dia.on { background: var(--me1); }
 .base-outs .o {
-  width: clamp(10px, 1.7vh, 16px); height: clamp(10px, 1.7vh, 16px);
+  width: clamp(9px, 1.7cqh, 16px); height: clamp(9px, 1.7cqh, 16px);
   border-radius: 50%; border: 2px solid #b3273c; background: #fff;
 }
 .base-outs .o.on { background: #e0223c; box-shadow: 0 0 0 2px rgba(224, 34, 60, .25); }
 .base-strikes .s {
-  width: clamp(10px, 1.7vh, 16px); height: clamp(10px, 1.7vh, 16px);
+  width: clamp(9px, 1.7cqh, 16px); height: clamp(9px, 1.7cqh, 16px);
   border-radius: 50%; border: 2px solid #b8860b; background: #fff;
 }
 .base-strikes .s.on { background: #f0b03c; }
@@ -357,24 +390,26 @@
   z-index: 12; text-align: center; opacity: 0; pointer-events: none;
   transition: opacity .2s, transform .2s;
   background: rgba(12, 18, 30, .82); border: 2px solid rgba(255, 255, 255, .5);
-  border-radius: 18px; padding: clamp(10px, 2vh, 22px) clamp(22px, 4vw, 54px);
+  border-radius: 18px; padding: clamp(8px, 2cqh, 20px) clamp(18px, 4cqw, 50px);
+  max-width: 92%;
 }
 .base-half.on { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-.base-half b { display: block; font-size: clamp(30px, 7vh, 64px); font-weight: 900; color: #fff6da; }
-.base-half span { display: block; font-size: clamp(15px, 2.8vh, 26px); font-weight: 800; color: #9de8f5; margin-top: 4px; }
-.base-half em { display: block; font-style: normal; margin-top: 4px; color: #ffd166; font-weight: 800; font-size: clamp(13px, 2.2vh, 20px); }
+.base-half b { display: block; font-size: clamp(22px, 6cqh, 44px); font-weight: 900; color: #fff6da; }
+.base-half span { display: block; font-size: clamp(13px, 2.7cqh, 24px); font-weight: 800; color: #9de8f5; margin-top: 4px; }
+.base-half em { display: block; font-style: normal; margin-top: 4px; color: #ffd166; font-weight: 800; font-size: clamp(11px, 2.2cqh, 19px); }
 
 .base-banner {
   position: absolute; left: 50%; top: 34%; transform: translate(-50%, -50%) scale(.8);
   z-index: 11; text-align: center; opacity: 0; pointer-events: none;
   transition: opacity .18s, transform .18s;
-  border-radius: 16px; padding: clamp(8px, 1.6vh, 18px) clamp(20px, 3.6vw, 46px);
-  border: 3px solid #1b2333; background: rgba(255, 255, 255, .95);
+  border-radius: 16px; padding: clamp(6px, 1.6cqh, 16px) clamp(16px, 3.6cqw, 42px);
+  border: 3px solid var(--ink); background: rgba(255, 255, 255, .95);
   box-shadow: 0 12px 30px -12px rgba(0, 0, 0, .8);
+  max-width: 92%;
 }
 .base-banner.on { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-.base-banner b { display: block; font-size: clamp(26px, 6vh, 56px); font-weight: 900; color: #14203a; }
-.base-banner span { display: block; font-size: clamp(13px, 2.3vh, 21px); font-weight: 700; color: #56607a; margin-top: 2px; }
+.base-banner b { display: block; font-size: clamp(20px, 5.4cqh, 42px); font-weight: 900; color: #14203a; }
+.base-banner span { display: block; font-size: clamp(12px, 2.3cqh, 20px); font-weight: 700; color: #56607a; margin-top: 2px; }
 .base-banner.hit b { color: #0e7a5f; }
 .base-banner.hr { background: linear-gradient(180deg, #fff3c4, #ffd166); }
 .base-banner.hr b { color: #9a5b00; }
@@ -382,10 +417,43 @@
 .base-banner.out b { color: #b3273c; }
 .base-banner.bad b { color: #b3273c; }
 
+/* 첫 오타를 봐줄 때 — 스트라이크가 아니다. 입력창 바로 위에 "다시!" 만 잠깐.
+   공은 계속 날아오는 중이라 낱말을 가리지 않는 아래쪽에 놓는다. */
+.base-again {
+  position: absolute; left: 50%; top: 84%; transform: translate(-50%, -50%) scale(.7);
+  z-index: 13; text-align: center; opacity: 0; pointer-events: none;
+  border-radius: 14px; padding: clamp(4px, 1cqh, 10px) clamp(14px, 2.6cqw, 30px);
+  border: 3px solid #8a5200; background: linear-gradient(180deg, #ffe085, #f5b842);
+  box-shadow: 0 10px 24px -12px rgba(0, 0, 0, .9);
+}
+.base-again b { display: block; font-size: clamp(17px, 3.8cqh, 32px); font-weight: 900; color: #6b3200; }
+.base-again span { display: block; font-size: clamp(10px, 1.9cqh, 16px); font-weight: 800; color: #8a5200; }
+.base-again.on { animation: baseAgain 1.1s ease-out forwards; }
+@keyframes baseAgain {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.7); }
+  14% { opacity: 1; transform: translate(-50%, -50%) scale(1.06); }
+  24% { transform: translate(-50%, -50%) scale(1); }
+  76% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -56%) scale(.94); }
+}
+
+/* 틀렸을 때 화면이 한 번 흔들린다 — 스트라이크·실점을 몸으로도 느끼게 */
+.stage.base-shake { animation: baseShake .44s cubic-bezier(.36, .07, .19, .97); }
+@keyframes baseShake {
+  10%, 90% { transform: translateX(-2px); }
+  20%, 80% { transform: translateX(4px); }
+  30%, 50%, 70% { transform: translateX(-8px); }
+  40%, 60% { transform: translateX(8px); }
+}
+
 /* =========================================================
    시작 화면 (인트로) — 기획서 3쪽 오른쪽 "시작화면"
-   "단계를 선택하세요 / 1~7단계", "난이도: 쉬움, 보통, 하드"
+   버튼이 열 개(단계 7 + 난이도 3)라 첫 화면이 벅찼다.
+   "N단계로 시작" 하나만 크게, 단계 일곱 개는 접어 두고, 난이도는 한 줄로 묶었다.
+   인트로도 판(.stage) 안에 뜨므로 여기서 컨테이너를 잡아 자판을 켜도 안 잘리게 한다.
    ========================================================= */
+.gintro:has(.base-introbg) { container-type: size; container-name: bs; }
+
 .base-introbg {
   position: absolute; inset: 0;
   background:
@@ -397,45 +465,88 @@
   background: linear-gradient(180deg, rgba(240, 163, 94, .55), rgba(217, 118, 47, .25));
   clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
 }
-.base-introbox { margin-top: 2vh; max-width: 46em; }
-.base-introbox h2 { margin-bottom: 4px; }
+.base-introbox {
+  margin-top: clamp(4px, 2cqh, 20px); max-width: 44em;
+  padding: clamp(8px, 2cqh, 22px) clamp(16px, 3cqw, 40px);
+}
+.base-introbox h2 { font-size: clamp(20px, 6cqh, 50px); margin: 0 0 4px; }
+.base-introbox .gintro-by { font-size: clamp(10px, 2cqh, 16px); margin-bottom: 2px; }
+.base-introbox .gintro-hint {
+  font-size: clamp(10px, 2cqh, 17px); margin-top: clamp(4px, 1cqh, 9px); line-height: 1.5;
+}
+.base-introbox .gintro-go {
+  margin-top: clamp(5px, 1.4cqh, 14px);
+  font-size: clamp(11px, 2.2cqh, 19px); padding: 6px 20px;
+}
 .base-teams {
-  display: flex; align-items: center; justify-content: center; gap: clamp(6px, 1vw, 14px);
-  margin: clamp(4px, .8vh, 10px) 0;
+  display: flex; align-items: center; justify-content: center; gap: clamp(5px, 1cqw, 13px);
+  margin: clamp(3px, .8cqh, 9px) 0;
   flex-wrap: wrap;
 }
 .base-tteam {
-  padding: 4px 14px; border-radius: 999px; font-weight: 900;
-  font-size: clamp(14px, 2.4vh, 21px); border: 2px solid rgba(255, 255, 255, .5);
+  padding: 3px 12px; border-radius: 999px; font-weight: 900;
+  font-size: clamp(11px, 2.2cqh, 19px); border: 2px solid rgba(255, 255, 255, .5);
 }
 .base-tteam.blue { background: #1d4ed8; color: #eaf2ff; }
 .base-tteam.white { background: #f4f6fa; color: #1b2333; }
 .base-tteam.me { box-shadow: 0 0 0 3px #ffd166; }
-.base-vs { color: #ffd166; font-weight: 900; font-size: clamp(13px, 2.2vh, 19px); }
-.base-teams em { color: #9de8f5; font-style: normal; font-size: clamp(11px, 1.8vh, 16px); font-weight: 700; }
+.base-vs { color: #ffd166; font-weight: 900; font-size: clamp(11px, 2cqh, 17px); }
+.base-teams em { color: #9de8f5; font-style: normal; font-size: clamp(9px, 1.7cqh, 15px); font-weight: 700; }
+
+/* 눌러야 할 것은 결국 이 큰 버튼 하나다 */
+.base-startrow {
+  display: flex; align-items: center; justify-content: center; flex-wrap: wrap;
+  gap: clamp(6px, 1cqw, 14px); margin: clamp(5px, 1.2cqh, 13px) 0 clamp(3px, .6cqh, 7px);
+}
+.base-bigstart {
+  cursor: pointer; font-family: inherit;
+  background: linear-gradient(180deg, #ffd977, #f0b03c); color: #2a1a08;
+  border: 0; border-radius: 14px;
+  padding: clamp(7px, 1.6cqh, 15px) clamp(20px, 3.4cqw, 42px);
+  font-size: clamp(15px, 3.4cqh, 30px); font-weight: 900; letter-spacing: -.5px;
+  box-shadow: 0 8px 20px -8px rgba(0, 0, 0, .8);
+}
+.base-bigstart:hover { filter: brightness(1.06); }
+.base-bigstart b { font-weight: 900; }
+.base-more {
+  cursor: pointer; font-family: inherit;
+  background: rgba(255, 255, 255, .1); color: #e5d9c2;
+  border: 2px solid rgba(255, 255, 255, .3); border-radius: 10px;
+  padding: clamp(4px, .9cqh, 9px) clamp(9px, 1.2cqw, 15px);
+  font-size: clamp(10px, 1.9cqh, 16px); font-weight: 800;
+}
+.base-more:hover { border-color: #ffd166; }
 
 .base-selt {
-  color: #ffd977; font-weight: 900; font-size: clamp(13px, 2.2vh, 20px);
-  margin: clamp(5px, 1vh, 11px) 0 3px;
+  color: #ffd977; font-weight: 900; font-size: clamp(10px, 2cqh, 17px);
+  margin: 0;
 }
 .base-chiprow {
-  display: flex; flex-wrap: wrap; justify-content: center; gap: clamp(4px, .7vw, 9px);
+  display: flex; flex-wrap: wrap; justify-content: center; gap: clamp(3px, .7cqw, 8px);
+}
+/* 단계는 접어 둔다 — "단계 바꾸기" 를 눌러야 펼쳐진다 */
+.base-chiprow.fold { display: none; }
+.base-chiprow.fold.open { display: flex; margin-bottom: clamp(3px, .8cqh, 8px); }
+.base-dfline {
+  display: flex; align-items: center; justify-content: center; flex-wrap: wrap;
+  gap: clamp(5px, 1cqw, 12px); margin-top: clamp(2px, .5cqh, 6px);
 }
 .base-chip {
   cursor: pointer; font-family: inherit;
   background: rgba(255, 255, 255, .1); color: #f0e3cc;
   border: 2px solid rgba(255, 255, 255, .35); border-radius: 10px;
-  padding: clamp(4px, .8vh, 9px) clamp(9px, 1.2vw, 16px);
-  font-size: clamp(13px, 2.2vh, 20px); font-weight: 800;
+  padding: clamp(3px, .8cqh, 8px) clamp(8px, 1.2cqw, 15px);
+  font-size: clamp(11px, 2cqh, 18px); font-weight: 800;
 }
+.base-chip.sm { padding: clamp(3px, .7cqh, 7px) clamp(8px, 1.1cqw, 14px); font-size: clamp(10px, 1.9cqh, 16px); }
 .base-chip:hover { border-color: #ffd166; }
 .base-chip.on {
   background: linear-gradient(180deg, #ffd977, #f0b03c); color: #2a1a08;
   border-color: transparent;
 }
 
-/* 크롬북(768px 높이)에서도 인트로가 한 화면에 들어가게 */
-@media (max-height: 760px) {
-  .base-introbox { margin-top: 1vh; padding-top: 10px; padding-bottom: 10px; }
-  .base-introbox h2 { font-size: clamp(26px, 5.4vh, 44px); }
+@media (prefers-reduced-motion: reduce) {
+  .stage.base-shake, .base-again.on, .base-ball.khr,
+  .base-run .rlg, .base-run .rar, .base-run svg { animation: none; }
+  .base-again.on { opacity: 1; }
 }

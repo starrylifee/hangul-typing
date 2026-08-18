@@ -40,8 +40,15 @@
   ];
 
   /* ---------- 기획서에 없어서 정한 값 ---------- */
-  var DRAW_COST = 1000;         // 스킨 한 번 뽑는 값
-  var DUP_BACK = 500;           // 이미 가진 스킨이 나오면 돌려주는 돈 (꽝 없음이라서)
+  /* 장전 하나에 20원.
+     기획서는 "맞출 때마다 100원" 이라고 했지 "장전은 0원" 이라고 하지 않았다.
+     100원은 그대로 두고, 아이가 계속 하는 일(낱말 치기)에 값을 붙인다.
+     이게 없으면 한 판 300원 → 중간 총(5000원) 이 17판째라 캠프 안에 못 산다. */
+  var MONEY_PER_LOAD = 20;
+  var FULL_MAG_SCORE = 50;      // 탄창이 꽉 찼는데 또 장전하면 점수로 바꿔 준다
+  var DRAW_COST = 500;          // 스킨 한 번 뽑는 값 (1000원은 레전더리가 평균 25만원이라 너무 멀었다)
+  var PITY = 20;                // 천장 — 20번 뽑는 동안 레전더리가 없으면 그 다음은 확정
+  var DUP_BACK = 250;           // 이미 가진 스킨이 나오면 돌려주는 돈 (꽝 없음이라서 · 뽑기값의 반)
   var HIT_SCORE = 100;          // 몬스터를 맞혔을 때 점수 (낱말 점수는 장전할 때 따로)
   var MON_SPEED0 = 12;          // 몬스터 처음 속도 (판 너비 %/초)
   var MON_SPEED_UP = 2.2;       // 규칙 4 — 한 번 맞힐 때마다 빨라지는 정도
@@ -92,6 +99,7 @@
     if (!s.owned || !s.owned.length) s.owned = ['basic'];
     if (!s.skins) s.skins = [];
     if (!s.skin) s.skin = '';
+    if (typeof s.pity !== 'number') s.pity = 0;   // 천장 — 레전더리 없이 뽑은 횟수
     if (!s.best) s.best = { score: 0, acc: 0 };
     return s;
   }
@@ -108,75 +116,104 @@
   }
 
   /* =========================================================
-     그림 (SVG) — 기획서 그림을 그대로 옮겼다
+     그림 (SVG) — 기획서 그림의 형태는 그대로, 선 규칙만 하나로 맞췄다
+
+     선 규칙 (세 그림 공통)
+       색   #2b241d  — 배경(#0a0e16)보다 확실히 밝은 진한 갈색.
+                       예전 총 외곽선 #15181f 은 배경과 거의 같아서 어두운 무대에서 형태가 녹았다.
+       두께 viewBox 높이의 약 2.4%  (총 92→2.2 · 몬스터 124→3 · 손 120→2.9)
+       linejoin / linecap = round, 칠은 단색 평면
      ========================================================= */
-  /* 총 — 시작 화면·상점·탄창에 쓴다 */
+  var LINE = '#2b241d';
+
+  /* 총 — 시작 화면·상점·탄창에 쓴다 (viewBox 높이 92 × 2.4% ≒ 2.2) */
   function gunSvg(cls, c1, c2) {
     return '<svg class="' + cls + '" viewBox="0 0 130 92" aria-hidden="true">' +
+      '<g stroke="' + LINE + '" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round">' +
       // 손잡이
-      '<path d="M34 48 L68 48 L58 88 L24 88 Z" fill="' + c2 + '" stroke="#15181f" stroke-width="3.4" stroke-linejoin="round"/>' +
-      '<g stroke="#15181f" stroke-width="2" opacity=".45">' +
-      '<path d="M32 60 H62"/><path d="M30 70 H60"/></g>' +
+      '<path d="M34 48 L68 48 L58 88 L24 88 Z" fill="' + c2 + '"/>' +
+      '<path d="M32 60 H62" fill="none" opacity=".38"/>' +
+      '<path d="M30 70 H60" fill="none" opacity=".38"/>' +
       // 방아쇠울 · 방아쇠
-      '<path d="M68 50 C80 52 82 64 72 68 L60 68" fill="none" stroke="#15181f" stroke-width="3.4" stroke-linecap="round"/>' +
-      '<path d="M64 50 L62 62" stroke="#15181f" stroke-width="4" stroke-linecap="round"/>' +
+      '<path d="M68 50 C80 52 82 64 72 68 L60 68" fill="none"/>' +
+      '<path d="M64 50 L62 62" fill="none" stroke-width="3.4"/>' +
       // 몸통
-      '<path d="M10 14 L90 14 L90 48 L34 48 L10 40 Z" fill="' + c1 + '" stroke="#15181f" stroke-width="3.4" stroke-linejoin="round"/>' +
+      '<path d="M10 14 L90 14 L90 48 L34 48 L10 40 Z" fill="' + c1 + '"/>' +
       // 총열
-      '<rect x="90" y="22" width="32" height="20" rx="5" fill="' + c2 + '" stroke="#15181f" stroke-width="3.4"/>' +
-      '<circle cx="120" cy="32" r="5" fill="#15181f"/>' +
+      '<rect x="90" y="22" width="32" height="20" rx="5" fill="' + c2 + '"/>' +
+      '<circle cx="120" cy="32" r="5" fill="' + LINE + '"/>' +
       // 위쪽 홈 · 가늠쇠
-      '<path d="M18 22 H82" stroke="#15181f" stroke-width="2.6" stroke-linecap="round" opacity=".5"/>' +
-      '<path d="M78 14 L83 5 L88 14 Z" fill="#15181f"/>' +
-      '</svg>';
+      '<path d="M18 22 H82" fill="none" opacity=".4"/>' +
+      '<path d="M78 14 L83 5 L88 14 Z" fill="' + LINE + '"/>' +
+      '</g></svg>';
   }
 
-  /* 몬스터 — 빨간 뿔, 노란 눈, 가슴에 하트, 꼬리, 검은 발 (기획서 플레이 화면) */
+  /* 몬스터 — 빨간 뿔, 노란 눈, 가슴에 하트, 꼬리, 검은 발 (기획서 플레이 화면)
+     팔·꼬리는 선으로 그린 부위라 「진한 선 한 번 → 그 위에 빨강 한 번」 으로 외곽선을 냈다.
+     (viewBox 높이 124 × 2.4% ≒ 3) */
   var MON_SVG =
     '<svg class="gun-monsvg" viewBox="0 0 130 124" aria-hidden="true">' +
-    // 꼬리
-    '<path d="M40 96 C16 96 8 78 20 66" fill="none" stroke="#2a0c0c" stroke-width="6" stroke-linecap="round"/>' +
-    '<path d="M20 66 L8 60 L11 74 Z" fill="#2a0c0c"/>' +
-    // 팔 (위로 든 자세)
-    '<path d="M32 70 L12 50" stroke="#c22f2b" stroke-width="11" stroke-linecap="round"/>' +
-    '<path d="M98 70 L118 50" stroke="#c22f2b" stroke-width="11" stroke-linecap="round"/>' +
-    '<path d="M12 50 l-5 -8 M12 50 l-8 3" stroke="#c22f2b" stroke-width="6" stroke-linecap="round"/>' +
-    '<path d="M118 50 l5 -8 M118 50 l8 3" stroke="#c22f2b" stroke-width="6" stroke-linecap="round"/>' +
+    '<g stroke="' + LINE + '" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">' +
+    // ① 꼬리·팔 — 외곽선 먼저
+    '<g fill="none" stroke-linecap="round">' +
+    '<path d="M40 96 C16 96 8 78 20 66" stroke-width="11"/>' +
+    '<path d="M32 70 L12 50" stroke-width="17"/><path d="M98 70 L118 50" stroke-width="17"/>' +
+    '<path d="M12 50 l-5 -8 M12 50 l-8 3" stroke-width="11"/>' +
+    '<path d="M118 50 l5 -8 M118 50 l8 3" stroke-width="11"/>' +
+    '</g>' +
+    // ② 그 위에 빨강
+    '<g fill="none" stroke="#c22f2b" stroke-linecap="round">' +
+    '<path d="M40 96 C16 96 8 78 20 66" stroke-width="5"/>' +
+    '<path d="M32 70 L12 50" stroke-width="11"/><path d="M98 70 L118 50" stroke-width="11"/>' +
+    '<path d="M12 50 l-5 -8 M12 50 l-8 3" stroke-width="5"/>' +
+    '<path d="M118 50 l5 -8 M118 50 l8 3" stroke-width="5"/>' +
+    '</g>' +
+    '<path d="M20 66 L8 60 L11 74 Z" fill="#c22f2b"/>' +
     // 몸통
     '<path d="M36 104 C28 70 40 44 65 44 C90 44 102 70 94 104 Z" fill="#d6342f"/>' +
     // 머리
     '<ellipse cx="65" cy="48" rx="32" ry="27" fill="#e2453b"/>' +
     // 뿔
-    '<path d="M40 32 L28 6 L54 26 Z" fill="#1b0a0a"/>' +
-    '<path d="M90 32 L102 6 L76 26 Z" fill="#1b0a0a"/>' +
+    '<path d="M40 32 L28 6 L54 26 Z" fill="' + LINE + '"/>' +
+    '<path d="M90 32 L102 6 L76 26 Z" fill="' + LINE + '"/>' +
     // 눈 (노랑)
     '<ellipse cx="52" cy="45" rx="9" ry="7" fill="#ffd23f"/>' +
     '<ellipse cx="78" cy="45" rx="9" ry="7" fill="#ffd23f"/>' +
-    '<ellipse cx="53" cy="46" rx="3.4" ry="4.4" fill="#2a0c0c"/>' +
-    '<ellipse cx="77" cy="46" rx="3.4" ry="4.4" fill="#2a0c0c"/>' +
+    '<ellipse cx="53" cy="46" rx="3.4" ry="4.4" fill="' + LINE + '" stroke="none"/>' +
+    '<ellipse cx="77" cy="46" rx="3.4" ry="4.4" fill="' + LINE + '" stroke="none"/>' +
     // 입 + 송곳니
-    '<path d="M48 60 Q65 76 82 60 Z" fill="#3d0909"/>' +
-    '<path d="M54 62 L58 71 L62 62 Z" fill="#fff"/>' +
-    '<path d="M68 62 L72 71 L76 62 Z" fill="#fff"/>' +
+    '<path d="M48 60 Q65 76 82 60 Z" fill="#3a1410"/>' +
+    '<path d="M54 62 L58 71 L62 62 Z" fill="#fff" stroke="none"/>' +
+    '<path d="M68 62 L72 71 L76 62 Z" fill="#fff" stroke="none"/>' +
     // 가슴 하트
     '<path d="M65 100 C48 88 45 76 54 71 C60 68 64 72 65 76 C66 72 70 68 76 71 C85 76 82 88 65 100 Z" ' +
-    'fill="#ff9ec4" stroke="#7c2447" stroke-width="2.6"/>' +
+    'fill="#ff9ec4"/>' +
     // 검은 발
-    '<path d="M30 104 L40 96 L48 106 L56 96 L64 106 L72 96 L80 106 L88 96 L100 104 L100 116 L30 116 Z" fill="#141414"/>' +
-    '</svg>';
+    '<path d="M30 104 L40 96 L48 106 L56 96 L64 106 L72 96 L80 106 L88 96 L100 104 L100 116 L30 116 Z" ' +
+    'fill="' + LINE + '"/>' +
+    '</g></svg>';
 
-  /* 키보드 위의 두 손 (기획서 아래쪽 그림) */
+  /* 키보드 위의 두 손 (기획서 아래쪽 그림)
+     엄지를 붙였다 — 없으니 식빵 두 덩이로 보였다.
+     엄지를 먼저 그리고 손바닥을 그 위에 덮어 속선이 안 보이게 했다.
+     (viewBox 높이 120 × 2.4% ≒ 2.9) */
   var HANDS_SVG =
     '<svg class="gun-handsvg" viewBox="0 0 240 120" aria-hidden="true">' +
-    '<g fill="#f6e6d6" stroke="#3a2a20" stroke-width="3" stroke-linejoin="round">' +
+    '<g fill="#f6e6d6" stroke="' + LINE + '" stroke-width="2.9" stroke-linejoin="round" stroke-linecap="round">' +
+    // 손바닥 + 네 손가락
     '<path d="M52 120 L52 62 C52 44 66 32 84 32 C102 32 116 44 116 62 L116 120 Z"/>' +
     '<path d="M188 120 L188 62 C188 44 174 32 156 32 C138 32 124 44 124 62 L124 120 Z"/>' +
+    // 손가락 사이 금
+    '<g fill="none" opacity=".5">' +
+    '<path d="M68 118 V60"/><path d="M84 118 V56"/><path d="M100 118 V60"/>' +
+    '<path d="M140 118 V60"/><path d="M156 118 V56"/><path d="M172 118 V60"/>' +
     '</g>' +
-    '<g fill="none" stroke="#c9ab92" stroke-width="2.4" stroke-linecap="round">' +
-    '<path d="M70 118 V64"/><path d="M98 118 V64"/>' +
-    '<path d="M142 118 V64"/><path d="M170 118 V64"/>' +
-    '</g>' +
-    '</svg>';
+    // 엄지 — 손바닥 위에 얹어 바깥 아래로 뻗는다 (진한 선 → 살색 순서로 외곽선을 낸다)
+    '<g fill="none" stroke-linecap="round">' +
+    '<path d="M76 78 L48 104" stroke-width="27.8"/><path d="M164 78 L192 104" stroke-width="27.8"/>' +
+    '<path d="M76 78 L48 104" stroke="#f6e6d6" stroke-width="22"/>' +
+    '<path d="M164 78 L192 104" stroke="#f6e6d6" stroke-width="22"/>' +
+    '</g></g></svg>';
 
   var G, C;
 
@@ -203,7 +240,7 @@
       '  <div class="gun-bigun">' + gunSvg('gun-gunsvg', col[0], col[1]) + '</div>' +
       '  <h2 class="gun-title"><span>장전하고 쏘세요</span></h2>' +
       '  <p class="gun-introdesc">낱말을 쳐서 총을 <b>장전</b>하고, 움직이는 몬스터를 <b>마우스로</b> 쏘세요.<br>' +
-      '     맞출 때마다 <b>100원</b> · 맞출수록 몬스터가 빨라져요 · 제한시간 <b>67초</b></p>' +
+      '     장전 하나에 <b>20원</b> · 맞출 때마다 <b>100원</b> · 맞출수록 몬스터가 빨라져요 · 제한시간 <b>67초</b></p>' +
       '  <button class="gun-play" id="gun-play">PLAY</button>' +
       '  <div class="gun-lvbox">' +
       '    <div class="gun-lvhd">단계</div>' +
@@ -221,6 +258,7 @@
     if (keyGuard) { document.removeEventListener('keydown', keyGuard, true); keyGuard = null; }
     A.prepare('gun', introHtml());
     G = A.state();
+    A.recKey(curLevel + '단계');                 // 최고 기록을 단계별로 나눠 둔다
     var s = shop();
     var gun = gunOf(s.gun);
 
@@ -228,7 +266,7 @@
       level: curLevel,
       wait: WAIT, left: TIME,
       ammo: 0, cap: gun.ammo,
-      hits: 0, shots: 0,
+      hits: 0, shots: 0, streak: 0, best: 0, loads: 0,
       mx: 50, my: 0, dir: 1, bob: 0,
       speed: MON_SPEED0,
       dead: false, respawn: 0,
@@ -237,6 +275,7 @@
     };
     G.gun = C;
 
+    watchSize();
     buildStage();
     bindIntro();
 
@@ -244,6 +283,37 @@
     C.next = [pickWord(), pickWord()];
     newWord();
     updateAll();
+  }
+
+  /* =========================================================
+     크기 단위 --u · 자판 안내를 켰을 때
+     「⌨️ 자판」을 켜면 무대가 낮아진다. vh 로 잡으면 글자·그림은 안 줄어서 판이 깨진다.
+     그래서 무대 높이의 1% 를 --u 로 넣어 주고, CSS 는 전부 그걸로 잰다.
+     이 게임은 아래에 키보드 그림까지 있어 제일 빡빡하다 —
+     진짜 자판 안내가 켜져 있으면 그림 자판과 두 손은 접는다(.kbmini). 낱말 카드는 남긴다.
+     ========================================================= */
+  var sizeWatch = null;
+
+  function applySize() {
+    var st = A.stage();
+    if (!st) return;
+    var h = st.clientHeight || 0;
+    if (h > 0) st.style.setProperty('--u', (h / 100) + 'px');
+    var wrap = st.querySelector('.gun-wrap');
+    if (wrap) wrap.classList.toggle('kbmini', !!(APP.rec && APP.rec.gameKb));
+  }
+
+  function watchSize() {
+    applySize();
+    if (sizeWatch) return;
+    sizeWatch = true;
+    if (window.ResizeObserver) {
+      new window.ResizeObserver(function () { applySize(); }).observe(A.stage());
+    }
+    window.addEventListener('resize', applySize);
+    // 자판 단추는 games.js 것이라 건드리지 않고 옆에서 하나 더 듣는다
+    var kb = A.el('btn-game-kb');
+    if (kb) kb.addEventListener('click', function () { setTimeout(applySize, 0); });
   }
 
   /* ---------- 낱말 고르기 — 고른 단계의 자판으로만 ---------- */
@@ -296,20 +366,22 @@
       '    <button class="gun-b gun-out" id="gun-exit">나가기</button>' +
       '    <button class="gun-b gun-shopb" id="gun-shop">상점</button>' +
       '  </div>' +
-      // 오른쪽 위 표시 (힘·점수·돈)
+      // 오른쪽 위 표시 (힘·점수·돈) — 「힘」이 곧 총알 수다 (아래 게이지와 이름·숫자를 맞췄다)
       '  <div class="gun-rstats">' +
       '    <div class="gun-s pw"><b>힘</b><span id="gun-pw">0 / 3</span></div>' +
       '    <div class="gun-s sc"><b>점수</b><span id="gun-sc">0</span></div>' +
       '    <div class="gun-s mn"><b>돈</b><span id="gun-mn">0원</span></div>' +
       '  </div>' +
-      // 몬스터
+      // 몬스터 (말풍선에 좌우로 움직인다는 말까지 넣었다)
       '  <div class="gun-mon" id="gun-mon">' + MON_SVG +
-      '    <span class="gun-monsay">움직임</span></div>' +
+      '    <span class="gun-monsay">← 움직임 →</span></div>' +
       '  <div class="gun-ground"></div>' +
-      '  <div class="gun-move"><span>←</span><b>좌우로 움직여요</b><span>→</span></div>' +
-      // 탄창
-      '  <div class="gun-magbox">' +
-      '    <span class="gun-maglb">탄창</span><span class="gun-mag" id="gun-mag"></span>' +
+      // 「마우스로 쏘라」 — 인트로에만 있으면 놓친 아이는 끝까지 모른다
+      '  <div class="gun-hint" id="gun-hint"></div>' +
+      // 힘 게이지 (오른쪽 위 「힘」과 같은 이름·같은 숫자)
+      '  <div class="gun-magbox" id="gun-magbox">' +
+      '    <span class="gun-maglb">힘</span><span class="gun-mag" id="gun-mag"></span>' +
+      '    <span class="gun-magnum" id="gun-magnum">0 / 3</span>' +
       '  </div>' +
       '  <div class="gun-wait" id="gun-wait"></div>' +
       '</div>' +
@@ -341,6 +413,10 @@
 
     A.el('gun-field').addEventListener('click', onFire);
     A.el('gun-field').addEventListener('mousemove', onAim);
+
+    // 판을 막 만들었으니 크기 단위와 .kbmini 를 지금 한 번 더 맞춘다
+    // (자판 안내를 켠 채로 게임에 들어오면 여기서 처음 걸린다)
+    applySize();
   }
 
   /* ---------- 인트로 안 버튼 (인트로 아무 데나 누르면 넘어가므로 조심) ---------- */
@@ -415,8 +491,20 @@
     C.prev.unshift(item.word);
     if (C.prev.length > 2) C.prev.pop();
 
+    // 장전 하나에 20원 — 아이가 제일 많이 하는 일에 값을 붙인다
+    var s = shop();
+    s.money += MONEY_PER_LOAD;
+    C.loads++;
+    saveShop();
+
     if (C.ammo >= C.cap) {
-      A.flashItem({ icon: '🚫', name: '탄창이 가득 찼어요 — 먼저 쏘세요!', color: '#ffcc5c' });
+      // 빨리 치는 아이는 4번째 낱말부터 총알이 안 쌓인다.
+      // 「먼저 쏘세요」로 끝내지 않고 남는 장전을 점수로 바꿔 준다.
+      A.bump(FULL_MAG_SCORE);
+      A.flashItem({
+        icon: '⚡', name: '힘이 가득! 남는 장전을 점수로 +' + FULL_MAG_SCORE + ' (+' + MONEY_PER_LOAD + '원)',
+        color: '#ffcc5c'
+      });
     } else {
       C.ammo++;
       var el = A.el('gun-now');
@@ -470,11 +558,17 @@
         e.clientY >= m.top && e.clientY <= m.bottom;
     }
     if (got) monHit(x, y);
+    else {
+      C.streak = 0;
+      A.sfx('bad');
+    }
   }
 
   function monHit(x, y) {
     var s = shop();
     C.hits++;
+    C.streak++;
+    if (C.streak > C.best) C.best = C.streak;
     C.dead = true;
     C.respawn = 0.45;
 
@@ -490,6 +584,22 @@
     mark(x, y, true);
     popText(x, y, '+' + MONEY_PER_HIT + '원');
     updateStats();
+
+    /* 큰 보상 — 명중은 자주 일어나니 고비에만 크게 터뜨린다.
+       ① 3연속·6연속… ② 마지막 한 발로 맞혔을 때 */
+    if (C.streak >= 3 && C.streak % 3 === 0) {
+      A.cheer({
+        icon: '🎯', name: C.streak + '연속 명중!',
+        sub: '+' + won(MONEY_PER_HIT) + ' · 몬스터가 더 빨라져요', color: '#ffe86a'
+      });
+    } else if (C.ammo === 0) {
+      A.cheer({
+        icon: '💥', name: '마지막 한 발로 명중!',
+        sub: '낱말을 쳐서 다시 장전하세요', color: '#ff9ec4'
+      });
+    } else {
+      A.sfx('hit');
+    }
   }
 
   function mark(x, y, hitOk) {
@@ -534,6 +644,7 @@
         if (C.wait > 0) w.innerHTML = '<b>' + Math.ceil(C.wait) + '</b><span>대기시간 · 지금 장전하세요</span>';
         else { w.innerHTML = ''; w.classList.add('off'); }
       }
+      updateHint();
       return;
     }
 
@@ -592,13 +703,25 @@
     for (var i = 0; i < C.cap; i++) out += '<i class="' + (i < C.ammo ? 'on' : '') + '"></i>';
     box.innerHTML = out;
     updateStats();
+    updateHint();
   }
   function updateStats() {
     var s = shop();
-    var pw = A.el('gun-pw'), sc = A.el('gun-sc'), mn = A.el('gun-mn');
+    var pw = A.el('gun-pw'), sc = A.el('gun-sc'), mn = A.el('gun-mn'), mnum = A.el('gun-magnum');
     if (pw) pw.textContent = C.ammo + ' / ' + C.cap;
+    if (mnum) mnum.textContent = C.ammo + ' / ' + C.cap;   // 두 게이지의 이름·숫자를 맞춘다
     if (sc) sc.textContent = G.score;
     if (mn) mn.textContent = won(s.money);
+  }
+  /* 총알이 있으면 「몬스터를 클릭하세요」, 없으면 「낱말을 쳐서 장전하세요」 */
+  function updateHint() {
+    var h = A.el('gun-hint');
+    if (!h || !C) return;
+    var ready = C.ammo > 0 && C.wait <= 0;
+    h.classList.toggle('ready', ready);
+    h.innerHTML = ready
+      ? '<span>🖱</span><b>몬스터를 클릭하세요</b>'
+      : '<span>⌨️</span><b>낱말을 쳐서 장전하세요</b>';
   }
   function updateAll() {
     updateMag();
@@ -714,6 +837,7 @@
         '<div class="gun-gpic">' + gunSvg('gun-gunsvg sm', skinColors()[0], skinColors()[1]) +
         '<span class="gun-gprice">' + (g.price ? won(g.price) : '무료') + '</span></div>' +
         '<b>' + g.name + '</b><span class="gun-gammo">' + g.ammo + '발</span>' +
+        '<span class="gun-gnote">' + (g.price ? '장전 20원 · 명중 100원' : '처음부터 있어요') + '</span>' +
         '<button class="gun-b gun-buy" data-buy="' + g.id + '">' +
         (on ? '쓰는 중' : (have ? '이 총 쓰기' : '사기')) + '</button>' +
         '</div>';
@@ -736,12 +860,19 @@
       '<button class="gun-b gun-draw" id="gun-draw">뽑기 (' + won(DRAW_COST) + ')</button>' +
       '<div class="gun-drawout" id="gun-drawout"></div>' +
       '</div>' +
-      '<div class="gun-gachaR"><div class="gun-rhd">확률</div>';
+      '<div class="gun-gachaR"><div class="gun-rhd"><b>확률</b><em>기획서 / 실제</em></div>';
     for (i = 0; i < RARITY.length; i++) {
       out += '<div class="gun-rrow" style="--rc:' + RARITY[i].color + '">' +
         '<b>' + RARITY[i].name + '</b><span>' + RARITY[i].w + '%</span>' +
         '<em>실제 ' + pct[i].toFixed(pct[i] < 1 ? 2 : 1) + '%</em></div>';
     }
+    /* 천장 — 실제 0.4% 는 캠프 내내 해도 못 보는 확률이라
+       「몇 번 안에는 꼭 나온다」를 눈으로 보여 준다 */
+    var left = Math.max(0, PITY - s.pity);
+    out += '<div class="gun-pity">천장 — <span>' + PITY + '번</span> 안에 레전더리가 꼭 나와요' +
+      '<div class="gun-pitybar"><i style="width:' + (s.pity / PITY * 100) + '%"></i></div>' +
+      '지금 ' + s.pity + ' / ' + PITY + ' · 앞으로 <span>' + left + '번</span>이면 확정' +
+      '</div>';
     out += '</div></div></div>';
 
     // 가진 스킨
@@ -820,6 +951,14 @@
       r -= RARITY[i].w;
       if (r <= 0) { pickRar = RARITY[i]; break; }
     }
+    // 천장 — 20번을 채웠으면 이번엔 레전더리 확정
+    var forced = false;
+    if (s.pity >= PITY && pickRar.id !== 'legend') {
+      pickRar = RARITY[RARITY.length - 1];
+      forced = true;
+    }
+    if (pickRar.id === 'legend') s.pity = 0; else s.pity++;
+
     var list = SKINS[pickRar.id];
     var sk = list[Math.floor(Math.random() * list.length)];
 
@@ -833,8 +972,12 @@
     o2.innerHTML = '<span class="got" style="--rc:' + pickRar.color + '">' +
       gunSvg('gun-gunsvg xs', sk.c1, sk.c2) +
       '<b>' + pickRar.name + '</b> ' + sk.name + ' 총' +
+      (forced ? ' <em>천장 확정!</em>' : '') +
       (dup ? ' <em>이미 있어요 · ' + won(DUP_BACK) + ' 돌려줌</em>' : ' <em>새로 얻었어요!</em>') +
       '</span>';
+    if (pickRar.id === 'legend' && !dup) {
+      A.cheer({ icon: '👑', name: '레전더리 ' + sk.name + '!', sub: '총 색이 바뀌었어요', color: '#ffcc5c' });
+    }
   }
 
   /* =========================================================
@@ -882,8 +1025,9 @@
       '    <td colspan="3">최대 점수 <b>' + s.best.score + '</b></td>' +
       '    <td colspan="3">최대 정확도 <b>' + s.best.acc + '%</b></td>' +
       '  </tr></tfoot></table>' +
-      '  <div class="gun-endmn">이번에 번 돈 <b>' + won(C.hits * MONEY_PER_HIT) + '</b>' +
-      '    <span>· 모은 돈 <b>' + won(s.money) + '</b> (다음 판에도 남아요)</span></div>' +
+      '  <div class="gun-endmn">이번에 번 돈 <b>' + won(C.hits * MONEY_PER_HIT + C.loads * MONEY_PER_LOAD) + '</b>' +
+      '    <span>(장전 ' + C.loads + '번 × ' + MONEY_PER_LOAD + '원 + 명중 ' + C.hits + '번 × ' + MONEY_PER_HIT + '원)' +
+      '    · 모은 돈 <b>' + won(s.money) + '</b> (다음 판에도 남아요)</span></div>' +
       '  <div class="gun-endout"><button class="gun-b gun-out" id="gun-eout">그만하기</button></div>' +
       '</div>';
     st.appendChild(ov);

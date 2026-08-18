@@ -13,6 +13,14 @@
      9. 하트 인형 — 제시간에 맞히면 목숨 +1(최대 3),
         놓치면 평소처럼 목숨 -1  (원문 글씨가 겹쳐 이렇게 정함)
      · 포인트는 10점씩                                        → POINT
+
+   2026-08 고침 (기획서 수치는 하나도 안 건드렸다. 재는 방식만 바꿨다)
+     · 제한시간을 "첫 글자를 친 순간" 부터 잰다. 낱말이 뜨고 자판을 찾는 동안은 시계가 안 간다.
+       5·7·8초는 그대로다.
+     · 하트 인형 확률을 목숨이 적을수록 올린다 (3개 0.18 · 2개 0.30 · 1개 0.45).
+     · 10점은 그대로 두고 남은 시간 × 12 만큼 빠르기 보너스를 얹는다. 화면에 갈라 보여 준다.
+     · 낱말을 기계 간판에 이 화면에서 제일 큰 글자로 띄우고, 남은 시간 막대를 그 바로 밑에 붙였다.
+     · 크레인 연출 2.47초 → 1.36초.
    ========================================================= */
 (function () {
   'use strict';
@@ -25,7 +33,17 @@
   var LIMIT = [0, 5, 5, 5, 7, 7, 7, 8];        // 규칙 5 — 단계별 제한시간(초)
   var POINT = 10;                              // 인형 하나 = 10점
   var LIVES = 3;                               // 하트 3개
-  var HEART_RATE = 0.18;                       // 규칙 9 "가끔" 하트 인형
+
+  /* 규칙 9 "가끔" 하트 인형.
+     0.18 로 고정해 뒀더니 잘하는 아이한테만 나왔다. 목숨이 적을수록 자주 나오게 —
+     여섯 게임에 컴백 장치가 하나도 없었다. */
+  var HEART_RATE = [0, 0.45, 0.30, 0.18];      // [ , 목숨1, 목숨2, 목숨3]
+  /* 빠르기 보너스 = 남은 초 × 12.
+     기획서의 "10점씩" 은 그대로 두고 그 위에 얹는 값이다.
+     처음엔 ×4 였는데, 21문제를 다 맞혀도 총점이 700점이라 다른 학생 게임
+     (폭탄 2700 · 총 7500)과 자릿수가 아예 달랐다. 아이들이 게임을 옮겨 다니며
+     점수를 견주는데 한 게임만 0 하나가 모자라면 "이건 점수가 안 나오는 게임" 이 된다. */
+  var SPEED_PT = 12;
 
   /* ---------- 화면 값 ---------- */
   var SLOTS = [13, 30.5, 48, 65.5, 83];        // 유리창 바닥의 인형 자리 5개 (그림 그대로)
@@ -85,18 +103,27 @@
       '<ellipse class="ey" cx="41" cy="47" rx="2.6" ry="4.4" transform="rotate(-12 41 47)"/>' +
       '<ellipse class="ey" cx="60" cy="50" rx="2.6" ry="4.4" transform="rotate(-12 60 50)"/>'
   };
-  /* 인형 몸 색 — 색연필 느낌의 파스텔 */
+  /* 인형 몸 색 — 색연필 느낌의 파스텔 단색(광택 그라데이션은 걷어냈다) */
   var DOLL_COLOR = {
-    cat: ['#ffe3b0', '#f6c67a'], dog: ['#ffd9c2', '#f3ba8a'],
-    rabbit: ['#ffe6f2', '#f5c3dc'], fish: ['#cfeeff', '#95d3f0'],
-    star: ['#fff0b8', '#f3da65'], clover: ['#d8f5cf', '#a8e096'],
-    heart: ['#ffd0d8', '#ff9fb0']
+    cat: '#ffdca4', dog: '#ffcdae', rabbit: '#ffd8ea', fish: '#b8e4f7',
+    star: '#ffe488', clover: '#c8eeba', heart: '#ffc0cc'
   };
   var KINDS = ['cat', 'dog', 'rabbit', 'fish', 'star', 'clover'];   // 하트는 규칙 9 전용
   var KIND_NAME = {
     cat: '고양이', dog: '강아지', rabbit: '토끼', fish: '물고기',
     star: '별', clover: '클로버', heart: '하트'
   };
+
+  /** 인형 그림 한 장. 6종+하트가 한 세트로 보이게 여기 한 곳에서만 만든다.
+      외곽선 #2b241d · 두께는 viewBox 높이의 2.4% · 채움은 단색 평면.
+      얼굴은 0.74 로 줄여 그리니 선 두께를 2.4/0.74=3.24 로 올려 놓았다 (CSS). */
+  function dollSvg(kind) {
+    return '<svg class="dsvg" viewBox="0 0 100 100" aria-hidden="true" ' +
+      'style="--c1:' + DOLL_COLOR[kind] + '">' +
+      '<circle class="bd" cx="50" cy="50" r="46.8"/>' +
+      '<g class="fc" transform="translate(13,8) scale(.74)">' + DOLL_SVG[kind] + '</g>' +
+      '</svg>';
+  }
 
   /* 빨간 하트 3개 (기획서 오른쪽 위) */
   var HEART_HUD =
@@ -108,9 +135,9 @@
   /* 집게 크레인 — 줄에 매달린 검은 모터 + 동그란 축 + 두 갈래 집게 (기획서 그림) */
   var HOOK_SVG =
     '<svg class="claw-hook" viewBox="0 0 60 76" aria-hidden="true">' +
-    '<rect x="21" y="0" width="18" height="22" rx="4" fill="#23242a" stroke="#111" stroke-width="2"/>' +
+    '<rect x="21" y="0" width="18" height="22" rx="4" fill="#23242a" stroke="#2b241d" stroke-width="2"/>' +
     '<rect x="25" y="4" width="4" height="14" rx="2" fill="#5b5f6b"/>' +
-    '<circle cx="30" cy="29" r="8" fill="#f2f4f8" stroke="#23242a" stroke-width="2.6"/>' +
+    '<circle cx="30" cy="29" r="8" fill="#f2f4f8" stroke="#2b241d" stroke-width="2.6"/>' +
     '<g class="arm l"><path d="M26 33 C15 44 10 57 12 72"/></g>' +
     '<g class="arm r"><path d="M34 33 C45 44 50 57 48 72"/></g>' +
     '</svg>';
@@ -118,23 +145,21 @@
   var G, C;
 
   /* ---------- 인트로 (엔터 → 3·2·1 → 시작) ---------- */
-  function dollChip(kind) {
-    return '<span class="claw-chip" style="--c1:' + DOLL_COLOR[kind][0] + ';--c2:' + DOLL_COLOR[kind][1] + '">' +
-      '<svg viewBox="0 0 100 100">' + DOLL_SVG[kind] + '</svg></span>';
-  }
   function introHtml() {
     var chips = '';
     var all = KINDS.concat(['heart']);
-    for (var i = 0; i < all.length; i++) chips += dollChip(all[i]);
+    for (var i = 0; i < all.length; i++) chips += '<span class="claw-chip">' + dollSvg(all[i]) + '</span>';
     return '<div class="claw-introbg"></div>' +
       '<div class="gintro-box claw-introbox">' +
       '  <p class="gintro-by">학생이 만든 게임 · 기획 삼색 볼펜</p>' +
       '  <h2>낱말 뽑기</h2>' +
       '  <p class="gintro-desc">인형뽑기 기계예요. 유리창 안 인형에 적힌 낱말을<br>' +
-      '     <b>제한시간 안에</b> 치면 집게가 인형을 뽑아 줍니다. 인형 하나에 <b>' + POINT + '점!</b></p>' +
+      '     <b>제한시간 안에</b> 치면 집게가 인형을 뽑아 줍니다. 인형 하나에 <b>' + POINT + '점!</b><br>' +
+      '     시계는 <b>첫 글자를 칠 때부터</b> 갑니다 — 자판을 찾는 동안은 안 가요.</p>' +
       '  <div class="claw-chiprow">' + chips + '</div>' +
       '  <p class="gintro-hint">못 치면 인형을 떨어뜨리고 하트가 하나 깨져요 · 하트 3개 · 모두 ' + TOTAL + '문제<br>' +
-      '     1~3단계 5초 · 4~6단계 7초 · 7단계 8초 · 하트 인형을 맞히면 하트가 하나 살아나요</p>' +
+      '     1~3단계 5초 · 4~6단계 7초 · 7단계 8초 · 빨리 칠수록 빠르기 점수가 더 붙어요<br>' +
+      '     하트 인형을 맞히면 하트가 하나 살아나요</p>' +
       '  <p class="gintro-go">엔터를 누르면 시작해요</p>' +
       '</div>';
   }
@@ -145,12 +170,20 @@
   function start() {
     A.prepare('claw', introHtml());
     G = A.state();
+    A.recKey('21문제');            // 이 게임은 늘 같은 21문제 코스라 기록판이 하나다
 
     var st = A.stage();
     var room = document.createElement('div');
     room.className = 'claw-room';
     room.innerHTML =
       '<div class="claw-machine">' +
+      '  <div class="claw-board" id="claw-board">' +
+      '    <div class="claw-bword" id="claw-bword">준비</div>' +
+      '    <div class="claw-tbar" id="claw-tbar"><i id="claw-tb"></i></div>' +
+      '    <div class="claw-bline"><span id="claw-tlb">치기 시작하면 시간이 가요</span>' +
+      '      <b id="claw-sec">5.0초</b></div>' +
+      '    <div class="claw-gain" id="claw-gain"><span class="g1"></span><span class="g2"></span></div>' +
+      '  </div>' +
       '  <div class="claw-glass">' +
       '    <div class="claw-rail"></div>' +
       '    <div class="claw-aim" id="claw-aim"><span>제시문</span><i></i></div>' +
@@ -179,17 +212,14 @@
       '    <div class="claw-stg"><b id="claw-stgno">1단계</b><span id="claw-stghint"></span></div>' +
       '    <div class="claw-qno"><b id="claw-qn">1</b> / ' + TOTAL + ' 문제</div>' +
       '  </div>' +
-      '  <div class="claw-timer">' +
-      '    <div class="claw-tnum">남은 시간 <b id="claw-sec">5.0</b>초<span id="claw-lim">제한 5초</span></div>' +
-      '    <div class="claw-tbar"><i id="claw-tb"></i></div>' +
-      '  </div>' +
-      '  <div class="claw-shelfbox">' +
+      '  <div class="claw-shelfbox" id="claw-shelfbox">' +
       '    <div class="claw-shelfhd">뽑은 인형 <b id="claw-got">0</b>개</div>' +
       '    <div class="claw-shelf" id="claw-shelf"></div>' +
       '  </div>' +
       '  <div class="claw-rules">' +
       '    <b>규칙 · 삼색 볼펜</b>' +
       '    <p>제시문 낱말을 제한시간 안에 치면 인형이 뽑혀요 (+' + POINT + '점)</p>' +
+      '    <p>시계는 첫 글자를 칠 때부터 가요 — 빨리 칠수록 점수가 더 붙어요</p>' +
       '    <p>못 치면 인형을 떨어뜨리고 하트가 하나 깨져요</p>' +
       '    <p>한 단계에 3문제씩 7단계 — 모두 ' + TOTAL + '문제</p>' +
       '    <p>하트 인형을 제시간에 맞히면 하트가 하나 살아나요</p>' +
@@ -201,7 +231,7 @@
       phase: 'aim', pt: 0, seq: null, si: 0,
       lives: LIVES, done: 0, got: 0, stage: 0,
       dolls: [], target: null, tgtSlot: -1,
-      craneX: 50, timeLeft: 0, limit: 5, used: []
+      craneX: 50, timeLeft: 0, limit: 5, armed: false, used: []
     };
     G.claw = C;
     G.items = [];
@@ -269,12 +299,8 @@
     el.className = 'claw-doll' + (drop ? ' in' : '');
     el.style.left = SLOTS[slot] + '%';
     el.style.bottom = FLOOR_B + '%';
-    el.style.setProperty('--c1', DOLL_COLOR[kind][0]);
-    el.style.setProperty('--c2', DOLL_COLOR[kind][1]);
     el.style.setProperty('--tilt', (Math.random() * 12 - 6).toFixed(1) + 'deg');
-    el.innerHTML =
-      '<svg class="claw-face" viewBox="0 0 100 100">' + DOLL_SVG[kind] + '</svg>' +
-      '<span class="claw-word"></span>';
+    el.innerHTML = dollSvg(kind) + '<span class="claw-word"></span>';
     A.el('claw-dolls').appendChild(el);
 
     var d = {
@@ -291,9 +317,8 @@
     d.kind = kind;
     d.word = word;
     d.lock = false; d.matched = 0; d.dead = false;
-    d.el.style.setProperty('--c1', DOLL_COLOR[kind][0]);
-    d.el.style.setProperty('--c2', DOLL_COLOR[kind][1]);
-    d.el.querySelector('.claw-face').innerHTML = DOLL_SVG[kind];
+    d.el.innerHTML = dollSvg(kind) + '<span class="claw-word"></span>';
+    d.wEl = d.el.querySelector('.claw-word');
     d.wEl.textContent = word;
     d.el.classList.remove('in');
     void d.el.offsetWidth;
@@ -312,12 +337,13 @@
     if (cr) cr.classList.toggle('grip', !!on);
   }
 
-  function drawHearts() {
+  function drawHearts(liveAt) {
     var box = A.el('claw-hearts');
     if (!box) return;
     var out = '';
     for (var i = 0; i < LIVES; i++) {
-      out += '<span class="claw-heart' + (i < C.lives ? '' : ' broke') + '">' + HEART_HUD + '</span>';
+      out += '<span class="claw-heart' + (i < C.lives ? '' : ' broke') +
+        (liveAt === i ? ' live' : '') + '">' + HEART_HUD + '</span>';
     }
     box.innerHTML = out;
   }
@@ -326,6 +352,17 @@
     A.bump(n);
     var pt = A.el('claw-pt');
     if (pt) pt.textContent = G.score;
+  }
+
+  /** 10점 / 빠르기 점수를 갈라 보여 준다 — 빨리 쳐도 이득이 없다는 말이 있었다 */
+  function showGain(base, bonus) {
+    var box = A.el('claw-gain');
+    if (!box) return;
+    box.children[0].textContent = '+' + base;
+    box.children[1].textContent = bonus > 0 ? '+' + bonus : '';
+    box.classList.remove('on');
+    void box.offsetWidth;
+    box.classList.add('on');
   }
 
   function shake() {
@@ -353,7 +390,6 @@
       var lv = DATA.getLevel(stage);
       A.el('claw-stgno').textContent = stage + '단계';
       A.el('claw-stghint').textContent = lv ? (lv.name + ' · ' + lv.hint) : '';
-      A.el('claw-lim').textContent = '제한 ' + LIMIT[stage] + '초';
       if (C.done > 0) {
         A.flashItem({
           icon: '🎯', name: stage + '단계 · ' + (lv ? lv.name : '') + ' (' + LIMIT[stage] + '초)',
@@ -372,8 +408,9 @@
     }
     C.tgtSlot = slot;
     var d = C.dolls[slot];
-    // 규칙 9 — 가끔 하트 인형이 나온다
-    var kind = Math.random() < HEART_RATE ? 'heart' : pickKind(slot);
+    // 규칙 9 — 가끔 하트 인형이 나온다 (목숨이 적을수록 자주)
+    var rate = HEART_RATE[Math.max(1, Math.min(LIVES, C.lives))];
+    var kind = Math.random() < rate ? 'heart' : pickKind(slot);
     reface(d, kind, pickWord(stage));
 
     C.dolls.forEach(function (x) { if (x) x.el.classList.remove('tgt'); });
@@ -387,6 +424,8 @@
 
     C.limit = LIMIT[stage];
     C.timeLeft = C.limit;
+    C.armed = false;             // 시계는 첫 글자를 칠 때부터 간다
+    showBoard(d);
     showTime();
 
     setCrane(d.x, REST_DROP);
@@ -395,30 +434,57 @@
     draw();
   }
 
+  /** 기계 간판에 낱말을 띄운다 — 이 화면에서 제일 큰 글자 */
+  function showBoard(d) {
+    var w = A.el('claw-bword');
+    if (!w) return;
+    var n = d.word.length;
+    // 긴 낱말은 간판 밖으로 나가지 않게 조금 줄인다
+    var f = n <= 4 ? 1 : (n === 5 ? .84 : (n === 6 ? .72 : .62));
+    w.style.setProperty('--wfs', f);
+    w.innerHTML = A.wordHtml(d);
+  }
+
   function showTime() {
-    var s = A.el('claw-sec'), b = A.el('claw-tb');
-    if (!s || !b) return;
-    var left = Math.max(0, C.timeLeft);
-    s.textContent = left.toFixed(1);
+    var bar = A.el('claw-tbar'), b = A.el('claw-tb');
+    if (!bar || !b) return;
+    var left = C.armed ? Math.max(0, C.timeLeft) : C.limit;
     b.style.width = (left / C.limit * 100) + '%';
-    var box = A.el('claw-tb').parentNode;
-    box.classList.toggle('hot', left <= C.limit * 0.35);
+    var s = A.el('claw-sec');
+    if (s) s.textContent = left.toFixed(1) + '초';
+    bar.classList.toggle('hot', C.armed && left <= C.limit * 0.35);
+    bar.classList.toggle('idle', !C.armed);
+    var lb = A.el('claw-tlb');
+    if (lb) lb.textContent = C.armed ? '남은 시간' : '치기 시작하면 시간이 가요';
+    var bd = A.el('claw-board');
+    if (bd) bd.classList.toggle('waiting', !C.armed);
+  }
+
+  /** 첫 글자를 친 순간 — 여기서부터 제한시간(5·7·8초)을 잰다 */
+  function armTimer() {
+    if (C.armed) return;
+    C.armed = true;
+    A.sfx('tick');
+    showTime();
   }
 
   /* =========================================================
      매 프레임 — 제한시간과 크레인 연출
+     연출은 기획서의 핵심 그림이라 없애지 않고 길이만 줄였다 (2.47초 → 1.36초).
+     21문제면 52초를 구경만 하던 것이 29초가 된다.
      ========================================================= */
-  var SEQ_GRAB = [['down', 0.5], ['close', 0.32], ['up', 0.5], ['carry', 0.55], ['open', 0.6]];
-  var SEQ_MISS = [['down', 0.5], ['close', 0.28], ['lift', 0.34], ['fall', 0.72]];
+  var SEQ_GRAB = [['down', 0.30], ['close', 0.16], ['up', 0.28], ['carry', 0.30], ['open', 0.32]];
+  var SEQ_MISS = [['down', 0.28], ['close', 0.14], ['lift', 0.20], ['fall', 0.46]];
 
   function step(dt) {
     if (!C) return;
     if (C.phase === 'aim') {
       C.pt += dt;
-      if (C.pt >= 0.45) { C.phase = 'play'; C.pt = 0; }
+      if (C.pt >= 0.3) { C.phase = 'play'; C.pt = 0; }
       return;
     }
     if (C.phase === 'play') {
+      if (!C.armed) return;                    // 자판을 찾는 동안은 시계가 안 간다
       C.timeLeft -= dt;
       showTime();
       if (C.timeLeft <= 0) miss();
@@ -480,20 +546,34 @@
     C.done++;
     C.got++;
     A.el('claw-got').textContent = C.got;
-    addPoint(POINT);                                  // 포인트 10점씩
+
+    /* 포인트 — 기획서의 10점은 그대로 두고, 남은 시간만큼 빠르기 점수를 얹는다 */
+    var left = C.armed ? Math.max(0, C.timeLeft) : C.limit;
+    var bonus = Math.round(left * SPEED_PT);
+    addPoint(POINT + bonus);
+    showGain(POINT, bonus);
     A.el('claw-aim').classList.remove('on');
 
     if (item.kind === 'heart') {
       // 규칙 9 (정한 것) — 하트 인형을 제시간에 맞히면 목숨 +1 (최대 3)
       if (C.lives < LIVES) {
         C.lives++;
-        drawHearts();
-        A.flashItem({ icon: '💗', name: '하트 인형! 하트가 하나 살아났어요', color: '#ff8fab' });
+        drawHearts(C.lives - 1);
+        // 이 게임 최고의 순간 — 깨진 하트가 살아난다
+        A.cheer({
+          icon: '💗', name: '하트가 살아났어요!',
+          sub: '하트 인형 +' + POINT + ' · 빠르기 +' + bonus,
+          color: '#ff8fab'
+        });
       } else {
-        A.flashItem({ icon: '💗', name: '하트 인형! (하트가 가득해요) +' + POINT, color: '#ff8fab' });
+        A.flashItem({ icon: '💗', name: '하트 인형! (하트가 가득해요) +' + (POINT + bonus), color: '#ff8fab' });
       }
     } else {
-      A.flashItem({ icon: '🧸', name: KIND_NAME[item.kind] + ' 인형을 뽑았어요! +' + POINT, color: '#ff8fab' });
+      A.flashItem({
+        icon: '🧸',
+        name: KIND_NAME[item.kind] + ' 인형! +' + POINT + ' · 빠르기 +' + bonus,
+        color: '#ff8fab'
+      });
     }
 
     runSeq(SEQ_GRAB, function () {
@@ -545,9 +625,7 @@
     if (tray) {
       var t = document.createElement('span');
       t.className = 'claw-traydoll';
-      t.style.setProperty('--c1', DOLL_COLOR[kind][0]);
-      t.style.setProperty('--c2', DOLL_COLOR[kind][1]);
-      t.innerHTML = '<svg viewBox="0 0 100 100">' + DOLL_SVG[kind] + '</svg>';
+      t.innerHTML = dollSvg(kind);
       tray.innerHTML = '';
       tray.appendChild(t);
     }
@@ -555,10 +633,10 @@
     if (shelf) {
       var s = document.createElement('span');
       s.className = 'claw-mini';
-      s.style.setProperty('--c1', DOLL_COLOR[kind][0]);
-      s.style.setProperty('--c2', DOLL_COLOR[kind][1]);
-      s.innerHTML = '<svg viewBox="0 0 100 100">' + DOLL_SVG[kind] + '</svg>';
+      s.innerHTML = dollSvg(kind);
       shelf.appendChild(s);
+      var box = A.el('claw-shelfbox');
+      if (box) box.classList.add('has');       // 비어 있을 땐 상자가 줄어들어 있다
     }
   }
 
@@ -573,12 +651,21 @@
   /* ---------- 낱말 표시 갱신 ---------- */
   function draw() {
     if (!C) return;
+    // 아이가 첫 글자를 친 순간 시계가 간다 (엔진은 입력이 있을 때마다 draw 를 부른다)
+    if (!C.armed && (C.phase === 'play' || C.phase === 'aim')) {
+      var inp = A.el('gamein');
+      if (inp && inp.value) armTimer();
+    }
     C.dolls.forEach(function (d) {
       if (!d) return;
       if (d === C.target && !d.dead) d.wEl.innerHTML = A.wordHtml(d);
       else d.wEl.textContent = d.word;
       d.el.classList.toggle('lock', !!d.lock);
     });
+    if (C.target && !C.target.dead) {
+      var bw = A.el('claw-bword');
+      if (bw) bw.innerHTML = A.wordHtml(C.target);
+    }
   }
 
   GAMES.register('claw', {

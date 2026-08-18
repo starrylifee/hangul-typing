@@ -1,22 +1,33 @@
 /* g-doble.css — 타자 도블 (기획 · LEE 팀)
    기획서 4쪽 [디자인 2] 를 그대로 옮겼다.
    왼쪽 위 「나 / 보유한 카드 N장」 · 오른쪽 위 「AI / 보유한 카드 N장」 ·
-   가운데 위 「1단계 · 기본자리」 · 오른쪽 위 「시간 25초 남음」 막대 ·
-   왼쪽 작은 동그란 카드(내 카드) · 가운데 큰 동그란 카드(더미) · 오른쪽 작은 카드(AI).
+   가운데 위 「1단계 · 기본자리」 · 「시간 25초 남음」 막대 ·
+   왼쪽 동그란 카드(내 카드) · 가운데 큰 동그란 카드(더미) · 오른쪽 카드(AI, 뒷면).
    3쪽 승리 화면(축하합니다!!! / 승리하셨습니다~ / 다시하기 · 다음단계)은 맨 아래.
+
+   크기는 vh 가 아니라 g-doble.js 의 fit() 이 게임판 높이를 재서 넣어 주는
+   --pile(가운데 카드 지름) 하나에서 전부 파생시킨다.
+   "⌨️ 자판" 을 켜서 판이 낮아져도 세 카드가 한 화면에 들어간다.
+     --pile 가운데 카드  --mine 내 카드  --foe AI 카드
+     --wfb 가운데 카드 낱말(화면에서 제일 큰 글자)  --wfm 내 카드 낱말
+     --hud "나"·"AI"   --hudb 보유 카드 수   --sub 잔 글씨   --lb 카드 이름표
    ========================================================= */
 
 .doble-table {
   position: absolute; inset: 0;
   display: flex; flex-direction: column;
-  padding: clamp(6px, 1.2vh, 14px) clamp(12px, 2vw, 30px) clamp(4px, .8vh, 10px);
-  gap: clamp(4px, .8vh, 10px);
+  padding: 6px clamp(10px, 2vw, 28px) 4px;
+  gap: 2px;
   background:
     radial-gradient(ellipse 80% 70% at 50% 0%, #1b2b3f 0%, #121a28 55%, #0a0e16 100%);
+  --pile: 300px; --mine: 240px; --foe: 132px;
+  --wfb: 31px; --wfm: 30px; --hud: 19px; --hudb: 16px; --sub: 13px; --lb: 12px;
+  --bar: 13px;
 }
 
 /* ---------------------------------------------------------
-   위쪽 — 나 / 단계 / AI · 시간 막대
+   위쪽 — 나 / 단계·시간 / AI
+   HUD 는 낱말보다 커지면 안 된다 (--hud = 낱말의 0.6배)
    --------------------------------------------------------- */
 .doble-top {
   flex: none;
@@ -28,41 +39,44 @@
 .doble-side.ai { align-items: flex-end; }
 .doble-side .who {
   font-weight: 900; letter-spacing: 1px; color: #fff;
-  font-size: clamp(20px, 3.6vh, 38px); line-height: 1.1;
+  font-size: var(--hud); line-height: 1.1;
 }
 .doble-side.ai .who { color: #ffb4c4; }
 .doble-side .have {
-  color: #cfd9e8; font-weight: 800;
-  font-size: clamp(13px, 2.2vh, 22px); margin-top: 2px;
+  color: #cfd9e8; font-weight: 800; white-space: nowrap;
+  font-size: var(--sub); margin-top: 1px;
 }
 .doble-side .have b {
-  color: #3ee0c0; font-size: clamp(17px, 2.9vh, 30px); margin: 0 2px;
+  color: #3ee0c0; font-size: var(--hudb); margin: 0 2px;
 }
 .doble-side.ai .have b { color: #ff8fab; }
 
+.doble-mid {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+}
+
 /* 가운데 위 — 1단계 · 기본자리 */
 .doble-stg {
-  text-align: center; padding: clamp(2px, .5vh, 6px) clamp(10px, 1.6vw, 22px);
+  text-align: center; padding: 1px clamp(8px, 1.4vw, 18px);
   border: 2px solid rgba(255, 255, 255, .18); border-radius: 999px;
   background: rgba(255, 255, 255, .06);
   white-space: nowrap;
 }
-.doble-stg b {
-  color: #ffd166; font-weight: 900; font-size: clamp(15px, 2.7vh, 27px);
-}
-.doble-stg span {
-  color: #dbe4f0; font-weight: 800; font-size: clamp(13px, 2.3vh, 23px); margin-left: 4px;
-}
+.doble-stg b { color: #ffd166; font-weight: 900; font-size: var(--hudb); }
+.doble-stg span { color: #dbe4f0; font-weight: 800; font-size: var(--sub); margin-left: 4px; }
 
-/* 오른쪽 위 — 시간 25초 남음 막대 */
-.doble-time { width: clamp(150px, 24vw, 300px); margin-top: clamp(3px, .6vh, 8px); }
+/* 시간 25초 남음 막대 + 지금 맞히면 몇 점인지 */
+.doble-time { width: clamp(180px, 26vw, 340px); }
 .doble-time .lb {
-  color: #e7edf7; font-weight: 800; text-align: right;
-  font-size: clamp(12px, 2vh, 19px); margin-bottom: 3px;
+  color: #e7edf7; font-weight: 800; text-align: center;
+  font-size: var(--sub); margin-bottom: 2px; white-space: nowrap;
 }
-.doble-time .lb b { color: #ffd166; font-size: clamp(16px, 2.7vh, 26px); }
+.doble-time .lb b { color: #ffd166; font-size: var(--hudb); }
+.doble-time .lb em {
+  font-style: normal; color: #7ee7c4; font-weight: 900; margin-left: 8px;
+}
 .doble-time .bar {
-  height: clamp(11px, 1.8vh, 20px); border-radius: 999px; overflow: hidden;
+  height: var(--bar); border-radius: 999px; overflow: hidden;
   background: rgba(255, 255, 255, .12); border: 1px solid rgba(255, 255, 255, .2);
 }
 .doble-time .bar i {
@@ -73,72 +87,102 @@
 .doble-time .bar.hot i { background: linear-gradient(90deg, #ff9a5c, #ff4d6d); }
 
 /* ---------------------------------------------------------
-   가운데 — 내 카드 / 더미 / AI 카드
+   가운데 — 내 카드 / 더미 / AI 카드 (주인공은 앞의 둘)
    --------------------------------------------------------- */
 .doble-row {
   flex: 1; min-height: 0;
   display: flex; align-items: center; justify-content: center;
-  gap: clamp(10px, 3vw, 56px);
+  gap: clamp(10px, 2.6vw, 46px);
 }
 .doble-col {
-  display: flex; flex-direction: column; align-items: center;
-  gap: clamp(3px, .7vh, 9px);
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
 }
+.doble-col.foe { align-self: center; }
 .doble-lb {
   color: #9fb0c6; font-weight: 800; white-space: nowrap;
-  font-size: clamp(11px, 1.9vh, 18px);
+  font-size: var(--lb);
 }
 .doble-col.mid .doble-lb { color: #ffd166; }
 .doble-lb b { color: #fff; }
+.doble-lb .dim { color: #6f7f95; font-weight: 700; }
 
 /* 동그란 카드 — 그림 그대로 원 안에 낱말이 흩어져 있다 */
 .doble-card {
   position: relative; border-radius: 50%;
-  background: radial-gradient(circle at 36% 26%, #fff 0%, #f6f1e8 55%, #e6ded0 100%);
-  border: clamp(2px, .42vh, 4px) solid #23262e;
+  background: radial-gradient(circle at 36% 26%, #fff 0%, #f8f3ea 55%, #ece3d3 100%);
+  border: 3px solid #2b241d;
   box-shadow: 0 10px 22px -8px rgba(0, 0, 0, .75), inset 0 -10px 20px -12px rgba(0, 0, 0, .35);
   flex: none;
 }
-.doble-card.small {
-  width: clamp(130px, 26vh, 232px); height: clamp(130px, 26vh, 232px);
-  font-size: clamp(12px, 2.1vh, 19px);
+.doble-card.mine {
+  width: var(--mine); height: var(--mine);
+  font-size: var(--wfm);
+  box-shadow: 0 0 0 3px rgba(126, 231, 196, .28), 0 12px 24px -8px rgba(0, 0, 0, .8);
 }
 .doble-card.big {
-  width: clamp(196px, 38vh, 340px); height: clamp(196px, 38vh, 340px);
-  font-size: clamp(15px, 2.8vh, 26px);
-  box-shadow: 0 0 0 4px rgba(255, 209, 102, .25), 0 14px 28px -8px rgba(0, 0, 0, .8);
+  width: var(--pile); height: var(--pile);
+  font-size: var(--wfb);
+  box-shadow: 0 0 0 4px rgba(255, 209, 102, .3), 0 14px 28px -8px rgba(0, 0, 0, .8);
+}
+/* AI 카드는 뒷면 — 여기서 정답을 찾는 게 아니라는 걸 한눈에 */
+.doble-card.foe {
+  width: var(--foe); height: var(--foe);
+  background: none; border: 0; overflow: visible;
+  box-shadow: 0 8px 18px -8px rgba(0, 0, 0, .8);
+  opacity: .92;
+}
+.doble-card.foe .doble-svg { width: 100%; height: 100%; display: block; }
+.doble-backn {
+  position: absolute; left: 50%; bottom: -6%; transform: translateX(-50%);
+  padding: 1px 10px; border-radius: 999px; white-space: nowrap;
+  background: #f4ecdd; border: 2px solid #2b241d;
+  color: #2b241d; font-weight: 900; font-size: calc(var(--sub) * .95);
+  line-height: 1.25; pointer-events: none;
+}
+.doble-backn b { font-size: var(--hudb); }
+
+/* 손그림 결 — 다른 학생 게임(인형·동물)과 같은 굵은 갈색 외곽선 */
+.doble-svg {
+  stroke: #2b241d; stroke-width: 2.4;
+  stroke-linejoin: round; stroke-linecap: round;
 }
 
-/* 카드 안 낱말 — 자리·기울기·크기가 조금씩 다르다 (도블답게) */
+/* 카드 안 낱말 — 자리·기울기·크기가 조금씩 다르고, 낱말마다 색이 다르다.
+   같은 낱말은 어느 카드에 있어도 같은 색이라 눈으로 짝을 찾을 수 있다. */
 .doble-w {
   position: absolute;
   transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) scale(var(--sc, 1));
-  white-space: nowrap; font-weight: 900; color: #23262e;
-  letter-spacing: -.02em; line-height: 1;
+  white-space: nowrap; font-weight: 900; color: var(--wc, #23262e);
+  letter-spacing: -.03em; line-height: 1;
   transition: color .2s;
 }
-.doble-w .hit { color: #e0338a; }
-.doble-w.lock { color: #0f8f77; }
+.doble-w .hit { color: #0e9c78; }          /* 이미 친 글자 — 앱 공통 색 */
+.doble-w.lock { text-shadow: 0 0 10px rgba(14, 156, 120, .35); }
 .doble-w.found {
-  color: #0f8f77;
-  text-shadow: 0 0 12px rgba(62, 224, 192, .8);
+  color: #0e9c78;
+  text-shadow: 0 0 14px rgba(62, 224, 192, .85);
+  animation: dobleFound .5s ease-out;
 }
-.doble-w.miss {
+@keyframes dobleFound {
+  0% { transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) scale(var(--sc, 1)); }
+  45% { transform: translate(-50%, -50%) rotate(0deg) scale(calc(var(--sc, 1) * 1.35)); }
+  100% { transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) scale(var(--sc, 1)); }
+}
+/* 못 찾은 낱말 — 클래스 이름이 style.css 의 .miss(오답 목록)와 겹치면
+   그 배경·여백을 그대로 물려받아 낱말 위에 까만 상자가 생긴다. 그래서 dmiss 로 쓴다. */
+.doble-w.dmiss {
   color: #d92847;
   text-shadow: 0 0 12px rgba(255, 107, 129, .7);
 }
 
-/* 더미 — 카드가 쌓여 있는 느낌 */
+/* 더미 — 카드가 쌓인 두께가 아래로 삐죽 보인다 (SVG) */
 .doble-pilebox { position: relative; display: flex; align-items: center; justify-content: center; }
-.doble-stack {
-  position: absolute; left: 50%; top: 50%; border-radius: 50%;
-  width: clamp(196px, 38vh, 340px); height: clamp(196px, 38vh, 340px);
-  background: linear-gradient(180deg, #f3ecdf, #ded4c2);
-  border: clamp(2px, .38vh, 4px) solid #23262e;
+.doble-stacksvg {
+  position: absolute; left: 50%; top: 50%;
+  width: calc(var(--pile) * 1.27); height: calc(var(--pile) * 1.27);
+  transform: translate(-50%, -50%);
+  pointer-events: none; z-index: 1;
 }
-.doble-stack.s1 { transform: translate(-50%, -50%) translate(-14px, 12px); opacity: .95; }
-.doble-stack.s2 { transform: translate(-50%, -50%) translate(-25px, 23px); opacity: .8; }
-.doble-stack.s3 { transform: translate(-50%, -50%) translate(-36px, 34px); opacity: .6; }
 .doble-pilebox .doble-card { position: relative; z-index: 2; }
 
 /* 카드가 들어오고 나가는 움직임 */
@@ -147,13 +191,16 @@
   0% { transform: translateY(-14px) scale(.86); opacity: 0; }
   100% { transform: translateY(0) scale(1); opacity: 1; }
 }
+/* 가져오면 내 쪽으로, 뺏기면 AI 쪽으로 날아간다 (--fx/--fy 는 js 가 픽셀로 재 준다) */
 .doble-card.to-me {
-  transition: transform .55s cubic-bezier(.4, 0, .2, 1), opacity .5s .1s;
-  transform: translateX(-46vw) scale(.55) rotate(-16deg); opacity: 0;
+  transition: transform .55s cubic-bezier(.4, 0, .2, 1), opacity .5s .15s;
+  transform: translate(var(--fx, -40vw), var(--fy, 0px)) scale(.42) rotate(-18deg);
+  opacity: 0;
 }
 .doble-card.to-ai {
-  transition: transform .8s cubic-bezier(.4, 0, .2, 1), opacity .7s .2s;
-  transform: translateX(46vw) scale(.55) rotate(16deg); opacity: 0;
+  transition: transform .8s cubic-bezier(.4, 0, .2, 1), opacity .7s .25s;
+  transform: translate(var(--fx, 40vw), var(--fy, 0px)) scale(.42) rotate(18deg);
+  opacity: 0;
 }
 .doble-card.pop { animation: doblePop .38s ease-out; }
 @keyframes doblePop {
@@ -161,10 +208,18 @@
   60% { transform: scale(1.1); }
   100% { transform: scale(1); }
 }
+/* 오답 — 카드가 부르르 떨린다 */
+.doble-card.shake { animation: dobleShake .45s cubic-bezier(.36, .07, .19, .97); }
+@keyframes dobleShake {
+  10%, 90% { transform: translateX(-3px) rotate(-1deg); }
+  20%, 80% { transform: translateX(5px) rotate(1.5deg); }
+  30%, 50%, 70% { transform: translateX(-9px) rotate(-2deg); }
+  40%, 60% { transform: translateX(9px) rotate(2deg); }
+}
 
 .doble-tip {
   flex: none; text-align: center; margin: 0;
-  color: #9fb0c6; font-weight: 700; font-size: clamp(11px, 1.9vh, 18px);
+  color: #9fb0c6; font-weight: 700; font-size: var(--lb);
 }
 .doble-tip b { color: #ffd166; }
 .doble-wrong { color: #ff8fab; font-weight: 800; }
@@ -177,19 +232,32 @@
   display: flex; flex-direction: column;
   background:
     radial-gradient(ellipse 70% 60% at 50% 45%, #16233a 0%, #0b1220 55%, #070b12 100%);
-  padding: clamp(10px, 2vh, 24px) clamp(16px, 3vw, 44px);
+  padding: clamp(8px, 1.8vh, 22px) clamp(16px, 3vw, 44px) clamp(6px, 1.4vh, 16px);
 }
 .doble-endtop {
   flex: none; display: flex; justify-content: space-between; align-items: flex-start;
 }
+.doble-end .doble-side .who { font-size: clamp(16px, 2.8vh, 30px); }
+.doble-end .doble-side .have { font-size: clamp(12px, 2vh, 20px); }
 .doble-endmid {
   flex: 1; min-height: 0;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: clamp(4px, .8vh, 10px);
+  gap: clamp(2px, .6vh, 8px);
+}
+.doble-trophy {
+  width: clamp(56px, 13vh, 130px); height: clamp(56px, 13vh, 130px);
+  display: block; flex: none;
+  animation: dobleTro .8s ease-out;
+  filter: drop-shadow(0 8px 18px rgba(0, 0, 0, .6));
+}
+@keyframes dobleTro {
+  0% { transform: translateY(-24px) rotate(-14deg) scale(.6); opacity: 0; }
+  60% { transform: translateY(0) rotate(6deg) scale(1.1); opacity: 1; }
+  100% { transform: translateY(0) rotate(0) scale(1); }
 }
 .doble-endmid h2 {
   margin: 0; font-weight: 900; color: #fff;
-  font-size: clamp(30px, 7vh, 66px); letter-spacing: -.02em;
+  font-size: clamp(26px, 6vh, 60px); letter-spacing: -.02em;
 }
 .doble-end.win .doble-endmid h2 {
   color: #ffd166; text-shadow: 0 0 26px rgba(255, 209, 102, .45);
@@ -202,18 +270,22 @@
 }
 .doble-endmid p {
   margin: 0; color: #dbe4f0; font-weight: 800;
-  font-size: clamp(18px, 4vh, 40px);
+  font-size: clamp(16px, 3.4vh, 36px);
 }
+.doble-endmid p.doble-endnote {
+  color: #9fb0c6; font-weight: 700; font-size: clamp(11px, 1.9vh, 19px);
+}
+.doble-endmid p.doble-endnote b { color: #7ee7c4; }
 .doble-endbtns {
   display: flex; gap: clamp(10px, 2vw, 28px);
-  margin-top: clamp(10px, 2.4vh, 30px);
+  margin-top: clamp(8px, 2vh, 26px);
 }
 .doble-btn {
   font-family: inherit; cursor: pointer;
-  padding: clamp(8px, 1.6vh, 18px) clamp(18px, 3vw, 46px);
-  font-size: clamp(16px, 3vh, 30px); font-weight: 900;
+  padding: clamp(7px, 1.4vh, 16px) clamp(16px, 2.8vw, 44px);
+  font-size: clamp(15px, 2.7vh, 28px); font-weight: 900;
   color: #16202e; background: #f2f5fa;
-  border: 3px solid #23262e; border-radius: 10px;
+  border: 3px solid #2b241d; border-radius: 10px;
   box-shadow: 0 5px 0 rgba(0, 0, 0, .45);
 }
 .doble-btn:hover { background: #fff; transform: translateY(-1px); }
@@ -221,10 +293,10 @@
 .doble-btn.go { background: linear-gradient(180deg, #ffe07a, #f0b03c); }
 .doble-btn:focus-visible { outline: 4px solid #3ee0c0; outline-offset: 3px; }
 .doble-more {
-  margin-top: clamp(8px, 1.6vh, 18px);
+  margin-top: clamp(6px, 1.4vh, 16px);
   background: none; border: 0; cursor: pointer; font-family: inherit;
   color: #8fa1b8; font-weight: 700; text-decoration: underline;
-  font-size: clamp(12px, 2vh, 18px);
+  font-size: clamp(11px, 1.8vh, 17px);
 }
 .doble-more:hover { color: #cfd9e8; }
 
@@ -243,28 +315,31 @@
 .doble-introbox { background: rgba(10, 18, 30, .8); border-color: rgba(126, 231, 196, .4); }
 .doble-introrow {
   display: flex; align-items: center; justify-content: center;
-  gap: clamp(8px, 1.6vw, 20px); margin: clamp(8px, 1.6vh, 18px) 0 4px;
+  gap: clamp(6px, 1.2vw, 16px); margin: clamp(6px, 1.4vh, 16px) 0 4px;
 }
 .doble-minic {
   position: relative; display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 2px;
-  width: clamp(78px, 13vh, 120px); height: clamp(78px, 13vh, 120px);
-  border-radius: 50%; background: #f6f1e8; border: 3px solid #23262e;
+  width: clamp(72px, 12vh, 110px); height: clamp(72px, 12vh, 110px);
+  border-radius: 50%; background: #f8f3ea; border: 3px solid #2b241d;
 }
 .doble-minic i {
-  font-style: normal; font-weight: 900; color: #23262e;
+  font-style: normal; font-weight: 900;
   font-size: clamp(11px, 1.8vh, 16px);
 }
-.doble-minic i:first-child { color: #d81b7a; }
 .doble-minic i:nth-child(2) { transform: rotate(-8deg); }
 .doble-minic i:last-child { transform: rotate(7deg); }
-.doble-eq { color: #7ee7c4; font-weight: 900; font-size: clamp(18px, 3.4vh, 32px); }
-
-/* 크롬북(1366×768) — 카드가 서로 붙지 않게 */
-@media (max-width: 1180px) {
-  .doble-row { gap: clamp(8px, 2vw, 26px); }
-  .doble-time { width: clamp(130px, 22vw, 230px); }
+.doble-minic.back {
+  background: none; border: 0; height: auto; gap: 4px;
 }
+.doble-minic.back .doble-svg { width: 100%; height: auto; }
+.doble-minic.back em {
+  font-style: normal; font-weight: 800; color: #9fb0c6; white-space: nowrap;
+  font-size: clamp(9px, 1.4vh, 13px); line-height: 1.15; text-align: center;
+}
+.doble-eq { color: #7ee7c4; font-weight: 900; font-size: clamp(16px, 3vh, 28px); }
+
 @media (prefers-reduced-motion: reduce) {
-  .doble-card.in, .doble-card.pop, .doble-endmid h2 { animation: none; }
+  .doble-card.in, .doble-card.pop, .doble-card.shake,
+  .doble-endmid h2, .doble-trophy, .doble-w.found { animation: none; }
 }

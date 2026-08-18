@@ -2,35 +2,46 @@
    기획서 3쪽 [기계 밖 모습] 을 그대로 옮겼다.
    분홍 기계 / 큰 유리창 / 줄에 매달린 집게 크레인 / 노란 조작 패널(동그란 버튼 2개) /
    왼쪽 검은 레버 / 빨간 테두리 배출구 / 오른쪽 위 □ point 와 빨간 하트 3개.
+
+   크기 규칙 (2026-08 고침)
+     이 판은 vh 를 하나도 쓰지 않는다. 머리말의 "⌨️ 자판" 을 켜면 게임판(#stage)이
+     낮아지는데, vh 로 잡아 두면 자판을 켠 순간 기계가 화면 밖으로 넘쳤다.
+     그래서 판(.claw-room)과 기계(.claw-machine)를 컨테이너로 잡고
+     안쪽 값은 전부 cqw/cqh/% 로 쓴다. 기계는 height:100% + aspect-ratio 라
+     자판을 켜든 끄든 기계 안 비율이 하나도 안 변한다.
    ========================================================= */
 
 .claw-room {
   position: absolute; inset: 0;
+  container-type: size; container-name: clawroom;
   display: flex; align-items: center; justify-content: center;
-  gap: clamp(14px, 2.4vw, 34px);
-  padding: clamp(8px, 1.6vh, 18px) clamp(12px, 2vw, 28px);
+  gap: clamp(10px, 2cqw, 30px);
+  padding: 1.4% 1.8%;
   background:
     radial-gradient(ellipse 70% 60% at 50% 0%, #2a2140 0%, #171227 55%, #0d0a16 100%);
 }
 
 /* ---------------------------------------------------------
-   분홍 인형뽑기 기계
+   분홍 인형뽑기 기계 — 높이는 판을 꽉, 폭은 높이를 따라온다
    --------------------------------------------------------- */
 .claw-machine {
   position: relative;
-  /* 세로로만 늘어나지 않게 — 높이에 비례해서 폭이 따라온다 (1920×1080 전자칠판) */
   height: 100%;
   aspect-ratio: .72;
   width: auto;
-  max-width: 48vw;
-  min-width: 320px;
-  border-radius: clamp(14px, 2vh, 22px);
-  border: clamp(3px, .5vh, 5px) solid #2b2b2b;
+  max-width: 44cqw;
+  min-width: 230px;
+  container-type: size; container-name: clawmach;
+  /* 이 네 값은 기계 "자신" 의 값이라 바깥 컨테이너(.claw-room) 기준으로 잰다.
+     기계 폭 = 0.72 × 판 높이 이므로 cqh × 0.72 가 곧 기계 폭 비율이다.
+     (cqw 로 쓰면 판 가로폭 기준이 되어 테두리가 12px 씩 두꺼워졌다) */
+  border-radius: 2cqh;
+  border: .75cqh solid #2b241d;
   background: linear-gradient(160deg, #ffb3d7 0%, #ff96c6 45%, #f77fb5 100%);
   box-shadow: 0 18px 40px -14px rgba(0, 0, 0, .8), inset 0 0 40px rgba(255, 255, 255, .25);
   display: flex; flex-direction: column;
-  padding: clamp(8px, 1.5vh, 16px);
-  gap: clamp(6px, 1.2vh, 12px);
+  padding: 1.6cqh;
+  gap: 1.15cqh;
   overflow: hidden;
 }
 /* 크레용으로 칠한 듯한 결 */
@@ -41,11 +52,73 @@
   opacity: .55;
 }
 
+/* ---------------------------------------------------------
+   제시문 판 — 기계 맨 위 간판
+   낱말이 이 화면에서 제일 큰 글자다. 남은 시간 막대도 낱말 바로 밑에 붙였다
+   (예전엔 기계 반대편 오른쪽 패널에 있어서 아이가 못 봤다).
+   --------------------------------------------------------- */
+.claw-board {
+  position: relative; z-index: 7; flex: none;
+  background: #fffaf3;
+  border: .9cqw solid #2b241d;
+  border-radius: 2.2cqw;
+  padding: 1.4cqw 2.4cqw 1.8cqw;
+  display: flex; flex-direction: column; align-items: center;
+  gap: .9cqw;
+  box-shadow: 0 .7cqw 0 rgba(43, 36, 29, .35);
+}
+.claw-bword {
+  font-weight: 900; color: #2b241d; line-height: 1.06;
+  white-space: nowrap; letter-spacing: -.02em;
+  font-size: calc(13cqw * var(--wfs, 1));
+  max-width: 100%;
+}
+/* 이미 친 글자 — 여섯 게임이 같은 초록을 쓴다 */
+.claw-bword .hit { color: #0e9c78; }
+.claw-bline {
+  width: 100%; display: flex; align-items: baseline; gap: 1cqw;
+  font-weight: 800; color: #7c6a58; font-size: 3.4cqw;
+}
+.claw-bline b { margin-left: auto; color: #c62a5e; font-size: 3.8cqw; }
+.claw-board.waiting .claw-bline { color: #c62a5e; }
+.claw-board.waiting .claw-bline b { color: #7c6a58; }
+.claw-tbar {
+  width: 100%; height: 2.8cqw; border-radius: 999px; overflow: hidden;
+  background: #e6e0d6; border: .45cqw solid #2b241d;
+}
+.claw-tbar i {
+  display: block; height: 100%; width: 100%;
+  background: linear-gradient(90deg, #7ee7c4, #0e9c78);
+}
+.claw-tbar.idle i { background: repeating-linear-gradient(115deg, #cfd8e4 0 6px, #e6ecf3 6px 12px); }
+.claw-tbar.hot i { background: linear-gradient(90deg, #ff9a5c, #ff4d6d); }
+/* 시계가 아직 안 갔다는 표시 — 막대가 살짝 숨쉰다 */
+.claw-board.waiting .claw-tbar { animation: clawIdle 1.4s infinite ease-in-out; }
+@keyframes clawIdle {
+  0%, 100% { opacity: .75; }
+  50% { opacity: 1; }
+}
+/* 얻은 점수를 10점 / 빠르기 로 갈라 보여 준다 */
+.claw-gain {
+  position: absolute; right: 2.4cqw; top: -1cqw;
+  display: none; gap: .8cqw; align-items: baseline;
+  font-weight: 900; pointer-events: none;
+}
+.claw-gain.on { display: flex; animation: clawGain 1.1s ease-out forwards; }
+.claw-gain .g1 { color: #e0338a; font-size: 5cqw; }
+.claw-gain .g2 { color: #0e9c78; font-size: 5cqw; }
+@keyframes clawGain {
+  0% { opacity: 0; transform: translateY(2cqw) scale(.7); }
+  22% { opacity: 1; transform: translateY(-1cqw) scale(1.12); }
+  60% { opacity: 1; transform: translateY(-2.4cqw) scale(1); }
+  100% { opacity: 0; transform: translateY(-5cqw) scale(1); }
+}
+
 /* 가운데 큰 유리창 */
 .claw-glass {
-  position: relative; flex: 1; min-height: 0;
-  border: clamp(2px, .38vh, 4px) solid #2b2b2b;
-  border-radius: clamp(6px, 1vh, 10px);
+  position: relative; flex: 1 1 auto; min-height: 0;
+  border: .7cqw solid #2b241d;
+  border-radius: 1.4cqw;
   background: linear-gradient(180deg, #fdfefe 0%, #eef7fb 62%, #e2eff6 100%);
   overflow: hidden;
   box-shadow: inset 0 8px 22px -12px rgba(0, 0, 0, .45);
@@ -59,19 +132,19 @@
 }
 /* 크레인이 매달려 다니는 레일 */
 .claw-rail {
-  position: absolute; left: 3%; right: 3%; top: 2.5%; height: 4px;
+  position: absolute; left: 3%; right: 3%; top: 2.5%; height: .8cqw;
   background: #3a3a3a; border-radius: 3px;
 }
 /* 유리창 바닥선 */
 .claw-gfloor {
   position: absolute; left: 0; right: 0; bottom: 0; height: 12%;
-  background: linear-gradient(180deg, rgba(43, 43, 43, .10), rgba(43, 43, 43, .22));
-  border-top: 2px solid rgba(43, 43, 43, .55);
+  background: linear-gradient(180deg, rgba(43, 36, 29, .10), rgba(43, 36, 29, .22));
+  border-top: .4cqw solid rgba(43, 36, 29, .55);
 }
 /* 뽑은 인형이 빠지는 구멍 (왼쪽 아래) */
 .claw-hole {
   position: absolute; left: 3%; bottom: 0; width: 14%; height: 9%;
-  background: #22252c; border: 2px solid #2b2b2b;
+  background: #22252c; border: .4cqw solid #2b241d;
   border-bottom: 0; border-radius: 8px 8px 0 0;
 }
 
@@ -82,55 +155,55 @@
   position: absolute; top: 2.5%; left: 50%; height: 97%;
   transform: translateX(-50%);
   display: flex; flex-direction: column; align-items: center;
-  transition: left .52s cubic-bezier(.4, 0, .2, 1);
+  transition: left .3s cubic-bezier(.4, 0, .2, 1);
   z-index: 4; pointer-events: none;
 }
 .claw-cart {
-  width: clamp(22px, 3.4vh, 34px); height: clamp(7px, 1.1vh, 11px);
+  width: 6cqw; height: 1.8cqw;
   background: #3a3a3a; border-radius: 3px; flex: none;
 }
 .claw-cord {
-  width: 3px; background: #2b2b2b; flex: none;
+  width: .7cqw; background: #2b241d; flex: none;
   height: var(--drop, 8%);
-  transition: height .48s cubic-bezier(.4, 0, .2, 1);
+  transition: height .28s cubic-bezier(.4, 0, .2, 1);
 }
 .claw-hook {
-  width: clamp(40px, 7vh, 62px); height: auto; flex: none;
+  width: 11cqw; height: auto; flex: none;
   margin-top: -2px;
   filter: drop-shadow(0 4px 6px rgba(0, 0, 0, .3));
 }
 .claw-hook .arm path {
-  fill: none; stroke: #23242a; stroke-width: 5; stroke-linecap: round;
+  fill: none; stroke: #2b241d; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round;
 }
 .claw-hook .arm {
   transform-box: view-box; transform-origin: 30px 31px;
-  transition: transform .3s ease-out;
+  transition: transform .18s ease-out;
 }
 .claw-crane.grip .arm.l { transform: rotate(24deg); }
 .claw-crane.grip .arm.r { transform: rotate(-24deg); }
 
 /* "제시문" 화살표 — 지금 쳐야 할 인형을 가리킨다 */
 .claw-aim {
-  /* 바닥 인형(FLOOR_B 14%) + 타깃 인형 높이 위에 딱 붙인다 — 허공에 뜨지 않게 */
-  position: absolute; top: auto;
-  bottom: calc(14% + clamp(70px, 12.6vh, 132px) + 8px);
+  /* 바닥 인형(FLOOR_B 14%) + 타깃 인형 높이 위에 딱 붙인다 — 허공에 뜨지 않게.
+     기계 비율이 고정이라 % 로 잡아도 어느 화면에서나 같은 자리다. */
+  position: absolute; top: auto; bottom: 42%;
   left: 50%;
   transform: translateX(-50%);
   display: flex; flex-direction: column; align-items: center;
-  opacity: 0; transition: left .5s cubic-bezier(.4, 0, .2, 1), opacity .25s;
+  opacity: 0; transition: left .3s cubic-bezier(.4, 0, .2, 1), opacity .25s;
   z-index: 3; pointer-events: none;
 }
 .claw-aim.on { opacity: 1; }
 .claw-aim span {
   background: #ff4d8d; color: #fff; font-weight: 900;
-  font-size: clamp(11px, 1.7vh, 15px); letter-spacing: .5px;
-  padding: 2px 10px; border-radius: 999px;
-  border: 2px solid #2b2b2b;
+  font-size: 3cqw; letter-spacing: .5px;
+  padding: .3cqw 2cqw; border-radius: 999px;
+  border: .5cqw solid #2b241d; white-space: nowrap;
 }
 .claw-aim i {
   width: 0; height: 0; margin-top: 1px;
-  border-left: 7px solid transparent; border-right: 7px solid transparent;
-  border-top: 9px solid #ff4d8d;
+  border-left: 1.5cqw solid transparent; border-right: 1.5cqw solid transparent;
+  border-top: 2cqw solid #ff4d8d;
   animation: clawAimBob 1s infinite ease-in-out;
 }
 @keyframes clawAimBob {
@@ -139,77 +212,74 @@
 }
 
 /* ---------------------------------------------------------
+   인형 그림 — 6종 + 하트가 한 세트로 보이게
+   외곽선 #2b241d, 두께 = viewBox 높이의 2.4%, 채움은 단색 평면(광택 없음).
+   얼굴은 0.74 로 줄여 그리므로 선 두께를 2.4/0.74 = 3.24 로 올려 둔다.
+   --------------------------------------------------------- */
+.dsvg { display: block; width: 100%; height: 100%; }
+.dsvg .bd { fill: var(--c1, #ffe3b0); stroke: #2b241d; stroke-width: 2.4; }
+.dsvg .fc path, .dsvg .fc ellipse, .dsvg .fc g {
+  fill: none; stroke: #2b241d; stroke-width: 3.24;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.dsvg .fc .ey { fill: #2b241d; stroke: none; }
+
+/* ---------------------------------------------------------
    낱말이 적힌 동그란 인형들 (유리창 바닥에 모여 있다)
    --------------------------------------------------------- */
 .claw-dolls { position: absolute; inset: 0; }
 .claw-doll {
   position: absolute;
-  width: clamp(56px, 10vh, 104px); height: clamp(56px, 10vh, 104px);
-  margin-left: 0;
+  width: 17%; aspect-ratio: 1;
   transform: translate(-50%, 0) rotate(var(--tilt, 0deg));
   border-radius: 50%;
-  background: radial-gradient(circle at 34% 28%, #fff, var(--c1, #ffe3b0) 42%, var(--c2, #f6c67a) 100%);
-  border: clamp(2px, .34vh, 3px) solid #2f2a26;
-  box-shadow: 0 5px 10px -4px rgba(0, 0, 0, .45), inset 0 -8px 14px -8px rgba(0, 0, 0, .3);
-  display: flex; align-items: center; justify-content: center;
-  transition: bottom .5s cubic-bezier(.4, 0, .2, 1), left .55s cubic-bezier(.4, 0, .2, 1),
-    width .25s, height .25s, opacity .3s;
+  display: block;
+  transition: bottom .28s cubic-bezier(.4, 0, .2, 1), left .3s cubic-bezier(.4, 0, .2, 1),
+    width .2s, opacity .25s;
   z-index: 2;
+  filter: drop-shadow(0 .5cqw .8cqw rgba(0, 0, 0, .35));
 }
-.claw-doll .claw-face {
-  position: absolute; width: 78%; height: 78%; top: 6%;
-  opacity: .95;
-}
-.claw-doll .claw-face path,
-.claw-doll .claw-face ellipse,
-.claw-doll .claw-face g { fill: none; stroke: #2f2a26; stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
-.claw-doll .claw-face .ey { fill: #2f2a26; stroke: none; }
 
 /* 인형에 적힌 낱말 */
 .claw-word {
-  position: absolute; left: 50%; bottom: -6%;
+  position: absolute; left: 50%; bottom: -8%;
   transform: translateX(-50%) rotate(calc(var(--tilt, 0deg) * -1));
-  background: rgba(255, 255, 255, .96);
-  border: 2px solid #2f2a26; border-radius: 999px;
-  padding: 1px clamp(6px, .9vw, 10px);
-  font-weight: 900; color: #2f2a26; white-space: nowrap;
-  font-size: clamp(14px, 2.2vh, 19px);
-  box-shadow: 0 3px 6px -3px rgba(0, 0, 0, .5);
+  background: #fffaf3;
+  border: .45cqw solid #2b241d; border-radius: 999px;
+  padding: .2cqw 1.4cqw;
+  font-weight: 900; color: #2b241d; white-space: nowrap;
+  font-size: 3.2cqw;
 }
-.claw-word .hit { color: #e0338a; }
+.claw-word .hit { color: #0e9c78; }
 
 /* 지금 쳐야 할 인형 — 크고 또렷하게 */
 .claw-doll.tgt {
-  z-index: 5;
-  width: clamp(70px, 12.6vh, 132px); height: clamp(70px, 12.6vh, 132px);
-  box-shadow: 0 0 0 4px rgba(255, 77, 141, .35), 0 8px 16px -6px rgba(0, 0, 0, .5);
+  z-index: 5; width: 21%;
+  filter: drop-shadow(0 .6cqw 1cqw rgba(0, 0, 0, .45));
+  box-shadow: 0 0 0 .8cqw rgba(255, 77, 141, .38);
 }
-.claw-doll.tgt .claw-word {
-  font-size: clamp(15px, 2.6vh, 24px);
-  border-color: #e0338a; color: #23242a;
-}
-.claw-doll:not(.tgt) { opacity: .8; filter: saturate(1); }
-.claw-doll:not(.tgt) .claw-word { background: rgba(255, 255, 255, .82); }
+.claw-doll.tgt .claw-word { font-size: 4.2cqw; border-color: #e0338a; }
+.claw-doll:not(.tgt) { opacity: .72; }
 
-.claw-doll.lock { box-shadow: 0 0 0 5px rgba(62, 224, 192, .55), 0 8px 16px -6px rgba(0, 0, 0, .5); }
-.claw-doll.pop { animation: clawPop .4s ease-out; }
+.claw-doll.lock { box-shadow: 0 0 0 .9cqw rgba(14, 156, 120, .5); }
+.claw-doll.pop { animation: clawPop .3s ease-out; }
 @keyframes clawPop {
   0% { transform: translate(-50%, 0) rotate(var(--tilt, 0deg)) scale(.6); }
   60% { transform: translate(-50%, 0) rotate(var(--tilt, 0deg)) scale(1.12); }
   100% { transform: translate(-50%, 0) rotate(var(--tilt, 0deg)) scale(1); }
 }
-.claw-doll.in { animation: clawDropIn .55s ease-out; }
+.claw-doll.in { animation: clawDropIn .42s ease-out; }
 @keyframes clawDropIn {
   0% { transform: translate(-50%, -320%) rotate(var(--tilt, 0deg)); opacity: 0; }
   70% { transform: translate(-50%, -8%) rotate(var(--tilt, 0deg)); opacity: 1; }
   100% { transform: translate(-50%, 0) rotate(var(--tilt, 0deg)); }
 }
 .claw-doll.held { z-index: 6; }
-.claw-doll.fall { transition: bottom .45s cubic-bezier(.55, 0, 1, .5), opacity .4s .18s; opacity: 0; }
+.claw-doll.fall { transition: bottom .3s cubic-bezier(.55, 0, 1, .5), opacity .26s .1s; opacity: 0; }
 /* 실패 — 인형을 떨어뜨린다 */
 .claw-doll.dropped {
-  transition: bottom .34s cubic-bezier(.6, 0, 1, .55);
-  animation: clawWobble .5s .3s ease-out;
+  transition: bottom .24s cubic-bezier(.6, 0, 1, .55);
+  animation: clawWobble .4s .2s ease-out;
 }
 @keyframes clawWobble {
   0% { transform: translate(-50%, 0) rotate(var(--tilt, 0deg)); }
@@ -223,66 +293,66 @@
    --------------------------------------------------------- */
 .claw-body {
   position: relative; flex: none;
-  height: clamp(96px, 17vh, 150px);
+  height: 27cqw;
 }
 /* 왼쪽 검은 레버 */
 .claw-lever {
   position: absolute; left: 1%; top: 4%;
-  width: clamp(14px, 2.2vw, 22px); height: clamp(34px, 6vh, 50px);
+  width: 5cqw; height: 11cqw;
   background: linear-gradient(180deg, #4a4a4a, #1e1e1e);
-  border: 2px solid #1a1a1a; border-radius: 6px;
+  border: .5cqw solid #2b241d; border-radius: 6px;
 }
 .claw-lever i {
   position: absolute; left: 50%; top: -34%;
   transform: translateX(-50%);
   width: 60%; height: 40%;
-  background: #d9d9d9; border: 2px solid #1a1a1a; border-radius: 4px 4px 0 0;
+  background: #d9d9d9; border: .5cqw solid #2b241d; border-radius: 4px 4px 0 0;
 }
 /* 노란 조작 패널 — 동그란 버튼 2개 + 왼쪽 끝 조이스틱 */
 .claw-panel {
-  position: absolute; left: 15%; right: 6%; top: 4%;
-  height: clamp(26px, 4.6vh, 40px);
+  position: absolute; left: 15%; right: 6%; top: 5%;
+  height: 9cqw;
   background: linear-gradient(180deg, #ffe95c, #f4cf2a);
-  border: 2px solid #2b2b2b; border-radius: 6px;
+  border: .5cqw solid #2b241d; border-radius: 6px;
   display: flex; align-items: center; justify-content: flex-end;
-  gap: clamp(10px, 1.6vw, 20px);
-  padding-right: clamp(12px, 2vw, 26px);
-  box-shadow: 0 4px 0 rgba(0, 0, 0, .18);
+  gap: 4cqw;
+  padding-right: 5cqw;
+  box-shadow: 0 .8cqw 0 rgba(43, 36, 29, .22);
 }
 .claw-panel .joy {
-  position: absolute; left: clamp(6px, 1vw, 12px); bottom: 55%;
-  width: clamp(7px, 1vw, 10px); height: clamp(16px, 2.8vh, 24px);
-  background: #f2f2f2; border: 2px solid #2b2b2b; border-radius: 4px 4px 2px 2px;
+  position: absolute; left: 2.4cqw; bottom: 55%;
+  width: 2.2cqw; height: 5.4cqw;
+  background: #f2f2f2; border: .5cqw solid #2b241d; border-radius: 4px 4px 2px 2px;
 }
 .claw-panel .pb {
-  width: clamp(13px, 2.2vh, 20px); height: clamp(13px, 2.2vh, 20px);
-  border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff, #cfcfcf 60%, #9a9a9a);
-  border: 2px solid #2b2b2b;
+  width: 4.4cqw; height: 4.4cqw;
+  border-radius: 50%; background: #dcdcdc;
+  border: .5cqw solid #2b241d;
 }
 /* 아래 작은 검은 막대와 흰 카드 투입구 (그림 그대로) */
 .claw-bar {
-  position: absolute; right: 15%; top: 42%;
-  width: clamp(26px, 4vw, 44px); height: clamp(9px, 1.5vh, 14px);
-  background: #232323; border: 2px solid #141414; border-radius: 3px;
+  position: absolute; right: 15%; top: 48%;
+  width: 9cqw; height: 3cqw;
+  background: #232323; border: .4cqw solid #141414; border-radius: 3px;
 }
 .claw-card {
-  position: absolute; right: 4%; top: 36%;
-  width: clamp(16px, 2.4vw, 26px); height: clamp(24px, 4.2vh, 38px);
-  background: linear-gradient(180deg, #fafafa, #d7d7d7);
-  border: 2px solid #2b2b2b; border-radius: 7px;
+  position: absolute; right: 4%; top: 42%;
+  width: 5.4cqw; height: 8.4cqw;
+  background: #eeeeee;
+  border: .5cqw solid #2b241d; border-radius: 7px;
 }
 .claw-card::after {
   content: ''; position: absolute; left: 50%; top: 52%;
   transform: translateX(-50%);
-  width: 46%; height: 3px; background: #8b8b8b; border-radius: 2px;
+  width: 46%; height: .7cqw; background: #8b8b8b; border-radius: 2px;
 }
 /* 빨간 테두리 배출구 */
 .claw-chute {
-  position: absolute; left: 2%; bottom: 3%;
-  width: 44%; height: clamp(34px, 6.4vh, 56px);
+  position: absolute; left: 2%; bottom: 4%;
+  width: 44%; height: 11cqw;
   /* 흰 채움을 없앤다 — 빈 입력칸으로 오해해서 아이가 여길 클릭한다 */
-  background: linear-gradient(180deg, #cfd6de, #aab3bf);
-  border: clamp(3px, .5vh, 5px) solid #e8262f;
+  background: #b9c2cd;
+  border: 1cqw solid #e8262f;
   border-radius: 5px;
   box-shadow: inset 0 6px 12px -6px rgba(0, 0, 0, .45);
   display: flex; align-items: center; justify-content: center;
@@ -290,18 +360,9 @@
 }
 .claw-tray { display: flex; align-items: center; justify-content: center; }
 .claw-traydoll {
-  display: block;
-  width: clamp(30px, 5.4vh, 50px); height: clamp(30px, 5.4vh, 50px);
-  border-radius: 50%;
-  background: radial-gradient(circle at 34% 28%, #fff, var(--c1) 42%, var(--c2) 100%);
-  border: 2px solid #2f2a26;
-  animation: clawTray .5s ease-out;
+  display: block; width: 8.4cqw; height: 8.4cqw;
+  animation: clawTray .4s ease-out;
 }
-.claw-traydoll svg { width: 100%; height: 100%; }
-.claw-traydoll svg path, .claw-traydoll svg ellipse, .claw-traydoll svg g {
-  fill: none; stroke: #2f2a26; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round;
-}
-.claw-traydoll svg .ey { fill: #2f2a26; stroke: none; }
 @keyframes clawTray {
   0% { transform: translateY(-160%) scale(.7); opacity: 0; }
   60% { transform: translateY(6%) scale(1.08); opacity: 1; }
@@ -309,116 +370,101 @@
 }
 
 /* ---------------------------------------------------------
-   오른쪽 — □ point 와 빨간 하트 3개, 단계·시간·뽑은 인형
+   오른쪽 — □ point 와 빨간 하트 3개, 단계·뽑은 인형·규칙
+   HUD 숫자는 제시문 낱말(13cqw ≈ 9.4cqh)의 0.7배를 절대 안 넘는다.
    --------------------------------------------------------- */
 .claw-side {
-  flex: 1; min-width: 0; max-width: clamp(300px, 32vw, 440px); height: 100%;
+  flex: 1 1 auto; min-width: 0;
+  max-width: clamp(260px, 30cqw, 430px); height: 100%;
   display: flex; flex-direction: column;
-  gap: clamp(8px, 1.6vh, 16px);
+  gap: clamp(6px, 1.6cqh, 16px);
 }
 .claw-hud {
-  display: flex; align-items: center; gap: clamp(6px, 1vw, 12px);
+  display: flex; align-items: center; gap: clamp(5px, 1cqw, 12px);
   flex: none;
 }
 .claw-ptbox {
-  min-width: clamp(52px, 7vw, 88px);
-  padding: clamp(3px, .6vh, 7px) clamp(8px, 1vw, 14px);
+  min-width: clamp(48px, 7cqw, 88px);
+  padding: clamp(2px, .6cqh, 7px) clamp(7px, 1cqw, 14px);
   border: 3px solid #f4f6fb; border-radius: 6px;
   background: rgba(255, 255, 255, .06);
   color: #fff; font-weight: 900; text-align: center;
-  font-size: clamp(18px, 3.2vh, 32px); line-height: 1.1;
+  font-size: clamp(16px, 5.4cqh, 40px); line-height: 1.1;
 }
 .claw-ptlb {
   color: #f4f6fb; font-weight: 800;
-  font-size: clamp(14px, 2.4vh, 24px); letter-spacing: .5px;
+  font-size: clamp(12px, 4cqh, 26px); letter-spacing: .5px;
 }
-.claw-hearts { margin-left: auto; display: flex; gap: clamp(3px, .5vw, 8px); }
+.claw-hearts { margin-left: auto; display: flex; gap: clamp(3px, .5cqw, 8px); }
 .claw-heart {
-  width: clamp(24px, 4.4vh, 44px); height: clamp(24px, 4.4vh, 44px);
+  width: clamp(22px, 7cqh, 48px); height: clamp(22px, 7cqh, 48px);
   display: block;
 }
 .claw-heart svg { width: 100%; height: 100%; }
-.claw-heart .hb { fill: #ff2e4d; stroke: #a3061c; stroke-width: 5; stroke-linejoin: round; }
-.claw-heart .crack { fill: none; stroke: #ffd7dd; stroke-width: 5; opacity: 0; }
-.claw-heart.broke .hb { fill: #3b3f4a; stroke: #62687a; }
-.claw-heart.broke .crack { stroke: #1c1f26; opacity: 1; }
+.claw-heart .hb { fill: #ff2e4d; stroke: #2b241d; stroke-width: 2.4; stroke-linejoin: round; }
+.claw-heart .crack { fill: none; stroke: #ffd7dd; stroke-width: 2.4; stroke-linecap: round; opacity: 0; }
+.claw-heart.broke .hb { fill: #3b3f4a; stroke: #2b241d; }
+.claw-heart.broke .crack { stroke: #cfd6e4; opacity: 1; }
 .claw-heart.broke.now { animation: clawBreak .5s ease-out; }
+.claw-heart.live { animation: clawLive .6s ease-out; }
 @keyframes clawBreak {
   0% { transform: scale(1.3) rotate(-10deg); }
   40% { transform: scale(.85) rotate(8deg); }
   100% { transform: scale(1) rotate(0); }
 }
+@keyframes clawLive {
+  0% { transform: scale(.3); }
+  55% { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
 
 .claw-info {
   flex: none;
   background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .16);
-  border-radius: 12px; padding: clamp(6px, 1.2vh, 12px) clamp(10px, 1.4vw, 18px);
+  border-radius: 12px; padding: clamp(5px, 1.2cqh, 12px) clamp(9px, 1.4cqw, 18px);
   display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
 }
 .claw-stg b {
-  color: #ffd166; font-weight: 900; font-size: clamp(17px, 3vh, 28px); margin-right: 8px;
+  color: #ffd166; font-weight: 900; font-size: clamp(14px, 5cqh, 32px); margin-right: 8px;
 }
-.claw-stg span { color: #cfd6e4; font-size: clamp(12px, 2vh, 17px); font-weight: 700; }
-.claw-qno { margin-left: auto; color: #9fb0c6; font-size: clamp(12px, 2vh, 18px); font-weight: 700; }
-.claw-qno b { color: #fff; font-size: clamp(16px, 2.6vh, 24px); }
-
-.claw-timer { flex: none; }
-.claw-tnum {
-  display: flex; align-items: baseline; gap: 8px;
-  color: #e7edf7; font-weight: 800; font-size: clamp(13px, 2.2vh, 20px);
-  margin-bottom: 5px;
-}
-.claw-tnum b { color: #ffd166; font-size: clamp(20px, 3.6vh, 36px); }
-.claw-tnum span { margin-left: auto; color: #93a2b8; font-weight: 700; font-size: clamp(11px, 1.8vh, 15px); }
-.claw-tbar {
-  height: clamp(12px, 2vh, 20px); border-radius: 999px; overflow: hidden;
-  background: rgba(255, 255, 255, .12);
-  border: 1px solid rgba(255, 255, 255, .18);
-}
-.claw-tbar i {
-  display: block; height: 100%; width: 100%;
-  background: linear-gradient(90deg, #7ee7c4, #3ee0c0);
-}
-.claw-tbar.hot i { background: linear-gradient(90deg, #ff9a5c, #ff4d6d); }
+.claw-stg span { color: #cfd6e4; font-size: clamp(11px, 2.8cqh, 18px); font-weight: 700; }
+.claw-qno { margin-left: auto; color: #9fb0c6; font-size: clamp(11px, 3cqh, 19px); font-weight: 700; }
+.claw-qno b { color: #fff; font-size: clamp(14px, 4.4cqh, 28px); }
 
 .claw-rules {
   flex: none;
   background: rgba(255, 255, 255, .05); border: 1px solid rgba(255, 255, 255, .14);
-  border-radius: 12px; padding: clamp(6px, 1.2vh, 12px) clamp(10px, 1.4vw, 16px);
+  border-radius: 12px; padding: clamp(5px, 1.2cqh, 12px) clamp(9px, 1.4cqw, 16px);
 }
 .claw-rules b {
-  display: block; color: #ff8fab; font-size: clamp(12px, 2vh, 17px); margin-bottom: 4px;
+  display: block; color: #ff8fab; font-size: clamp(11px, 2.8cqh, 17px); margin-bottom: 4px;
 }
 .claw-rules p {
-  color: #b8c4d6; font-size: clamp(11px, 1.8vh, 15px); font-weight: 600;
+  color: #b8c4d6; font-size: clamp(10px, 2.5cqh, 15px); font-weight: 600;
   line-height: 1.5; margin: 0; padding-left: 12px; text-indent: -12px;
 }
 .claw-rules p::before { content: '· '; color: #6b7688; }
 
+/* 비었을 땐 줄어든다 — 1920 에서 빈 상자가 화면 최대 요소가 되던 문제 */
 .claw-shelfbox {
-  flex: 1; min-height: 0;
+  flex: 0 0 auto;
   background: rgba(255, 255, 255, .05); border: 1px solid rgba(255, 255, 255, .14);
-  border-radius: 12px; padding: clamp(6px, 1.2vh, 12px) clamp(10px, 1.4vw, 16px);
+  border-radius: 12px; padding: clamp(5px, 1.2cqh, 12px) clamp(9px, 1.4cqw, 16px);
   display: flex; flex-direction: column; gap: 6px;
 }
-.claw-shelfhd { color: #cfd6e4; font-weight: 800; font-size: clamp(12px, 2vh, 18px); flex: none; }
-.claw-shelfhd b { color: #ff8fab; font-size: clamp(15px, 2.6vh, 24px); }
+.claw-shelfbox.has { flex: 0 1 auto; min-height: 0; }
+.claw-shelfhd { color: #cfd6e4; font-weight: 800; font-size: clamp(11px, 2.8cqh, 18px); flex: none; }
+.claw-shelfhd b { color: #ff8fab; font-size: clamp(13px, 4.4cqh, 26px); }
 .claw-shelf {
-  flex: 1; min-height: 0; overflow: hidden;
-  display: flex; flex-wrap: wrap; align-content: flex-start; gap: clamp(3px, .5vh, 7px);
+  min-height: 0; overflow: hidden;
+  display: flex; flex-wrap: wrap; align-content: flex-start; gap: clamp(3px, .6cqh, 7px);
 }
+.claw-shelfbox.has .claw-shelf { margin-top: clamp(3px, .8cqh, 8px); }
 .claw-mini {
-  width: clamp(22px, 3.8vh, 38px); height: clamp(22px, 3.8vh, 38px);
-  border-radius: 50%;
-  background: radial-gradient(circle at 34% 28%, #fff, var(--c1) 42%, var(--c2) 100%);
-  border: 2px solid #2f2a26;
-  animation: clawPopIn .35s ease-out;
+  display: inline-block;
+  width: clamp(20px, 5.6cqh, 40px); height: clamp(20px, 5.6cqh, 40px);
+  animation: clawPopIn .3s ease-out;
 }
-.claw-mini svg { width: 100%; height: 100%; }
-.claw-mini svg path, .claw-mini svg ellipse, .claw-mini svg g {
-  fill: none; stroke: #2f2a26; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round;
-}
-.claw-mini svg .ey { fill: #2f2a26; stroke: none; }
 @keyframes clawPopIn {
   0% { transform: scale(.3); opacity: 0; }
   100% { transform: scale(1); opacity: 1; }
@@ -449,26 +495,20 @@
 .claw-introbox { background: rgba(46, 12, 30, .78); border-color: rgba(255, 190, 220, .45); }
 .claw-chiprow {
   display: flex; justify-content: center; flex-wrap: wrap;
-  gap: clamp(6px, 1vw, 14px); margin: clamp(8px, 1.4vh, 16px) 0 2px;
+  gap: clamp(6px, 1cqw, 14px); margin: clamp(6px, 1.4cqh, 16px) 0 2px;
 }
 .claw-chip {
-  width: clamp(34px, 6.4vh, 62px); height: clamp(34px, 6.4vh, 62px);
-  border-radius: 50%;
-  background: radial-gradient(circle at 34% 28%, #fff, var(--c1) 42%, var(--c2) 100%);
-  border: 2px solid #2f2a26;
-  box-shadow: 0 4px 10px -4px rgba(0, 0, 0, .6);
+  display: inline-block;
+  width: clamp(30px, 7vh, 66px); height: clamp(30px, 7vh, 66px);
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, .6));
 }
-.claw-chip svg { width: 100%; height: 100%; }
-.claw-chip svg path, .claw-chip svg ellipse, .claw-chip svg g {
-  fill: none; stroke: #2f2a26; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round;
-}
-.claw-chip svg .ey { fill: #2f2a26; stroke: none; }
 
 /* 좁은 화면(크롬북 1366×768)에서 기계가 눌리지 않게 */
 @media (max-width: 1100px) {
-  .claw-machine { max-width: 44vw; min-width: 280px; }
-  .claw-doll { width: clamp(48px, 8.4vh, 74px); height: clamp(48px, 8.4vh, 74px); }
+  .claw-machine { max-width: 42cqw; min-width: 210px; }
+  .claw-side { max-width: clamp(200px, 34cqw, 320px); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .stage.claw-shake, .claw-aim i, .claw-doll.pop, .claw-doll.in { animation: none; }
+  .stage.claw-shake, .claw-aim i, .claw-doll.pop, .claw-doll.in,
+  .claw-board.waiting .claw-tbar { animation: none; }
 }
