@@ -247,10 +247,24 @@
   /* =========================================================
      인형 만들기 / 그리기
      ========================================================= */
+  /** 한 줄에 같은 인형이 나란히 놓이지 않게 — 지금 바닥에 없는 종류부터 고른다 */
+  function pickKind(exceptSlot) {
+    var used = [];
+    if (C && C.dolls) {
+      for (var i = 0; i < C.dolls.length; i++) {
+        if (i === exceptSlot || !C.dolls[i]) continue;
+        used.push(C.dolls[i].kind);
+      }
+    }
+    var free = KINDS.filter(function (k) { return used.indexOf(k) < 0; });
+    var pool = free.length ? free : KINDS;
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
   function makeDoll(slot, drop) {
     var stage = Math.max(1, C ? Math.floor(C.done / PER_STAGE) + 1 : 1);
     if (stage > STAGES) stage = STAGES;
-    var kind = KINDS[Math.floor(Math.random() * KINDS.length)];
+    var kind = pickKind(slot);
     var el = document.createElement('div');
     el.className = 'claw-doll' + (drop ? ' in' : '');
     el.style.left = SLOTS[slot] + '%';
@@ -359,8 +373,7 @@
     C.tgtSlot = slot;
     var d = C.dolls[slot];
     // 규칙 9 — 가끔 하트 인형이 나온다
-    var kind = Math.random() < HEART_RATE ? 'heart'
-      : KINDS[Math.floor(Math.random() * KINDS.length)];
+    var kind = Math.random() < HEART_RATE ? 'heart' : pickKind(slot);
     reface(d, kind, pickWord(stage));
 
     C.dolls.forEach(function (x) { if (x) x.el.classList.remove('tgt'); });

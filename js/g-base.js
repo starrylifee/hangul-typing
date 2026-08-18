@@ -130,6 +130,8 @@
       '<path class="bpj" d="M50 36 C37 36 33 48 33 60 L35 84 L67 84 L69 60 C69 48 63 36 50 36 Z"/>' +
       '<path class="bpa" d="M66 50 C76 44 80 34 78 26"/>' +
       '<path class="bpa" d="M36 50 C46 42 60 34 74 30"/>' +
+      '<path d="M74 30 L96 6" stroke="#c98a4b" stroke-width="7" stroke-linecap="round" fill="none"/>' +
+      '<circle cx="98" cy="4" r="4" fill="#2b2f3a"/>' +
       '<circle class="bph" cx="50" cy="24" r="12"/>' +
       '<path class="bpc" d="M38 21 C38 11 62 11 62 21 Z"/>' +
       '<path class="bpc" d="M38 21 L34 24 L38 25 Z"/>' +
@@ -196,8 +198,8 @@
       '<stop offset="1" stop-color="#63300e" stop-opacity="0"/></radialGradient>' +
       '</defs>' +
       // 팔 — 손목에서 오른쪽 아래로 (기획서 그림). 굵은 선 두 겹으로 테두리를 만든다
-      '<path d="M114 148 L158 198" stroke="#5a2c0d" stroke-width="34" stroke-linecap="round" fill="none"/>' +
-      '<path d="M114 148 L158 198" stroke="#f2c79b" stroke-width="27" stroke-linecap="round" fill="none"/>' +
+      '<path d="M114 148 L146 184" stroke="#5a2c0d" stroke-width="34" stroke-linecap="round" fill="none"/>' +
+      '<path d="M114 148 L146 184" stroke="#f2c79b" stroke-width="27" stroke-linecap="round" fill="none"/>' +
       // 하얀 소매(손목 밴드)
       '<g transform="rotate(-45 134 170)">' +
       '<rect x="114" y="156" width="40" height="28" rx="6" fill="#f8f9fc" stroke="#5a2c0d" stroke-width="3.2"/></g>' +
@@ -212,13 +214,14 @@
       '<path d="M62 118 C62 88 84 72 112 72 C142 72 161 90 160 120 C159 152 135 172 106 172 ' +
       'C76 172 62 150 62 118 Z" fill="url(#bsGlv)" stroke="#5a2c0d" stroke-width="3.8"/>' +
       // 엄지 — 왼쪽으로 크게 벌어진다 (밑동은 손바닥 밑으로 들어간다)
-      '<g transform="rotate(-24 62 152)">' +
-      '<rect x="40" y="74" width="30" height="90" rx="15" fill="url(#bsGlv2)" stroke="#5a2c0d" stroke-width="3.4"/>' +
+      '<g transform="rotate(-16 62 152)">' +
+      '<rect x="46" y="74" width="30" height="90" rx="15" fill="url(#bsGlv2)" stroke="#5a2c0d" stroke-width="3.4"/>' +
       '</g>' +
-      // 웨빙 — 엄지와 검지 사이를 잇는 X 자 가죽끈
-      '<path d="M40 98 L70 56 L92 98 L64 138 Z" fill="#bb7434" stroke="#5a2c0d" stroke-width="3.4" stroke-linejoin="round"/>' +
+      // 웨빙 — 엄지와 검지 사이를 잇는 X 자 가죽끈.
+      // 손가락 위로 떠 보이지 않게 손가락 밑동 아래(엄지·검지 사이 골)로 내렸다
+      '<path d="M42 112 L68 82 L92 108 L66 142 Z" fill="#bb7434" stroke="#5a2c0d" stroke-width="3.4" stroke-linejoin="round"/>' +
       '<g stroke="#f0d3a4" stroke-width="3.2" stroke-linecap="round" fill="none">' +
-      '<path d="M47 90 L79 76 M55 110 L86 90 M52 74 L70 122 M64 62 L82 106"/>' +
+      '<path d="M51 102 L75 132 M59 93 L83 123 M50 123 L76 93 M58 132 L84 102"/>' +
       '</g>' +
       '<ellipse cx="112" cy="122" rx="44" ry="36" fill="url(#bsGlvP)"/>' +
       // 손가락 사이 이음선

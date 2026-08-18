@@ -41,7 +41,7 @@
 .bps { stroke: #1a1d26; stroke-width: 7; stroke-linecap: round; fill: none; }
 
 .base-batter {                 /* 왼쪽 타석(야구장 SVG 의 x 33~40) 안에 세운다 */
-  position: absolute; left: 36%; top: 88%;
+  position: absolute; left: 34%; top: 80%;
   height: clamp(84px, 20vh, 172px);
   transform: translate(-50%, -88%);
   transform-origin: 60% 100%;
