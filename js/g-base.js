@@ -50,6 +50,15 @@
     white: { key: 'white', name: '백팀', c1: '#f4f6fa', c2: '#c8ced9', ink: '#1b2333' }
   };
 
+  /* 공의 종류 — 날아올 때 이미 1루타/2루타/3루타/홈런이 정해져 있다.
+     확률은 규칙 4 그대로(HOMER 1/20 → 나머지는 HITMIX·CPUMIX).
+     속도는 규칙 2 의 2~10초 범위를 종류별 구간으로 쪼갠 것 — 좋은 공일수록 빨리 지나간다. */
+  var KIND = {
+    h1: { cls: 'k1', bases: 1, label: '1루타', name: '안타!', foe: '상대 안타', sec: [6, 10] },
+    h2: { cls: 'k2', bases: 2, label: '2루타', name: '2루타!', foe: '상대 2루타', sec: [4.5, 7] },
+    h3: { cls: 'k3', bases: 3, label: '3루타', name: '3루타!', foe: '상대 3루타', sec: [3, 5] },
+    hr: { cls: 'khr', bases: 4, label: '홈런', name: '홈런!', foe: '상대 홈런', sec: [2, 3.5] }
+  };
   var G, C;
 
   /* =========================================================
@@ -130,35 +139,71 @@
       '<path class="bpj" d="M50 36 C37 36 33 48 33 60 L35 84 L67 84 L69 60 C69 48 63 36 50 36 Z"/>' +
       '<path class="bpa" d="M66 50 C76 44 80 34 78 26"/>' +
       '<path class="bpa" d="M36 50 C46 42 60 34 74 30"/>' +
+      /* 배트는 따로 묶어 둔다 — 칠 때 손을 축으로 이 묶음만 돌려서 휘두른다 */
+      '<g class="bpbat">' +
       '<path d="M74 30 L96 6" stroke="#c98a4b" stroke-width="7" stroke-linecap="round" fill="none"/>' +
       '<circle cx="98" cy="4" r="4" fill="#2b2f3a"/>' +
+      '</g>' +
       '<circle class="bph" cx="50" cy="24" r="12"/>' +
       '<path class="bpc" d="M38 21 C38 11 62 11 62 21 Z"/>' +
       '<path class="bpc" d="M38 21 L34 24 L38 25 Z"/>' +
       '</svg>';
   }
 
-  /* 야구공 — 하얀 공에 빨간 실밥 (기획서: 낱말이 공에 쓰여 있다) */
+  /* 주자 — 루에 서 있는 사람. 투수·타자와 같은 그림체(같은 클래스, 같은 선 굵기)를 쓴다.
+     유니폼 색은 CSS 에서 우리 팀(--me1/--me2) / 상대 팀(--you1/--you2) 으로 갈린다. */
+  function runnerSvg() {
+    return '<svg viewBox="0 0 100 130" aria-hidden="true">' +
+      '<ellipse cx="50" cy="126" rx="21" ry="4" fill="rgba(0,0,0,.24)"/>' +
+      // 다리 — 한 발은 루를 딛고 한쪽 무릎은 살짝 든 "달릴 준비" 자세
+      '<path class="bpk" d="M45 80 L39 102 L43 122"/>' +
+      '<path class="bpk" d="M57 80 L68 98 L63 118"/>' +
+      '<path class="bps" d="M43 122 L34 124"/><path class="bps" d="M63 118 L72 121"/>' +
+      // 몸통(유니폼)
+      '<path class="bpj" d="M50 36 C38 36 34 47 34 59 L36 82 L66 82 L68 59 C68 47 62 36 50 36 Z"/>' +
+      '<path class="bpn" d="M50 36 L50 82"/>' +
+      // 팔 — 뒤로 한 번, 앞으로 한 번
+      '<path class="bpa" d="M36 51 C26 57 22 67 25 75"/>' +
+      '<path class="bpa" d="M66 51 C76 45 80 35 78 27"/>' +
+      // 머리 + 헬멧
+      '<circle class="bph" cx="50" cy="24" r="12"/>' +
+      '<path class="bpc" d="M38 21 C38 11 62 11 62 21 Z"/>' +
+      '<path class="bpc" d="M62 21 L73 23 L62 25 Z"/>' +
+      '</svg>';
+  }
+
+  /* 야구공 — 낱말이 공에 쓰여 있다 (규칙 6).
+     공 색과 실밥 색은 CSS 가 종류(k1/k2/k3/khr)에 따라 바꾼다. */
   function ballSvg() {
     return '<svg class="base-ballsvg" viewBox="0 0 100 100" aria-hidden="true">' +
-      '<circle cx="50" cy="50" r="46" fill="#fdfcf7" stroke="#b9b3a2" stroke-width="2"/>' +
-      '<path d="M22 14 C36 30 36 70 22 86" fill="none" stroke="#d3261a" stroke-width="3.4" stroke-linecap="round"/>' +
-      '<path d="M78 14 C64 30 64 70 78 86" fill="none" stroke="#d3261a" stroke-width="3.4" stroke-linecap="round"/>' +
+      '<circle class="bl-face" cx="50" cy="50" r="46" stroke-width="2"/>' +
+      '<path class="bl-seam" d="M22 14 C36 30 36 70 22 86" fill="none" stroke-width="3.4" stroke-linecap="round"/>' +
+      '<path class="bl-seam" d="M78 14 C64 30 64 70 78 86" fill="none" stroke-width="3.4" stroke-linecap="round"/>' +
       seams(26, 22, 78) + seams(74, 22, 78) +
+      // 홈런 공에서만 보이는 반짝임
+      '<g class="bl-spark">' +
+      star(12, 16) + star(88, 24) + star(20, 84) + star(84, 78) +
+      '</g>' +
       '</svg>';
+  }
+  function star(x, y) {
+    return '<path d="M' + x + ' ' + (y - 9) + ' Q' + (x + 2) + ' ' + (y - 2) + ' ' + (x + 9) + ' ' + y +
+      ' Q' + (x + 2) + ' ' + (y + 2) + ' ' + x + ' ' + (y + 9) +
+      ' Q' + (x - 2) + ' ' + (y + 2) + ' ' + (x - 9) + ' ' + y +
+      ' Q' + (x - 2) + ' ' + (y - 2) + ' ' + x + ' ' + (y - 9) + ' Z" fill="#fff2c0"/>';
   }
   function seams(x, y0, y1) {
     var s = '', n = 7, i, y;
     for (i = 0; i < n; i++) {
       y = y0 + (y1 - y0) * (i / (n - 1));
       var d = x < 50 ? -7 : 7;
-      s += '<path d="M' + x + ' ' + y + ' l' + d + ' ' + (i < n / 2 ? 4 : -4) +
-        '" stroke="#d3261a" stroke-width="2" stroke-linecap="round" fill="none"/>';
+      s += '<path class="bl-seam" d="M' + x + ' ' + y + ' l' + d + ' ' + (i < n / 2 ? 4 : -4) +
+        '" stroke-width="2" stroke-linecap="round" fill="none"/>';
     }
     return s;
   }
 
-  /* 배트 — 기획서 아래쪽 입력창 왼쪽에 있는 그 배트 */
+  /* 배트 — 기획서 3쪽 아래쪽에 누워 있는 그 배트 (수비 화면에는 없다) */
   function batSvg() {
     return '<svg class="base-batsvg" viewBox="0 0 220 44" aria-hidden="true">' +
       '<defs><linearGradient id="bsBat" x1="0" y1="0" x2="0" y2="1">' +
@@ -184,54 +229,93 @@
   }
 
   /* 갈색 야구 글러브 — 기획서 4쪽 가운데 (손목에서 팔이 오른쪽 아래로 뻗는다)
-     야구 글러브로 읽히게 하는 세 가지 — 뭉툭한 네 갈래, 왼쪽으로 벌어진 엄지,
-     그 둘 사이를 잇는 X 자 가죽끈(웨빙). 웨빙이 없으면 그냥 손처럼 보인다. */
+     ── 그리는 방법 ─────────────────────────────────────────────
+     손가락 네 갈래 · 엄지 · 손바닥 · 뒤꿈치를 각각 그린 뒤 **같은 도형을 두 번** 그린다.
+       1차 : 진갈색으로 굵게(테두리 두께만큼 부풀려서)  → 바깥 윤곽선이 생긴다
+       2차 : 가죽색으로 원래 크기                        → 부품끼리의 경계선이 덮인다
+     이러면 부품을 붙여 놓은 티가 안 나고 "한 덩어리에서 갈라져 나온" 모양이 된다.
+     (예전 판은 손가락·엄지를 각각 테두리째 그려서 소시지를 붙여 놓은 것처럼 보였다)
+     가죽색 그라데이션은 userSpaceOnUse — 도형이 달라도 빛이 한 방향에서 온다.
+     글러브로 읽히게 하는 것 : 위로 뻗은 네 갈래 · 아래 바깥으로 벌어진 엄지 ·
+     그 사이(웹)의 격자 가죽끈 · 오목한 포켓 · 손끝을 가로지르는 끈. */
+  var GLV = {
+    /* [밑동x, 밑동y, 끝x, 끝y, 굵기] — 캡슐 하나가 손가락 하나 */
+    F: [[92, 126, 90, 62, 15.5], [110, 120, 114, 52, 16],
+        [128, 124, 136, 60, 15.5], [144, 132, 158, 84, 13.5]],
+    TH: [74, 168, 26, 100, 16],                 // 엄지 — 아래 바깥(왼쪽)으로 벌어진다
+    WEB: 'M36 92 L74 54 L86 76 L74 134 L52 130 Z',   // 엄지와 검지 사이를 메우는 웹
+    PALM: [108, 150, 50, 44],
+    HEEL: [104, 180, 45, 28],
+    POCK: [108, 148, 48, 42]
+  };
+  function glvCap(a, ex, st) {
+    return '<path d="M' + a[0] + ' ' + a[1] + ' L' + a[2] + ' ' + a[3] + '" fill="none" ' +
+      'stroke-linecap="round" stroke-width="' + (2 * a[4] + ex) + '"' + st + '/>';
+  }
+  /** 글러브 덩어리를 한 번 그린다. outline 이면 진갈색으로 부풀려서(=테두리) */
+  function glvBody(outline) {
+    var P = GLV, ex = outline ? 9 : 0, i, s = '';
+    var st = outline ? ' stroke="#5a2c0d"' : ' stroke="url(#bsGlv)"';
+    var fl = outline ? '#5a2c0d' : 'url(#bsGlv)';
+    for (i = 0; i < P.F.length; i++) s += glvCap(P.F[i], ex, st);
+    s += glvCap(P.TH, ex, st);
+    s += '<path d="' + P.WEB + '" fill="' + fl + '"' + st + ' stroke-width="' + ex + '" stroke-linejoin="round"/>';
+    s += '<ellipse cx="' + P.PALM[0] + '" cy="' + P.PALM[1] + '" rx="' + P.PALM[2] + '" ry="' + P.PALM[3] +
+      '" fill="' + fl + '"' + st + ' stroke-width="' + ex + '"/>';
+    s += '<ellipse cx="' + P.HEEL[0] + '" cy="' + P.HEEL[1] + '" rx="' + P.HEEL[2] + '" ry="' + P.HEEL[3] +
+      '" fill="' + fl + '"' + st + ' stroke-width="' + ex + '"/>';
+    return s;
+  }
   function gloveSvg() {
-    return '<svg class="base-glovesvg" viewBox="0 0 176 220" aria-hidden="true">' +
+    var P = GLV;
+    return '<svg class="base-glovesvg" viewBox="0 0 200 240" aria-hidden="true">' +
       '<defs>' +
-      '<linearGradient id="bsGlv" x1=".15" y1="0" x2=".85" y2="1">' +
-      '<stop offset="0" stop-color="#d9924e"/><stop offset="1" stop-color="#8d4a1b"/></linearGradient>' +
-      '<linearGradient id="bsGlv2" x1="0" y1="0" x2="0" y2="1">' +
-      '<stop offset="0" stop-color="#c9813f"/><stop offset="1" stop-color="#8a4718"/></linearGradient>' +
-      '<radialGradient id="bsGlvP" cx="46%" cy="40%" r="60%">' +
-      '<stop offset="0" stop-color="#63300e" stop-opacity=".45"/>' +
-      '<stop offset="1" stop-color="#63300e" stop-opacity="0"/></radialGradient>' +
+      '<linearGradient id="bsGlv" gradientUnits="userSpaceOnUse" x1="34" y1="34" x2="160" y2="212">' +
+      '<stop offset="0" stop-color="#dd9a55"/><stop offset=".5" stop-color="#b26c2b"/>' +
+      '<stop offset="1" stop-color="#844416"/></linearGradient>' +
+      '<radialGradient id="bsGlvD" cx="50%" cy="42%" r="58%">' +
+      '<stop offset="0" stop-color="#3f1e08" stop-opacity=".46"/>' +
+      '<stop offset=".55" stop-color="#3f1e08" stop-opacity=".2"/>' +
+      '<stop offset="1" stop-color="#3f1e08" stop-opacity="0"/></radialGradient>' +
+      '<radialGradient id="bsGlvL" cx="50%" cy="66%" r="56%">' +
+      '<stop offset="0" stop-color="#ffdcae" stop-opacity=".32"/>' +
+      '<stop offset="1" stop-color="#ffdcae" stop-opacity="0"/></radialGradient>' +
       '</defs>' +
-      // 팔 — 손목에서 오른쪽 아래로 (기획서 그림). 굵은 선 두 겹으로 테두리를 만든다
-      '<path d="M114 148 L152 192" stroke="#5a2c0d" stroke-width="34" stroke-linecap="round" fill="none"/>' +
-      '<path d="M114 148 L152 192" stroke="#f2c79b" stroke-width="27" stroke-linecap="round" fill="none"/>' +
-      // 하얀 소매(손목 밴드)
-      '<g transform="rotate(-45 134 170)">' +
-      '<rect x="114" y="156" width="40" height="28" rx="6" fill="#f8f9fc" stroke="#5a2c0d" stroke-width="3.2"/></g>' +
-      // 손가락 네 갈래 — 뭉툭하고 짧게 (포켓이 주인공)
-      '<g fill="url(#bsGlv2)" stroke="#5a2c0d" stroke-width="3.4" stroke-linejoin="round">' +
-      '<g transform="rotate(-14 86 112)"><rect x="73" y="40" width="26" height="76" rx="13"/></g>' +
-      '<g transform="rotate(-4 108 112)"><rect x="95" y="33" width="26" height="83" rx="13"/></g>' +
-      '<g transform="rotate(7 129 112)"><rect x="116" y="37" width="26" height="79" rx="13"/></g>' +
-      '<g transform="rotate(19 148 116)"><rect x="136" y="50" width="24" height="68" rx="12"/></g>' +
-      '</g>' +
-      // 손바닥(포켓)
-      '<path d="M62 118 C62 88 84 72 112 72 C142 72 161 90 160 120 C159 152 135 172 106 172 ' +
-      'C76 172 62 150 62 118 Z" fill="url(#bsGlv)" stroke="#5a2c0d" stroke-width="3.8"/>' +
-      // 엄지 — 왼쪽으로 크게 벌어진다 (밑동은 손바닥 밑으로 들어간다)
-      '<g transform="rotate(-16 62 152)">' +
-      '<rect x="46" y="74" width="30" height="90" rx="15" fill="url(#bsGlv2)" stroke="#5a2c0d" stroke-width="3.4"/>' +
-      '</g>' +
-      // 웨빙 — 엄지와 검지 사이를 잇는 X 자 가죽끈.
-      // 손가락 위로 떠 보이지 않게 손가락 밑동 아래(엄지·검지 사이 골)로 내렸다
-      '<path d="M42 112 L68 82 L92 108 L66 142 Z" fill="#bb7434" stroke="#5a2c0d" stroke-width="3.4" stroke-linejoin="round"/>' +
-      '<g stroke="#f0d3a4" stroke-width="3.2" stroke-linecap="round" fill="none">' +
-      '<path d="M51 102 L75 132 M59 93 L83 123 M50 123 L76 93 M58 132 L84 102"/>' +
-      '</g>' +
-      '<ellipse cx="112" cy="122" rx="44" ry="36" fill="url(#bsGlvP)"/>' +
-      // 손가락 사이 이음선
-      '<g stroke="#6b3612" stroke-width="2.6" stroke-linecap="round" fill="none" opacity=".8">' +
-      '<path d="M96 74 L94 88 M118 74 L119 88 M138 78 L142 92"/>' +
-      '</g>' +
-      // 포켓의 바느질 자국
-      '<path d="M76 126 C94 114 130 114 148 128" fill="none" stroke="#f2d6ac" stroke-width="3" stroke-linecap="round" stroke-dasharray="8 7"/>' +
-      '<path d="M80 146 C96 136 128 136 142 146" fill="none" stroke="#f2d6ac" stroke-width="2.6" stroke-linecap="round" stroke-dasharray="7 7" opacity=".85"/>' +
-      '<path d="M66 132 C72 156 90 172 112 173" fill="none" stroke="#f2d6ac" stroke-width="2.6" stroke-linecap="round" stroke-dasharray="6 8" opacity=".7"/>' +
+      // 팔 — 손목에서 오른쪽 아래로 (기획서 그림)
+      '<path d="M132 190 L180 240" stroke="#5a2c0d" stroke-width="46" stroke-linecap="round" fill="none"/>' +
+      '<path d="M132 190 L180 240" stroke="#f3c9a0" stroke-width="37" stroke-linecap="round" fill="none"/>' +
+      // 하얀 손목 밴드
+      '<g transform="rotate(46 152 210)">' +
+      '<rect x="128" y="192" width="50" height="36" rx="9" fill="#f8f9fc" stroke="#5a2c0d" stroke-width="3.6"/>' +
+      '<path d="M140 196 L140 224 M152 196 L152 224 M164 196 L164 224" stroke="#d7dde8" stroke-width="2.4"/></g>' +
+      glvBody(true) + glvBody(false) +
+      // 포켓 — 위는 그늘, 아래는 빛. 오목한 접시로 보이게
+      '<ellipse cx="' + P.POCK[0] + '" cy="' + P.POCK[1] + '" rx="' + P.POCK[2] + '" ry="' + P.POCK[3] +
+      '" fill="url(#bsGlvD)"/>' +
+      '<ellipse cx="' + P.POCK[0] + '" cy="' + (P.POCK[1] + 18) + '" rx="' + (P.POCK[2] - 6) +
+      '" ry="' + (P.POCK[3] - 14) + '" fill="url(#bsGlvL)"/>' +
+      // 손가락 사이 골 — 얕게 파인 선. 갈라져 나온 것처럼 보이게 한다
+      '<g stroke="#5a2c0d" stroke-width="3.4" stroke-linecap="round" fill="none" opacity=".5">' +
+      '<path d="M101 68 C101 90 101 106 103 124"/><path d="M122 64 C123 88 123 104 123 122"/>' +
+      '<path d="M139 78 C141 98 140 112 139 126"/></g>' +
+      // 손끝을 가로지르는 가죽끈
+      '<path d="M88 54 C106 42 134 46 156 72" fill="none" stroke="#f0d3a4" stroke-width="3.8" ' +
+      'stroke-linecap="round" stroke-dasharray="7 10"/>' +
+      // 웹 — 조금 어두운 가죽 판 + 격자로 엮인 가죽끈
+      '<path d="M42 94 C44 86 62 66 72 60 C78 58 82 64 82 72 C80 90 76 116 72 128 ' +
+      'C70 134 62 132 56 128 C48 122 40 104 42 94 Z" fill="#8a4718" opacity=".4"/>' +
+      '<g stroke="#f3d9ae" stroke-width="4.2" stroke-linecap="round" fill="none">' +
+      '<path d="M44 96 L78 62 M54 122 L82 84"/>' +
+      '<path d="M42 88 L58 106 M52 78 L70 96 M62 68 L80 88 M48 108 L64 124"/></g>' +
+      // 뒤꿈치 바느질
+      '<g stroke="#f2d6ac" stroke-width="3" stroke-linecap="round" fill="none" opacity=".85">' +
+      '<path d="M68 156 C90 174 130 174 152 154" stroke-dasharray="9 8"/>' +
+      '<path d="M76 176 C96 188 126 188 146 174" stroke-dasharray="8 8" opacity=".7"/></g>' +
+      // 포켓 테와 손끝의 빛
+      '<path d="M64 146 C74 182 142 182 152 144" fill="none" stroke="#ffd9a8" stroke-width="5" ' +
+      'stroke-linecap="round" opacity=".28"/>' +
+      '<path d="M92 60 C112 48 136 54 152 76" fill="none" stroke="#ffe4bd" stroke-width="4" ' +
+      'stroke-linecap="round" opacity=".3"/>' +
       '</svg>';
   }
 
@@ -264,8 +348,10 @@
       '  <div class="base-chiprow" id="base-lvrow">' + lv + '</div>' +
       '  <p class="base-selt">난이도</p>' +
       '  <div class="base-chiprow" id="base-dfrow">' + df + '</div>' +
-      '  <p class="gintro-hint">공에 적힌 낱말을 치면 안타 · 못 치거나 오답이면 스트라이크 (볼은 없어요)<br>' +
-      '     홈런은 스무 번에 한 번! 수비 때 맞히면 아웃, 놓치면 상대가 안타 · ' + INNINGS + '이닝</p>' +
+      '  <p class="gintro-hint">공마다 <b>1루타 · 2루타 · 3루타 · 홈런</b>이 미리 정해져 날아와요.' +
+      '     좋은 공일수록 빨라요 (1루타 6~10초 · 홈런 2~3.5초)<br>' +
+      '     공에 적힌 낱말을 치면 그 공대로 진루! 못 치거나 오답이면 스트라이크 (볼은 없어요)<br>' +
+      '     홈런 공은 스무 번에 한 번! 수비 때 맞히면 아웃, 놓치면 그 공만큼 상대가 진루 · ' + INNINGS + '이닝</p>' +
       '  <p class="gintro-go">엔터를 누르면 경기 시작</p>' +
       '</div>';
   }
@@ -278,27 +364,23 @@
       /* ---- 공격 화면 (기획서 3쪽) ---- */
       '<div class="base-att">' +
       fieldSvg() +
-      '  <div class="base-runner r1" id="base-r1"></div>' +
-      '  <div class="base-runner r2" id="base-r2"></div>' +
-      '  <div class="base-runner r3" id="base-r3"></div>' +
+      '  <div class="base-runner r1" id="base-r1">' + runnerSvg() + '</div>' +
+      '  <div class="base-runner r2" id="base-r2">' + runnerSvg() + '</div>' +
+      '  <div class="base-runner r3" id="base-r3">' + runnerSvg() + '</div>' +
       '  <div class="base-pitcher" id="base-pitcher">' + pitcherSvg() + '</div>' +
       '  <div class="base-batter">' + batterSvg() + '</div>' +
       '  <div class="base-scorebox" id="base-scorebox"><b id="base-sb-me">0</b><i>:</i><b id="base-sb-you">0</b></div>' +
-      '  <div class="base-inbar att">' + batSvg() +
-      '    <div class="base-inbox" id="base-inbox-a"><span class="ph">단어를 입력하세요</span></div>' +
-      '  </div>' +
+      '  <div class="base-bat">' + batSvg() + '</div>' +
       '</div>' +
       /* ---- 수비 화면 (기획서 4쪽) ---- */
       '<div class="base-def">' +
       '  <div class="base-sun">' + sunSvg() + '</div>' +
       '  <div class="base-cloud c1"></div><div class="base-cloud c2"></div>' +
       '  <div class="base-glove" id="base-glove">' + gloveSvg() + '</div>' +
-      '  <div class="base-inbar def">' +
-      '    <div class="base-inbox def" id="base-inbox-d"><span class="ph">단어를 쓰시오</span></div>' +
-      '  </div>' +
       '</div>' +
       /* ---- 공 (두 화면이 같이 쓴다) ---- */
       '<div class="base-ball" id="base-ball">' + ballSvg() +
+      '  <span class="base-tag" id="base-tag"></span>' +
       '  <span class="base-word" id="base-word"></span>' +
       '</div>' +
       /* ---- 오른쪽 위 스코어보드 (기획서 4쪽) ---- */
@@ -340,7 +422,7 @@
       run: { me: 0, cpu: 0 },
       outsDone: 0,
       phase: 'init', wait: 0,
-      fly: 0, t: 0, ball: null, used: []
+      fly: 0, t: 0, ball: null, used: [], lastWord: ''
     };
 
     A.prepare('base', introHtml());
@@ -448,27 +530,55 @@
   /* =========================================================
      한 타석(공 하나) 던지기
      ========================================================= */
+  /** 공의 종류를 뽑는다 — 규칙 4 의 확률 그대로 (공격 HITMIX / 수비 CPUMIX) */
+  function pickKind() {
+    if (Math.random() < HOMER) return 'hr';        // 규칙 4 — 홈런 1/20
+    var tbl = C.top ? HITMIX : CPUMIX;
+    var mix = tbl[C.diff] || tbl.normal;
+    var r = Math.random() * (mix[0] + mix[1] + mix[2]);
+    if (r < mix[0]) return 'h1';
+    if (r < mix[0] + mix[1]) return 'h2';
+    return 'h3';
+  }
+
+  /** 공에 종류 옷을 입힌다 — 색 · 딱지 */
+  function paintBall(kind) {
+    var b = A.el('base-ball');
+    if (b) {
+      b.className = 'base-ball' + (b.classList.contains('on') ? ' on' : '') + ' ' + KIND[kind].cls;
+    }
+    var t = A.el('base-tag');
+    if (t) t.textContent = KIND[kind].label + ' 공';
+  }
+
   function pitch() {
-    // 규칙 2 — 공 속도는 랜덤으로 2초 ~ 10초
-    C.fly = FLY_MIN + Math.random() * (FLY_MAX - FLY_MIN);
+    /* 새 공 = 새 타석. 앞 타석에서 치던 글자가 남아 있으면 안 된다.
+       스트라이크·아웃·이닝 교대 어느 길로 왔든 여기를 반드시 거친다. */
+    clearIn(C.lastWord);
+    C.lastWord = '';
+
+    /* 규칙 2 의 "2초~10초" 를 종류별 구간으로 쪼갰다 — 좋은 공일수록 빨리 지나간다 */
+    var kind = pickKind();
+    var sec = KIND[kind].sec;
+    C.fly = sec[0] + Math.random() * (sec[1] - sec[0]);
     C.t = 0;
     C.lane = 30 + Math.random() * 40;      // 수비 때 공이 떨어지는 자리
-    var word = pickWord(C.fly);
+    var word = pickWord(C.fly);            // 빠른 공일수록 짧은 낱말이 나온다
 
     var ballEl = A.el('base-ball');
     var wEl = A.el('base-word');
     wEl.className = 'base-word n' + Math.min(7, word.length);
+    paintBall(kind);
     var it = {
-      word: word, el: ballEl, wEl: wEl,
+      word: word, el: ballEl, wEl: wEl, hitKind: kind,
       lock: false, matched: 0, dead: false
     };
     C.ball = it;
-    G.items = [it];
+    G.items = [it];       // 판정 상태(lock·matched)도 새 항목으로 갈아 끼운다
     C.phase = 'fly';
     showBall(true);
     moveBall(0);
     draw();
-    clearIn();
   }
 
   function showBall(on) {
@@ -487,9 +597,11 @@
       y = 29 + 49 * (p * p * 0.6 + p * 0.4);
       sc = 0.58 + 0.55 * p;
     } else {
-      // 하늘에서 글러브 위(손가락 끝)로 떨어진다 — 46%,34% 가 글러브 포켓 자리다
-      x = C.lane + (46 - C.lane) * p;
-      y = -8 + 42 * p;
+      // 하늘에서 글러브의 포켓으로 떨어진다.
+      // 글러브(left 42%, top 58%, 높이 50vh)의 포켓 한가운데가 경기장의 약 43%,65% —
+      // 공 반지름만큼 위인 43%,61% 로 보내면 포켓 안에 얹힌 것처럼 보인다
+      x = C.lane + (43 - C.lane) * p;
+      y = -8 + 69 * p;
       sc = 0.5 + 0.6 * p;
     }
     b.style.left = x + '%';
@@ -497,9 +609,15 @@
     b.style.setProperty('--sc', sc.toFixed(3));
   }
 
-  function clearIn() {
+  /** 입력창을 비운다 — 값만 지우면 안 된다.
+      한글 IME 는 입력창을 비운 뒤에 조합 중이던 글자를 뒤늦게 밀어 넣는다.
+      그래서 "아" 까지만 치고 스트라이크로 넘어가면 다음 공에 "아" 가 남아 있었다.
+      games.js 의 clearInput(직전낱말) 은 그 꼬리 글자를 0.7초간 걸러 내는 장치를 함께 건다.
+      빨간 경고 테두리도 여기서 같이 지운다 (오답 뒤 새 공이 빨간 테두리로 시작했다). */
+  function clearIn(word) {
+    A.clearInput(word || '');
     var el = A.el('gamein');
-    if (el) el.value = '';
+    if (el) el.style.borderColor = '';
     if (G) G.wasBad = false;
   }
 
@@ -523,7 +641,6 @@
     var p = C.t / C.fly;
     if (p > 1) p = 1;
     moveBall(p);
-    mirrorInput();
 
     // 규칙 3 — 오답을 쓰면 스트라이크 (한/영 키가 영문 상태면 봐준다)
     if (C.ball && !C.ball.dead) {
@@ -535,15 +652,6 @@
     }
 
     if (p >= 1) timeUp();
-  }
-
-  /** 입력창에 친 글자를 기획서의 입력 상자에도 보여 준다 */
-  function mirrorInput() {
-    var v = A.el('gamein').value;
-    var box = A.el(C.top ? 'base-inbox-a' : 'base-inbox-d');
-    if (!box) return;
-    if (v) box.innerHTML = '<b>' + A.esc(v) + '</b>';
-    else box.innerHTML = '<span class="ph">' + (C.top ? '단어를 입력하세요' : '단어를 쓰시오') + '</span>';
   }
 
   /* ---------- 오답 (규칙 3) ---------- */
@@ -586,20 +694,14 @@
     else defOut(item);
   }
 
-  /* 규칙 4 — 난이도에 따라 안타·2루타·3루타, 홈런은 1/20 */
+  /* 규칙 4 — 안타·2루타·3루타·홈런.
+     주사위는 공을 던질 때(pickKind) 이미 굴렸다. 여기서는 그 공의 종류를 그대로 쓴다. */
   function swing(item) {
-    var kind, bases, name, icon, color;
-    if (Math.random() < HOMER) {
-      kind = 'hr'; bases = 4; name = '홈런!'; icon = '💥'; color = '#ffd166';
-      A.bump(100);
-    } else {
-      var mix = HITMIX[C.diff] || HITMIX.normal;
-      var r = Math.random() * (mix[0] + mix[1] + mix[2]);
-      if (r < mix[0]) { kind = 'h1'; bases = 1; name = '안타!'; }
-      else if (r < mix[0] + mix[1]) { kind = 'h2'; bases = 2; name = '2루타!'; }
-      else { kind = 'h3'; bases = 3; name = '3루타!'; }
-      icon = '⚾'; color = '#6ee7a0';
-    }
+    var kind = item.hitKind || 'h1';
+    var K = KIND[kind];
+    var bases = K.bases, name = K.name, icon, color;
+    if (kind === 'hr') { icon = '💥'; color = '#ffd166'; A.bump(100); }
+    else { icon = '⚾'; color = '#6ee7a0'; }
     var got = advance(bases, true);
     C.strikes = 0;
     showBoard();
@@ -623,22 +725,21 @@
   /* 맞히면 아웃 또는 fly out */
   function defOut(item) {
     var fly = Math.random() < 0.5;
-    banner(fly ? 'fly out!' : '아웃!',
-      fly ? '뜬공을 글러브로 잡았어요' : '“' + item.word + '” 를 잡아 아웃',
-      'out');
+    var sub = item.hitKind === 'hr' ? '홈런 공을 잡아냈어요!'
+      : (fly ? '뜬공을 글러브로 잡았어요' : '“' + item.word + '” 를 잡아 아웃');
+    banner(item.hitKind === 'hr' ? '홈런 저지!' : (fly ? 'fly out!' : '아웃!'), sub, 'out');
     A.flashItem({ icon: '🧤', name: fly ? 'fly out! 잡았어요' : '아웃! 잘 잡았어요', color: '#6ee7a0' });
     catchPop();
     addOut();
   }
 
-  /* 못 쓰면 상대가 안타·2루타·3루타 */
+  /* 못 쓰면 상대가 안타·2루타·3루타·홈런 — 놓친 그 공에 적혀 있던 종류 그대로 */
   function concede(why) {
+    var kind = (C.ball && C.ball.hitKind) || 'h1';
     endBall();
     A.breakCombo();
-    var mix = CPUMIX[C.diff] || CPUMIX.normal;
-    var r = Math.random() * (mix[0] + mix[1] + mix[2]);
-    var bases = r < mix[0] ? 1 : (r < mix[0] + mix[1] ? 2 : 3);
-    var name = bases === 1 ? '상대 안타' : (bases === 2 ? '상대 2루타' : '상대 3루타');
+    var K = KIND[kind];
+    var bases = K.bases, name = K.foe;
     var got = advance(bases, false);
     showBoard();
     banner(name, why + (got ? ' · ' + got + '점을 줬어요' : ''), 'bad');
@@ -695,13 +796,12 @@
   }
 
   function endBall() {
-    if (C.ball) C.ball.dead = true;
+    if (C.ball) { C.lastWord = C.ball.word; C.ball.dead = true; }
     C.ball = null;
     G.items = [];
     C.phase = 'anim';
     showBall(false);
-    clearIn();
-    mirrorInput();
+    clearIn(C.lastWord);      // 타석이 끝나는 즉시 한 번, 다음 공에서 한 번 더 비운다
   }
 
   function wait(sec, next) {
@@ -791,8 +891,11 @@
       bd.classList.toggle('mine-white', C.mine === 'white');
       bd.classList.toggle('mine-blue', C.mine === 'blue');
     }
-    // 그라운드 위의 주자
-    for (i = 1; i <= 3; i++) cls('base-r' + i, 'on', C.bases[i - 1]);
+    // 그라운드 위의 주자 — 공격이면 우리 팀 색, 수비면 상대 팀 색으로 갈아입는다
+    for (i = 1; i <= 3; i++) {
+      cls('base-r' + i, 'on', C.bases[i - 1]);
+      cls('base-r' + i, 'foe', !C.top);
+    }
   }
   function txt(id, v) { var e = A.el(id); if (e) e.textContent = v; }
   function cls(id, c, on) { var e = A.el(id); if (e) e.classList.toggle(c, !!on); }
