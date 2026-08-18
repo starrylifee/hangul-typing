@@ -1527,6 +1527,53 @@ ul.notyet li {
   animation: burstpop .9s forwards ease-out; pointer-events: none; z-index: 4;
 }
 
+/* 게임 인트로 — 시작 전에 한 장 보여 주고 엔터로 넘어간다 */
+.gintro {
+  position: absolute; inset: 0; z-index: 20; overflow: hidden;
+  cursor: pointer; animation: gintroIn .35s ease-out;
+  display: flex; align-items: flex-start; justify-content: center;
+}
+.gintro.out { animation: gintroOut .26s forwards ease-in; }
+@keyframes gintroIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes gintroOut { to { opacity: 0; } }
+.gintro-art {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; user-select: none; pointer-events: none;
+}
+/* 글자는 그림 가운데 위 — 캐릭터와 과자봉지를 가리지 않는 자리 */
+.gintro-box {
+  position: relative; margin-top: 4.5vh; text-align: center;
+  max-width: 44em; padding: clamp(14px, 2.4vh, 26px) clamp(20px, 3vw, 42px);
+  background: rgba(18, 11, 5, .72); border: 1px solid rgba(255, 216, 128, .35);
+  border-radius: 20px; backdrop-filter: blur(3px);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, .55);
+}
+.gintro-by {
+  color: #ffd977; font-weight: 800; letter-spacing: .5px;
+  font-size: clamp(12px, 2vh, 17px); margin-bottom: 4px;
+}
+.gintro-box h2 {
+  font-size: clamp(30px, 6.4vh, 58px); font-weight: 900; color: #fff6da;
+  margin: 0 0 8px; text-shadow: 0 3px 14px rgba(0, 0, 0, .6);
+}
+.gintro-desc {
+  color: #f0e3cc; font-size: clamp(15px, 2.6vh, 23px); line-height: 1.55; font-weight: 600;
+}
+.gintro-hint {
+  color: #9de8f5; font-size: clamp(13px, 2.2vh, 19px); font-weight: 700; margin-top: 8px;
+}
+.gintro-go {
+  margin-top: clamp(10px, 1.8vh, 18px); display: inline-block;
+  background: linear-gradient(180deg, #ffd977, #f0b03c); color: #2a1a08;
+  font-weight: 900; font-size: clamp(15px, 2.6vh, 22px);
+  padding: 9px 26px; border-radius: 999px;
+  animation: gintroPulse 1.4s infinite ease-in-out;
+}
+@keyframes gintroPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
 /* =========================================================
    학생 게임 3) 폭죽 놀이
    ========================================================= */

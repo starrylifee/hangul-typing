@@ -1,0 +1,432 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" role="img" aria-label="동굴 안에서 밖을 바라보는 탐험가. 동굴 벽에는 과자봉지와 보석이 박혀 있다.">
+<title>과자 캐기 — 동굴</title>
+
+<defs>
+  <!-- 동굴 밖 -->
+  <linearGradient id="dgSky" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%"   stop-color="#7cc7e0"/>
+    <stop offset="32%"  stop-color="#bfe2df"/>
+    <stop offset="60%"  stop-color="#ffeeb4"/>
+    <stop offset="100%" stop-color="#fff9e2"/>
+  </linearGradient>
+  <radialGradient id="dgSun" cx="50%" cy="50%" r="50%">
+    <stop offset="0%"   stop-color="#ffffff" stop-opacity=".9"/>
+    <stop offset="42%"  stop-color="#fff4c0" stop-opacity=".6"/>
+    <stop offset="100%" stop-color="#ffe07a" stop-opacity="0"/>
+  </radialGradient>
+  <linearGradient id="dgRay" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%"   stop-color="#fffdf0" stop-opacity=".7"/>
+    <stop offset="60%"  stop-color="#fff0b4" stop-opacity=".22"/>
+    <stop offset="100%" stop-color="#ffe488" stop-opacity="0"/>
+  </linearGradient>
+  <linearGradient id="dgRayIn" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%"   stop-color="#fff0b8" stop-opacity=".32"/>
+    <stop offset="70%"  stop-color="#ffdd77" stop-opacity=".09"/>
+    <stop offset="100%" stop-color="#ffdd77" stop-opacity="0"/>
+  </linearGradient>
+  <radialGradient id="dgWallLit" cx="50%" cy="52%" r="52%">
+    <stop offset="0%"   stop-color="#ffcf72" stop-opacity=".5"/>
+    <stop offset="55%"  stop-color="#ffb84f" stop-opacity=".16"/>
+    <stop offset="100%" stop-color="#ff9e2e" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="dgMouthAO" cx="50%" cy="50%" r="50%">
+    <stop offset="72%" stop-color="#7a4a12" stop-opacity="0"/>
+    <stop offset="100%" stop-color="#5c3208" stop-opacity=".55"/>
+  </radialGradient>
+
+  <linearGradient id="dgGem" x1="0.15" y1="0" x2="0.85" y2="1">
+    <stop offset="0%"   stop-color="#cdf8ff"/>
+    <stop offset="42%"  stop-color="#4ad2f2"/>
+    <stop offset="100%" stop-color="#1069ab"/>
+  </linearGradient>
+  <linearGradient id="dgBody" x1="0" y1="0" x2="0.3" y2="1">
+    <stop offset="0%"   stop-color="#4e3520"/>
+    <stop offset="100%" stop-color="#180f07"/>
+  </linearGradient>
+  <linearGradient id="dgHat" x1="0" y1="0" x2="0.25" y2="1">
+    <stop offset="0%"   stop-color="#704c25"/>
+    <stop offset="100%" stop-color="#26170a"/>
+  </linearGradient>
+
+  <!-- 동굴 입구 — 깨진 바위 면처럼 각지게 -->
+  <path id="dgMouth" d="M412 330 L470 208 L560 168 L640 186 L706 148
+    L812 132 L908 152 L986 140 L1062 190 L1136 268
+    L1112 350 L1180 424 L1204 520 L1176 616 L1212 700
+    L1150 762 L1046 818 L940 838 L838 812 L742 844 L640 828
+    L552 782 L500 716 L448 696 L412 600 L398 462 Z"/>
+  <clipPath id="dgClip"><use href="#dgMouth"/></clipPath>
+  <!-- 입구를 뺀 나머지 = 바위가 그려질 영역 -->
+  <clipPath id="dgWall" clip-rule="evenodd">
+    <path d="M0 0H1600V900H0Z
+      M412 330 L470 208 L560 168 L640 186 L706 148
+      L812 132 L908 152 L986 140 L1062 190 L1136 268
+      L1112 350 L1180 424 L1204 520 L1176 616 L1212 700
+      L1150 762 L1046 818 L940 838 L838 812 L742 844 L640 828
+      L552 782 L500 716 L448 696 L412 600 L398 462 Z"/>
+  </clipPath>
+
+  <filter id="dgGlow" x="-80%" y="-80%" width="260%" height="260%">
+    <feGaussianBlur stdDeviation="8" result="b"/>
+    <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+  <filter id="dgSoft" x="-60%" y="-60%" width="220%" height="220%">
+    <feGaussianBlur stdDeviation="26"/>
+  </filter>
+  <filter id="dgDrop" x="-50%" y="-50%" width="200%" height="200%">
+    <feDropShadow dx="-3" dy="9" stdDeviation="8" flood-color="#000" flood-opacity=".8"/>
+  </filter>
+
+  <symbol id="dgBag" viewBox="0 0 120 84">
+    <polygon points="0,7 7.5,0 15,7 22.5,0 30,7 37.5,0 45,7 52.5,0 60,7 67.5,0 75,7 82.5,0
+      90,7 97.5,0 105,7 112.5,0 120,7 120,77 112.5,84 105,77 97.5,84 90,77 82.5,84 75,77
+      67.5,84 60,77 52.5,84 45,77 37.5,84 30,77 22.5,84 15,77 7.5,84 0,77" fill="currentColor"/>
+    <path d="M0 12 L120 12 L120 32 L0 32 Z" fill="#ffffff" opacity=".22"/>
+    <path d="M0 58 L120 58 L120 77 L112.5 84 L105 77 L97.5 84 L90 77 L82.5 84 L75 77
+      L67.5 84 L60 77 L52.5 84 L45 77 L37.5 84 L30 77 L22.5 84 L15 77 L7.5 84 L0 77 Z"
+      fill="#000000" opacity=".22"/>
+  </symbol>
+
+  <symbol id="dgGemSym" viewBox="-30 -34 60 68">
+    <path d="M0 -32 L26 -10 L0 32 L-26 -10 Z" fill="url(#dgGem)"/>
+    <path d="M0 -32 L26 -10 L0 -2 L-26 -10 Z" fill="#ffffff" opacity=".32"/>
+    <path d="M0 -2 L26 -10 L0 32 Z" fill="#0a5288" opacity=".4"/>
+    <path d="M-9 -21 L-2 -14 L-13 -8 Z" fill="#ffffff" opacity=".85"/>
+  </symbol>
+
+  <symbol id="dgSpark" viewBox="-16 -16 32 32">
+    <path d="M0 -15 Q2.6 -2.6 15 0 Q2.6 2.6 0 15 Q-2.6 2.6 -15 0 Q-2.6 -2.6 0 -15 Z" fill="#ffe680"/>
+  </symbol>
+
+  <symbol id="dgBat" viewBox="-30 -14 60 28">
+    <path d="M0 -2 Q-9 -12 -27 -10 Q-17 -3 -15 6 Q-7 1 0 6 Q7 1 15 6 Q17 -3 27 -10 Q9 -12 0 -2 Z" fill="#4a341c"/>
+    <circle cx="0" cy="-1" r="4.4" fill="#4a341c"/>
+    <path d="M-3.4 -5 L-5 -11 L-1 -7 Z M3.4 -5 L5 -11 L1 -7 Z" fill="#4a341c"/>
+  </symbol>
+</defs>
+
+<!-- ═══ 1. 동굴 밖 풍경 ═══════════════════════════ -->
+<rect width="1600" height="900" fill="#150e07"/>
+<g clip-path="url(#dgClip)">
+  <rect width="1600" height="900" fill="url(#dgSky)"/>
+  <circle cx="836" cy="470" r="290" fill="url(#dgSun)" opacity=".7"/>
+
+  <!-- 먼 산 세 겹 -->
+  <path d="M380 596 L474 512 L536 562 L618 480 L690 534 L768 470 L850 540 L926 486
+           L1012 550 L1090 498 L1180 570 L1240 542 L1240 900 L380 900 Z" fill="#6f9f9c"/>
+  <path d="M380 672 L466 612 L560 662 L654 598 L742 656 L836 606 L930 664 L1024 612
+           L1120 666 L1240 632 L1240 900 L380 900 Z" fill="#93b98e"/>
+  <path d="M380 736 L520 700 L680 738 L840 696 L1000 740 L1160 700 L1240 726 L1240 900 L380 900 Z"
+        fill="#cfc072"/>
+  <path d="M380 792 L620 774 L900 800 L1180 770 L1240 786 L1240 900 L380 900 Z" fill="#eddb92"/>
+  <ellipse cx="836" cy="748" rx="400" ry="52" fill="#fffbe0" opacity=".6" filter="url(#dgSoft)"/>
+
+  <g fill="#5c8a80" opacity=".9">
+    <rect x="556" y="694" width="9" height="48"/><circle cx="560" cy="688" r="27"/>
+    <rect x="1094" y="700" width="8" height="44"/><circle cx="1098" cy="694" r="22"/>
+    <rect x="656" y="712" width="7" height="34"/><circle cx="659" cy="708" r="18"/>
+  </g>
+
+  <!-- 빛줄기 -->
+  <g transform="translate(838 110)" fill="url(#dgRay)" opacity=".85">
+    <polygon points="-18,0 18,0 92,860 -104,860" transform="rotate(-32)"/>
+    <polygon points="-10,0 10,0 46,860 -60,860" transform="rotate(-22)"/>
+    <polygon points="-20,0 20,0 104,860 -76,860" transform="rotate(-13)"/>
+    <polygon points="-9,0 9,0 42,860 -48,860"  transform="rotate(-4)"/>
+    <polygon points="-16,0 16,0 80,860 -86,860" transform="rotate(6)"/>
+    <polygon points="-10,0 10,0 48,860 -54,860" transform="rotate(16)"/>
+    <polygon points="-19,0 19,0 96,860 -72,860" transform="rotate(26)"/>
+    <animateTransform attributeName="transform" type="translate"
+      values="838 110; 862 110; 838 110" dur="12s" repeatCount="indefinite"/>
+  </g>
+
+  <!-- 박쥐 — 글자 자리(가운데 위)와 캐릭터를 피해 난다 -->
+  <use href="#dgBat" x="-30" y="-14" width="60" height="28">
+    <animateTransform attributeName="transform" type="translate"
+      values="500 626; 668 566; 500 626" dur="18s" repeatCount="indefinite"/>
+  </use>
+  <use href="#dgBat" x="-22" y="-10" width="44" height="20" opacity=".85">
+    <animateTransform attributeName="transform" type="translate"
+      values="1122 690; 966 618; 1122 690" dur="24s" repeatCount="indefinite"/>
+  </use>
+
+  <!-- 먼지 -->
+  <g fill="#fffdf0">
+    <circle cx="566" cy="500" r="4" opacity=".7">
+      <animate attributeName="cy" values="620;420;620" dur="13s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values=".1;.8;.1" dur="13s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="1042" cy="480" r="3" opacity=".6">
+      <animate attributeName="cy" values="600;420;600" dur="17s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values=".1;.75;.1" dur="17s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="1116" cy="600" r="5" opacity=".5">
+      <animate attributeName="cy" values="700;500;700" dur="15s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values=".1;.65;.1" dur="15s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="620" cy="690" r="3.4" opacity=".55">
+      <animate attributeName="cy" values="760;560;760" dur="19s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values=".1;.7;.1" dur="19s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+
+  <!-- 입구 안쪽 그늘 -->
+  <ellipse cx="800" cy="500" rx="440" ry="380" fill="url(#dgMouthAO)"/>
+</g>
+
+<!-- ═══ 2. 동굴 벽 (입구 바깥만 그려진다) ═════════ -->
+<g clip-path="url(#dgWall)">
+  <rect width="1600" height="900" fill="#2a1c12"/>
+
+  <!-- 큰 면 -->
+  <polygon points="0,0 320,0 480,180 420,340 0,258" fill="#4c3726"/>
+  <polygon points="0,258 420,340 420,440 0,540" fill="#1d1309"/>
+  <polygon points="0,540 420,440 470,700 540,730 0,806" fill="#35251a"/>
+  <polygon points="0,806 540,730 580,800 340,900 0,900" fill="#100a04"/>
+
+  <polygon points="320,0 660,0 690,180 560,210 480,180" fill="#382718"/>
+  <polygon points="660,0 1000,0 1010,190 900,180 690,180" fill="#1d1309"/>
+  <polygon points="1000,0 1320,0 1170,330 1110,390 1010,190" fill="#38271b"/>
+
+  <polygon points="1320,0 1600,0 1600,262 1170,330" fill="#4c3726"/>
+  <polygon points="1600,262 1600,548 1180,640 1200,440 1120,390 1170,330" fill="#1d1309"/>
+  <polygon points="1600,548 1600,812 1220,710 1180,640" fill="#35251a"/>
+  <polygon points="1600,812 1600,900 1330,900 1160,760 1220,710" fill="#100a04"/>
+
+  <polygon points="340,900 580,800 660,850 800,860 720,900" fill="#0e0904"/>
+  <polygon points="720,900 800,860 900,830 1000,860 1160,760 1340,900" fill="#170f07"/>
+
+  <!-- 결 -->
+  <g opacity=".5">
+    <polygon points="0,44 190,20 264,152 86,190" fill="#6a4d31"/>
+    <polygon points="88,304 300,286 316,410 152,436" fill="#0a0603"/>
+    <polygon points="52,586 292,548 268,700 100,724" fill="#6a4d31"/>
+    <polygon points="376,0 528,0 574,124 460,152" fill="#0a0603"/>
+    <polygon points="754,0 902,0 926,112 796,130" fill="#5f4529"/>
+    <polygon points="1116,0 1268,0 1212,138 1090,116" fill="#0a0603"/>
+    <polygon points="1600,48 1416,24 1362,164 1520,204" fill="#6a4d31"/>
+    <polygon points="1526,308 1318,286 1330,414 1470,436" fill="#0a0603"/>
+    <polygon points="1556,592 1332,556 1352,704 1512,732" fill="#6a4d31"/>
+    <polygon points="1600,830 1372,812 1420,900 1600,900" fill="#0a0603"/>
+    <polygon points="120,838 420,806 500,900 180,900" fill="#0a0603"/>
+  </g>
+
+  <!-- 입구에 면한 바위가 빛을 받는다 (클립으로 딱 잘린다) -->
+  <g opacity=".9">
+    <polygon points="412,330 470,208 522,228 456,354" fill="#8a6134"/>
+    <polygon points="398,462 412,600 462,588 448,456" fill="#7a552e"/>
+    <polygon points="640,186 706,148 716,180 650,216" fill="#8a6134"/>
+    <polygon points="1062,190 1136,268 1170,244 1090,166" fill="#7a552e"/>
+    <polygon points="1180,424 1204,520 1240,510 1214,414" fill="#8a6134"/>
+    <polygon points="1212,700 1150,762 1178,790 1246,716" fill="#6d4b28"/>
+    <polygon points="552,782 640,828 628,858 538,812" fill="#6d4b28"/>
+    <polygon points="940,838 1046,818 1054,850 946,872" fill="#5d3f22"/>
+  </g>
+</g>
+
+<!-- 빛 번짐 -->
+<ellipse cx="800" cy="500" rx="620" ry="480" fill="url(#dgWallLit)"/>
+
+<!-- 입구 테두리 -->
+<use href="#dgMouth" fill="none" stroke="#ffd275" stroke-width="9" opacity=".28"/>
+<use href="#dgMouth" fill="none" stroke="#fff4cd" stroke-width="3" opacity=".75"/>
+
+<!-- 종유석 — 어두운 천장에 매달려 있고, 입구를 향한 면만 빛을 받는다 -->
+<g>
+  <g fill="#3b2917">
+    <path d="M244 0 L302 0 L282 236 Z"/>
+    <path d="M340 0 L386 0 L370 158 Z"/>
+    <path d="M1288 0 L1344 0 L1318 198 Z"/>
+    <path d="M1392 0 L1436 0 L1420 140 Z"/>
+  </g>
+  <g fill="#6d4b28" opacity=".8">
+    <path d="M290 0 L302 0 L282 236 Z"/>
+    <path d="M374 0 L386 0 L370 158 Z"/>
+    <path d="M1288 0 L1300 0 L1318 198 Z"/>
+    <path d="M1392 0 L1402 0 L1420 140 Z"/>
+  </g>
+  <!-- 입구 안쪽으로 두 개만 드리운다 (윗동은 바위에 묻혀 있다) -->
+  <path d="M452 150 L502 158 L480 306 Z" fill="#241811"/>
+  <path d="M486 152 L502 158 L480 306 Z" fill="#7a552e" opacity=".65"/>
+  <path d="M1046 130 L1094 148 L1062 300 Z" fill="#241811"/>
+  <path d="M1046 130 L1062 136 L1062 300 Z" fill="#7a552e" opacity=".65"/>
+</g>
+<!-- 석순 -->
+<g>
+  <path d="M486 830 L516 726 L548 834 Z" fill="#181008"/>
+  <path d="M516 726 L548 834 L530 838 Z" fill="#6d4b28" opacity=".55"/>
+  <path d="M1102 838 L1130 754 L1160 842 Z" fill="#181008"/>
+  <path d="M1130 754 L1160 842 L1142 846 Z" fill="#6d4b28" opacity=".55"/>
+</g>
+
+<!-- ═══ 3. 동굴 안으로 쏟아지는 빛 ═════════════════ -->
+<g transform="translate(838 110)" fill="url(#dgRayIn)">
+  <polygon points="-24,0 24,0 140,900 -164,900" transform="rotate(-28)"/>
+  <polygon points="-15,0 15,0 70,900 -92,900" transform="rotate(-10)"/>
+  <polygon points="-21,0 21,0 124,900 -102,900" transform="rotate(9)"/>
+  <polygon points="-14,0 14,0 66,900 -78,900" transform="rotate(26)"/>
+  <animateTransform attributeName="transform" type="translate"
+    values="838 110; 862 110; 838 110" dur="12s" repeatCount="indefinite"/>
+</g>
+<ellipse cx="812" cy="866" rx="380" ry="44" fill="#ffd45c" opacity=".2" filter="url(#dgSoft)"/>
+
+<!-- 입구를 가리는 바위 돌출부 — 원근을 만든다 -->
+<path d="M398 462 L470 470 L436 560 L500 626 L412 640 L392 548 Z" fill="#20150c"/>
+<path d="M398 462 L470 470 L436 560 L406 544 Z" fill="#6d4b28" opacity=".55"/>
+<path d="M1204 520 L1146 540 L1180 606 L1120 664 L1206 682 L1226 596 Z" fill="#20150c"/>
+<path d="M1204 520 L1146 540 L1180 606 L1210 588 Z" fill="#6d4b28" opacity=".45"/>
+
+<!-- 동굴 바닥 -->
+<path d="M0 852 L260 832 L520 860 L812 836 L1096 864 L1356 838 L1600 854 L1600 900 L0 900 Z"
+      fill="#0d0904"/>
+<path d="M520 860 L812 836 L1096 864 L1096 872 L812 846 L520 868 Z" fill="#ffcf72" opacity=".35"/>
+<ellipse cx="812" cy="878" rx="330" ry="30" fill="#ffd45c" opacity=".16" filter="url(#dgSoft)"/>
+
+<!-- ═══ 4. 벽에 박힌 과자봉지 ═════════════════════ -->
+<!-- 왼쪽 위 : 새우깡 -->
+<polygon points="112,182 320,206 336,330 128,344" fill="#0b0704"/>
+<g transform="translate(224 254) rotate(-12)" filter="url(#dgDrop)">
+  <use href="#dgBag" width="184" height="129" x="-92" y="-64" color="#7ec8e3"/>
+  <circle cx="0" cy="-37" r="12" fill="#f4d489"/>
+  <circle cx="-4.5" cy="-40" r="2.3" fill="#8a6224"/><circle cx="4.5" cy="-33.5" r="2.3" fill="#8a6224"/>
+  <rect x="-63" y="-15" width="126" height="39" rx="10" fill="#fffdf5"/>
+  <text x="0" y="14" text-anchor="middle" font-family="'Malgun Gothic','Apple SD Gothic Neo',sans-serif"
+        font-size="27" font-weight="700" fill="#2f2415">새우깡</text>
+  <path d="M-92 -64 L-56 -68 L-50 66 L-92 60 Z" fill="#000" opacity=".4"/>
+</g>
+<polygon points="96,296 180,326 268,306 330,344 316,404 96,378" fill="#241811"/>
+<polygon points="96,296 180,326 268,306 240,352 130,344" fill="#3d2c1c"/>
+<polygon points="96,296 150,318 138,352 96,340" fill="#5c422a" opacity=".7"/>
+
+<!-- 왼쪽 아래 : 포카칩 -->
+<polygon points="104,614 316,644 302,762 118,752" fill="#0b0704"/>
+<g transform="translate(226 692) rotate(9)" filter="url(#dgDrop)">
+  <use href="#dgBag" width="184" height="129" x="-92" y="-64" color="#f5a25d"/>
+  <circle cx="0" cy="-37" r="12" fill="#f4d489"/>
+  <circle cx="-4.5" cy="-40" r="2.3" fill="#8a6224"/><circle cx="4.5" cy="-33.5" r="2.3" fill="#8a6224"/>
+  <rect x="-65" y="-15" width="130" height="39" rx="10" fill="#fffdf5"/>
+  <text x="0" y="14" text-anchor="middle" font-family="'Malgun Gothic','Apple SD Gothic Neo',sans-serif"
+        font-size="27" font-weight="700" fill="#2f2415">포카칩</text>
+  <path d="M-92 -64 L-58 -68 L-52 66 L-92 60 Z" fill="#000" opacity=".4"/>
+</g>
+<polygon points="92,736 176,766 272,748 332,782 320,842 92,818" fill="#241811"/>
+<polygon points="92,736 176,766 272,748 244,790 126,784" fill="#3d2c1c"/>
+<polygon points="92,736 146,758 134,792 92,780" fill="#5c422a" opacity=".7"/>
+
+<!-- 오른쪽 위 : 바나나킥 -->
+<polygon points="1494,236 1276,262 1268,382 1486,392" fill="#0b0704"/>
+<g transform="translate(1382 316) rotate(11)" filter="url(#dgDrop)">
+  <use href="#dgBag" width="184" height="129" x="-92" y="-64" color="#67c587"/>
+  <circle cx="0" cy="-37" r="12" fill="#f4d489"/>
+  <circle cx="-4.5" cy="-40" r="2.3" fill="#8a6224"/><circle cx="4.5" cy="-33.5" r="2.3" fill="#8a6224"/>
+  <rect x="-78" y="-15" width="156" height="39" rx="10" fill="#fffdf5"/>
+  <text x="0" y="14" text-anchor="middle" font-family="'Malgun Gothic','Apple SD Gothic Neo',sans-serif"
+        font-size="27" font-weight="700" fill="#2f2415">바나나킥</text>
+  <path d="M92 -64 L58 -68 L52 66 L92 60 Z" fill="#000" opacity=".32"/>
+</g>
+<polygon points="1508,354 1420,388 1330,368 1268,404 1284,462 1508,432" fill="#241811"/>
+<polygon points="1508,354 1420,388 1330,368 1360,412 1478,404" fill="#3d2c1c"/>
+<polygon points="1508,354 1452,378 1464,412 1508,398" fill="#5c422a" opacity=".55"/>
+
+<!-- 오른쪽 아래 : 홈런볼 -->
+<polygon points="1516,676 1320,702 1330,808 1524,806" fill="#0b0704"/>
+<g transform="translate(1408 752) rotate(-8)" filter="url(#dgDrop)">
+  <use href="#dgBag" width="164" height="115" x="-82" y="-57" color="#e5726f"/>
+  <circle cx="0" cy="-33" r="11" fill="#f4d489"/>
+  <rect x="-59" y="-13" width="118" height="35" rx="9" fill="#fffdf5"/>
+  <text x="0" y="13" text-anchor="middle" font-family="'Malgun Gothic','Apple SD Gothic Neo',sans-serif"
+        font-size="25" font-weight="700" fill="#2f2415">홈런볼</text>
+  <path d="M82 -57 L52 -61 L48 58 L82 54 Z" fill="#000" opacity=".32"/>
+</g>
+<polygon points="1524,786 1444,812 1360,796 1310,826 1322,876 1524,856" fill="#241811"/>
+<polygon points="1524,786 1444,812 1360,796 1390,836 1500,830" fill="#3d2c1c"/>
+
+<!-- ═══ 5. 보석 ═══════════════════════════════════ -->
+<g filter="url(#dgGlow)">
+  <use href="#dgGemSym" x="-30" y="-34" width="60" height="68" transform="translate(322 478) rotate(-8) scale(1.25)"/>
+  <use href="#dgGemSym" x="-30" y="-34" width="60" height="68" transform="translate(1290 540) rotate(11) scale(1.05)"/>
+  <use href="#dgGemSym" x="-30" y="-34" width="60" height="68" transform="translate(276 862) rotate(-16) scale(.78)"/>
+</g>
+<g>
+  <use href="#dgSpark" x="-17" y="-17" width="34" height="34" transform="translate(268 428)">
+    <animateTransform attributeName="transform" type="scale" additive="sum"
+      values="1;.3;1" dur="2.4s" repeatCount="indefinite"/>
+  </use>
+  <use href="#dgSpark" x="-11" y="-11" width="22" height="22" transform="translate(378 534)">
+    <animateTransform attributeName="transform" type="scale" additive="sum"
+      values=".35;1;.35" dur="3.1s" repeatCount="indefinite"/>
+  </use>
+  <use href="#dgSpark" x="-15" y="-15" width="30" height="30" transform="translate(1346 496)">
+    <animateTransform attributeName="transform" type="scale" additive="sum"
+      values="1;.3;1" dur="2.8s" repeatCount="indefinite"/>
+  </use>
+  <use href="#dgSpark" x="-10" y="-10" width="20" height="20" transform="translate(228 824)">
+    <animateTransform attributeName="transform" type="scale" additive="sum"
+      values=".3;1;.3" dur="2.1s" repeatCount="indefinite"/>
+  </use>
+</g>
+
+<!-- ═══ 6. 탐험가 (역광 실루엣) ═══════════════════ -->
+<g transform="translate(806 892)">
+  <ellipse cx="0" cy="4" rx="176" ry="24" fill="#000000" opacity=".55" filter="url(#dgSoft)"/>
+
+  <!-- 호미 -->
+  <g transform="translate(142 -70) rotate(16)">
+    <rect x="-8" y="-206" width="16" height="210" rx="8" fill="#3a2814"/>
+    <rect x="-8" y="-206" width="6" height="210" rx="3" fill="#8f6736" opacity=".9"/>
+    <path d="M-2 -6 C-38 -8 -62 8 -72 40 C-46 28 -22 34 -2 54 C14 36 16 6 -2 -6 Z" fill="#1b150f"/>
+    <path d="M-2 -6 C-28 -6 -50 6 -60 30 C-40 20 -20 26 -8 42 C4 26 6 2 -2 -6 Z" fill="#5c5852"/>
+    <path d="M-2 -6 C-28 -6 -50 6 -60 30" fill="none" stroke="#ffe9ae" stroke-width="4" opacity=".75"/>
+  </g>
+
+  <!-- 몸통 -->
+  <path d="M-96 8 C-100 -80 -76 -136 -56 -156 L56 -156 C76 -136 100 -80 96 8 Z" fill="url(#dgBody)"/>
+  <path d="M-96 8 L96 8 L88 22 L-88 22 Z" fill="#120b05"/>
+  <path d="M-64 -44 C-98 -52 -110 -84 -98 -116 L-70 -124 L-60 -50 Z" fill="#2c1d0f"/>
+  <path d="M-98 -116 L-70 -124" stroke="#ffd977" stroke-width="4" opacity=".45" fill="none"/>
+  <path d="M58 -146 C92 -130 116 -102 124 -64 L96 -56 C88 -90 74 -114 48 -128 Z" fill="#22160a"/>
+  <path d="M-58 -154 C-24 -138 24 -138 58 -154 C50 -132 -50 -132 -58 -154 Z" fill="#9e4626"/>
+
+  <!-- 귀 -->
+  <path d="M-44 -304 L-88 -390 L-12 -342 Z" fill="#2c1d0f"/>
+  <path d="M44 -304 L88 -390 L12 -342 Z" fill="#2c1d0f"/>
+  <!-- 머리 -->
+  <circle cx="0" cy="-232" r="70" fill="url(#dgBody)"/>
+  <!-- 모자 -->
+  <path d="M-56 -282 C-54 -350 -30 -378 0 -378 C30 -378 54 -350 56 -282 Z" fill="url(#dgHat)"/>
+  <path d="M-120 -286 C-100 -308 -50 -318 0 -318 C50 -318 100 -308 120 -286
+           C120 -260 62 -248 0 -248 C-62 -248 -120 -260 -120 -286 Z" fill="url(#dgHat)"/>
+  <path d="M-58 -294 C-28 -278 28 -278 58 -294 L58 -278 C28 -262 -28 -262 -58 -278 Z" fill="#140d06"/>
+  <path d="M-120 -286 C-118 -262 -62 -248 0 -248 C62 -248 118 -262 120 -286"
+        fill="none" stroke="#ffe6a5" stroke-width="5" opacity=".5"/>
+
+  <!-- 역광 림라이트 -->
+  <g fill="none" stroke-linecap="round">
+    <path d="M96 8 C100 -80 76 -136 56 -156" stroke="#ffeab0" stroke-width="8" opacity=".85"/>
+    <path d="M-96 8 C-100 -80 -76 -136 -56 -156" stroke="#ffd977" stroke-width="5" opacity=".5"/>
+    <path d="M-56 -282 C-54 -350 -30 -378 0 -378" stroke="#ffd977" stroke-width="5" opacity=".5"/>
+    <path d="M56 -282 C54 -350 30 -378 0 -378" stroke="#ffeab0" stroke-width="6" opacity=".7"/>
+    <path d="M44 -304 L88 -390" stroke="#ffeab0" stroke-width="5" opacity=".65"/>
+    <path d="M-44 -304 L-88 -390" stroke="#ffd977" stroke-width="4" opacity=".4"/>
+    <path d="M58 -146 C92 -130 116 -102 124 -64" stroke="#ffeab0" stroke-width="5" opacity=".65"/>
+    <path d="M120 -286 C100 -308 50 -318 0 -318" stroke="#ffd977" stroke-width="3.5" opacity=".45"/>
+  </g>
+
+  <!-- ? 말풍선 -->
+  <g>
+    <animateTransform attributeName="transform" type="translate"
+      values="0 0; 0 -14; 0 0" dur="3.6s" repeatCount="indefinite"/>
+    <circle cx="150" cy="-292" r="9" fill="#fff6da" opacity=".85"/>
+    <circle cx="176" cy="-324" r="14" fill="#fff6da" opacity=".92"/>
+    <ellipse cx="236" cy="-390" rx="54" ry="45" fill="#fff6da"/>
+    <text x="236" y="-370" text-anchor="middle" font-family="'Malgun Gothic',sans-serif"
+          font-size="56" font-weight="800" fill="#3a2a14">?</text>
+  </g>
+</g>
+
+<!-- ═══ 7. 비네트 ═════════════════════════════════ -->
+<radialGradient id="dgVig" cx="50%" cy="46%" r="74%">
+  <stop offset="50%" stop-color="#000" stop-opacity="0"/>
+  <stop offset="100%" stop-color="#000" stop-opacity=".62"/>
+</radialGradient>
+<rect width="1600" height="900" fill="url(#dgVig)"/>
+</svg>

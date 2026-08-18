@@ -142,7 +142,8 @@ var GAMES = (function () {
   /* =========================================================
      공통 준비 / 정리
      ========================================================= */
-  function prepare(gameId) {
+  /* introHtml 을 주면 카운트다운 전에 인트로 화면을 한 장 띄운다 (엔터로 넘어간다) */
+  function prepare(gameId, introHtml) {
     stop();
     var lv = DATA.getLevel(sel.level);
     var d = diffOf();
@@ -172,13 +173,44 @@ var GAMES = (function () {
     input.disabled = false;
 
     APP.show('game');
-    countdown(function () {
+    var go = function () {
       G.running = true;
       G.startAt = Date.now();
       G.lastT = performance.now();
       G.raf = requestAnimationFrame(loop);
       input.focus();
-    });
+    };
+    if (introHtml) intro(introHtml, function () { countdown(go); });
+    else countdown(go);
+  }
+
+  /* 게임 화면 위에 인트로 한 장. 엔터·스페이스·클릭으로 넘어간다 */
+  function intro(html, done) {
+    var st = $('stage');
+    var ov = document.createElement('div');
+    ov.className = 'gintro';
+    ov.innerHTML = html;
+    st.appendChild(ov);
+    // 게임 쪽이 판(동굴·봉지)을 다 그린 뒤에 맨 위로 다시 올린다
+    setTimeout(function () { if (ov.parentNode) ov.parentNode.appendChild(ov); }, 0);
+
+    var closed = false;
+    var next = function () {
+      if (closed) return;
+      closed = true;
+      document.removeEventListener('keydown', onKey, true);
+      if (G) G._introKey = null;
+      ov.classList.add('out');
+      setTimeout(function () { ov.remove(); }, 260);
+      done();
+    };
+    var onKey = function (e) {
+      // 입력창이 포커스를 가진 채로 엔터가 오면 게임 쪽 처리로 새지 않게 막는다
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); next(); }
+    };
+    document.addEventListener('keydown', onKey, true);
+    G._introKey = onKey;
+    ov.onclick = next;
   }
 
   function countdown(done) {
@@ -205,6 +237,7 @@ var GAMES = (function () {
   function stop() {
     if (!G) return;
     if (G.raf) cancelAnimationFrame(G.raf);
+    if (G._introKey) document.removeEventListener('keydown', G._introKey, true);
     if (G._cdTimer) clearInterval(G._cdTimer);
     if (G._spawnTimer) clearInterval(G._spawnTimer);
     G.running = false;
@@ -1672,8 +1705,20 @@ var GAMES = (function () {
     '꿀꽈배기', '캐러멜콘', '치즈볼', '쌀로별'
   ];
 
+  /* 인트로 그림은 기획서 2쪽 "3. 디자인" 을 그대로 옮긴 것이다 (img/dig-intro.svg) */
+  var DIG_INTRO =
+    '<img class="gintro-art" src="img/dig-intro.svg" alt="">' +
+    '<div class="gintro-box">' +
+    '  <p class="gintro-by">학생이 만든 게임 · 기획 쭈꾸미</p>' +
+    '  <h2>과자 캐기</h2>' +
+    '  <p class="gintro-desc">동굴에 도둑이 숨긴 과자가 있어요.<br>' +
+    '     봉지에 적힌 과자 이름을 치면 호미로 캡니다. ' + DIG_COUNT + '개를 다 캐면 끝!</p>' +
+    '  <p class="gintro-hint">💎 운이 좋으면 보석이 나와요 (+' + DIG_GEM_BONUS + '점)</p>' +
+    '  <p class="gintro-go">엔터를 누르면 시작해요</p>' +
+    '</div>';
+
   function startDig() {
-    prepare('dig');
+    prepare('dig', DIG_INTRO);
     G.student = true;
     $('game-lv').textContent = '학생 게임 · 기획 쭈꾸미';
 
