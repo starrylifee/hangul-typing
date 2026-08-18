@@ -122,12 +122,42 @@ var APP = (function () {
      화면 전환
      ========================================================= */
   var cur = 'home';
+  /* =========================================================
+     주소(해시)로 화면 기억하기
+     화면이 하나뿐인 앱이라 새로고침하면 늘 홈으로 떨어졌다. 전자칠판에서 게임을 띄워
+     놓고 새로고침하면 처음부터 다시 찾아 들어가야 했다.
+     목록 화면과 게임에는 주소를 붙여 둔다 (#studentsel, #game/claw 처럼).
+     연습·결과 화면은 진행 중 상태라 주소를 안 붙인다 — 새로고침하면 그 앞 목록으로 간다. */
+  var ROUTED = { home: 1, studentsel: 1, gamesel: 1 };
+  var routing = false;
+
+  function route(h) {
+    if (('#' + h) === location.hash) return;
+    routing = true;
+    location.hash = h;
+    setTimeout(function () { routing = false; }, 0);
+  }
+
+  function applyHash() {
+    var h = (location.hash || '').replace(/^#/, '');
+    var p = h.split('/');
+    if (p[0] === 'game' && p[1] && window.GAMES && GAMES.has && GAMES.has(p[1])) {
+      GAMES.start(p[1]);
+      return true;
+    }
+    if (p[0] === 'studentsel' && window.GAMES) { GAMES.openStudent(); return true; }
+    if (p[0] === 'gamesel' && window.GAMES) { GAMES.openSelect(); return true; }
+    if (p[0] === 'home') { show('home'); return true; }
+    return false;
+  }
+
   function show(name) {
     var list = document.querySelectorAll('.screen');
     for (var i = 0; i < list.length; i++) list[i].classList.remove('on');
     $('s-' + name).classList.add('on');
     cur = name;
     if (name === 'home') renderHome();
+    if (ROUTED[name]) route(name);
   }
 
   function toast(msg) {
@@ -719,6 +749,14 @@ var APP = (function () {
 
     renderHome();
 
+    /* 주소에 적힌 화면으로 간다 — 새로고침해도 보던 게임이 그대로 뜬다.
+       뒤로 가기·앞으로 가기도 이걸로 따라간다. */
+    window.addEventListener('hashchange', function () {
+      if (routing) return;
+      if (!applyHash()) show('home');
+    });
+    applyHash();
+
     // 이름이 아직 없으면 첫 화면에서 바로 물어본다
     if (!rec.name) openNameModal(true);
   }
@@ -756,7 +794,7 @@ var APP = (function () {
   }
 
   return {
-    init: init, show: show, toast: toast,
+    init: init, show: show, toast: toast, route: route,
     rec: rec, save: save, replaceRec: replaceRec, switchStudent: switchStudent,
     startPractice: startPractice, startLong: startLong,
     MODE_NAME: MODE_NAME,

@@ -38,6 +38,10 @@ var GAMES = (function () {
      등록한 게임은 start/step/hit/draw 를 스스로 갖고, 홈 카드도 자동으로 붙는다. */
   var EXT = {};
   var EXT_ORDER = [];
+  /* games.js 안에 직접 들어 있는 게임들 — 주소로 들어올 때 확인용 */
+  var BUILTIN = {
+    defense: 1, race: 1, mole: 1, erase: 1, spell: 1, flip: 1, dig: 1, fire: 1
+  };
 
   /* 아이템 — 아이템이 붙은 낱말을 쳐서 없애면 효과가 걸린다.
      게임 성격에 맞는 곳에만 넣는다 (두더지는 칸이 빽빽해 넣지 않음). */
@@ -179,6 +183,8 @@ var GAMES = (function () {
     input.disabled = false;
 
     APP.show('game');
+    // 주소에 게임을 적어 둔다 — 새로고침하면 이 게임이 다시 뜬다
+    if (APP.route) APP.route('game/' + gameId);
     var go = function () {
       G.running = true;
       G.startAt = Date.now();
@@ -2235,6 +2241,8 @@ var GAMES = (function () {
   return {
     init: init, openSelect: openSelect, openStudent: openStudent,
     start: start, stop: stop, renderStudent: renderStudent,
+    /** 주소(#game/○○)에 적힌 것이 진짜 있는 게임인지 확인한다 */
+    has: function (id) { return !!(GAME_NAME[id] && (EXT[id] || BUILTIN[id])); },
     register: register, api: api
   };
 })();
