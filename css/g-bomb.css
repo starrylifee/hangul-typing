@@ -124,6 +124,41 @@
   55% { transform: scale(1.45); }
   100% { transform: scale(1); }
 }
+/* 심지가 타는 폭탄 — 낱말은 계속 보인다 (다시 쳐야 꺼진다) */
+.bomb-cell .bfuse {
+  display: none; position: absolute; left: 6%; right: 6%; bottom: 7%;
+  height: calc(var(--cell) * .085);
+  background: #7a2020; border-radius: 999px; overflow: hidden;
+}
+.bomb-cell .bfuse i {
+  display: block; height: 100%; width: 100%;
+  background: linear-gradient(90deg, #ffd166, #ff7043);
+}
+.bomb-cell.fusing {
+  background: #ffd9dd;
+  animation: bombFuse .35s infinite steps(2);
+}
+.bomb-cell.fusing .bfuse { display: block; }
+.bomb-cell.fusing .bw { color: #8c1f1f; }
+.bomb-cell.fusing .bw .hit { color: #12925f; }
+.bomb-cell.fusing::after {
+  content: '🧨'; position: absolute; top: 4%; right: 6%;
+  font-size: calc(var(--cell) * .24); line-height: 1;
+}
+@keyframes bombFuse {
+  50% { background: #ffb3bb; }
+}
+
+/* 꺼진 폭탄 — 그 칸은 잠긴다 */
+.bomb-cell.defused {
+  background: #d8e8f5; animation: none;
+}
+.bomb-cell.defused::after {
+  content: '💧'; position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: calc(var(--cell) * .36);
+}
+
 .bomb-flash {
   position: absolute; left: 50%; top: 50%;
   transform: translate(-50%, -50%);
