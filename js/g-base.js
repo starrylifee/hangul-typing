@@ -53,11 +53,13 @@
   /* 공의 종류 — 날아올 때 이미 1루타/2루타/3루타/홈런이 정해져 있다.
      확률은 규칙 4 그대로(HOMER 1/20 → 나머지는 HITMIX·CPUMIX).
      속도는 규칙 2 의 2~10초 범위를 종류별 구간으로 쪼갠 것 — 좋은 공일수록 빨리 지나간다. */
+  /* sec  = 공격(내가 칠 때) 도달 시간, dsec = 수비(상대가 친 공) 도달 시간.
+     수비가 너무 쉬우면 컴퓨터가 점수를 못 낸다. 상대 타구는 더 빨리 온다. */
   var KIND = {
-    h1: { cls: 'k1', bases: 1, label: '1루타', name: '안타!', foe: '상대 안타', sec: [6, 10] },
-    h2: { cls: 'k2', bases: 2, label: '2루타', name: '2루타!', foe: '상대 2루타', sec: [4.5, 7] },
-    h3: { cls: 'k3', bases: 3, label: '3루타', name: '3루타!', foe: '상대 3루타', sec: [3, 5] },
-    hr: { cls: 'khr', bases: 4, label: '홈런', name: '홈런!', foe: '상대 홈런', sec: [2, 3.5] }
+    h1: { cls: 'k1', bases: 1, label: '1루타', name: '안타!', foe: '상대 안타', sec: [6, 10], dsec: [4, 6.5] },
+    h2: { cls: 'k2', bases: 2, label: '2루타', name: '2루타!', foe: '상대 2루타', sec: [4.5, 7], dsec: [3, 4.6] },
+    h3: { cls: 'k3', bases: 3, label: '3루타', name: '3루타!', foe: '상대 3루타', sec: [3, 5], dsec: [2.3, 3.4] },
+    hr: { cls: 'khr', bases: 4, label: '홈런', name: '홈런!', foe: '상대 홈런', sec: [2, 3.5], dsec: [1.8, 2.6] }
   };
   var G, C;
 
@@ -155,10 +157,12 @@
   function runnerSvg() {
     return '<svg viewBox="0 0 100 130" aria-hidden="true">' +
       '<ellipse cx="50" cy="126" rx="21" ry="4" fill="rgba(0,0,0,.24)"/>' +
-      // 다리 — 한 발은 루를 딛고 한쪽 무릎은 살짝 든 "달릴 준비" 자세
-      '<path class="bpk" d="M45 80 L39 102 L43 122"/>' +
-      '<path class="bpk" d="M57 80 L68 98 L63 118"/>' +
-      '<path class="bps" d="M43 122 L34 124"/><path class="bps" d="M63 118 L72 121"/>' +
+      // 다리 — 한 발은 루를 딛고 한쪽 무릎은 살짝 든 "달릴 준비" 자세.
+      // 달릴 때는 CSS 가 이 두 묶음을 번갈아 흔든다 (.rlg)
+      '<g class="rlg a"><path class="bpk" d="M45 80 L39 102 L43 122"/>' +
+      '<path class="bps" d="M43 122 L34 124"/></g>' +
+      '<g class="rlg b"><path class="bpk" d="M57 80 L68 98 L63 118"/>' +
+      '<path class="bps" d="M63 118 L72 121"/></g>' +
       // 몸통(유니폼)
       '<path class="bpj" d="M50 36 C38 36 34 47 34 59 L36 82 L66 82 L68 59 C68 47 62 36 50 36 Z"/>' +
       '<path class="bpn" d="M50 36 L50 82"/>' +
@@ -367,6 +371,8 @@
       '  <div class="base-runner r1" id="base-r1">' + runnerSvg() + '</div>' +
       '  <div class="base-runner r2" id="base-r2">' + runnerSvg() + '</div>' +
       '  <div class="base-runner r3" id="base-r3">' + runnerSvg() + '</div>' +
+      /* 베이스 사이를 달려가는 주자가 잠깐 생겼다 사라지는 자리 */
+      '  <div class="base-runlay" id="base-runlay"></div>' +
       '  <div class="base-pitcher" id="base-pitcher">' + pitcherSvg() + '</div>' +
       '  <div class="base-batter">' + batterSvg() + '</div>' +
       '  <div class="base-scorebox" id="base-scorebox"><b id="base-sb-me">0</b><i>:</i><b id="base-sb-you">0</b></div>' +
@@ -545,10 +551,12 @@
   function paintBall(kind) {
     var b = A.el('base-ball');
     if (b) {
-      b.className = 'base-ball' + (b.classList.contains('on') ? ' on' : '') + ' ' + KIND[kind].cls;
+      // .foe — 상대가 친 공. 붉은 테두리가 둘려서 내가 칠 공과 한눈에 구분된다
+      b.className = 'base-ball' + (b.classList.contains('on') ? ' on' : '') +
+        ' ' + KIND[kind].cls + (C.top ? '' : ' foe');
     }
     var t = A.el('base-tag');
-    if (t) t.textContent = KIND[kind].label + ' 공';
+    if (t) t.textContent = (C.top ? '' : '상대 ') + KIND[kind].label + ' 공';
   }
 
   function pitch() {
@@ -559,7 +567,8 @@
 
     /* 규칙 2 의 "2초~10초" 를 종류별 구간으로 쪼갰다 — 좋은 공일수록 빨리 지나간다 */
     var kind = pickKind();
-    var sec = KIND[kind].sec;
+    // 수비(상대 타구)는 더 빨리 온다 — 안 그러면 컴퓨터가 점수를 못 낸다
+    var sec = C.top ? KIND[kind].sec : KIND[kind].dsec;
     C.fly = sec[0] + Math.random() * (sec[1] - sec[0]);
     C.t = 0;
     C.lane = 30 + Math.random() * 40;      // 수비 때 공이 떨어지는 자리
@@ -598,7 +607,7 @@
       sc = 0.58 + 0.55 * p;
     } else {
       // 하늘에서 글러브의 포켓으로 떨어진다.
-      // 글러브(left 42%, top 58%, 높이 50vh)의 포켓 한가운데가 경기장의 약 43%,65% —
+      // 글러브(left 42%, top 56%, 높이 56vh)의 포켓 한가운데가 경기장의 약 43%,64% —
       // 공 반지름만큼 위인 43%,61% 로 보내면 포켓 안에 얹힌 것처럼 보인다
       x = C.lane + (43 - C.lane) * p;
       y = -8 + 69 * p;
@@ -615,8 +624,12 @@
       games.js 의 clearInput(직전낱말) 은 그 꼬리 글자를 0.7초간 걸러 내는 장치를 함께 건다.
       빨간 경고 테두리도 여기서 같이 지운다 (오답 뒤 새 공이 빨간 테두리로 시작했다). */
   function clearIn(word) {
-    A.clearInput(word || '');
     var el = A.el('gamein');
+    /* 꼬리로 넘길 것은 "아이가 방금 친 글자" 다.
+       낱말을 다 친 경우엔 그게 곧 낱말이고, "아" 까지만 치다 만 경우엔 "아" 다.
+       낱말을 넘기면 치다 만 글자는 못 걸러 낸다 — 그게 이번 버그였다. */
+    var typed = (el && el.value) || '';
+    A.clearInput(typed || word || '');
     if (el) el.style.borderColor = '';
     if (G) G.wasBad = false;
   }
@@ -656,7 +669,8 @@
 
   /* ---------- 오답 (규칙 3) ---------- */
   function wrongInput() {
-    clearIn();
+    /* 여기서 먼저 비우면 안 된다 — 아래 strike/concede 가 부르는 endBall() 이
+       "방금 친 글자" 를 봐야 한글 조합 잔여 글자를 걸러 낼 수 있다 */
     if (C.top) strike('오답! 스트라이크');
     else concede('오답! 못 잡았어요');
   }
@@ -757,8 +771,73 @@
   /* =========================================================
      주자 · 득점 · 아웃 (야구 규칙 그대로)
      ========================================================= */
+  /* 베이스 자리 — 0 은 홈, 1·2·3 은 각 루. 야구장 SVG 의 베이스 좌표와 같다. */
+  var BASEPOS = [
+    { l: 50, t: 88 }, { l: 88, t: 52 }, { l: 50, t: 14 }, { l: 12, t: 52 }
+  ];
+  var RUN_SEG = 360;          // 한 베이스를 달리는 데 걸리는 시간(ms)
+
+  function posOf(i) { return BASEPOS[i >= 4 ? 0 : i]; }
+
+  /** 이번 타구로 누가 어디서 어디로 뛰는지 — C.bases 를 바꾸기 전에 뽑아 둔다 */
+  function planRun(n) {
+    var mv = [], i;
+    for (i = 2; i >= 0; i--) {
+      if (C.bases[i]) mv.push({ from: i + 1, to: Math.min(4, i + 1 + n) });
+    }
+    mv.push({ from: 0, to: Math.min(4, n) });      // 타자도 뛴다
+    return mv;
+  }
+
+  /** 주자를 베이스 하나씩 달리게 한다. 달리는 동안 루에 서 있던 주자는 감춘다. */
+  function runRunners(mv) {
+    var lay = A.el('base-runlay');
+    if (!lay || !mv.length) return;
+    lay.innerHTML = '';
+    C.wrap.classList.add('running');
+
+    var longest = 0;
+    mv.forEach(function (m) {
+      var steps = m.to - m.from;
+      if (steps <= 0) return;
+      if (steps > longest) longest = steps;
+
+      var el = document.createElement('div');
+      el.className = 'base-run' + (C.top ? '' : ' foe');
+      el.innerHTML = runnerSvg();
+      var p0 = posOf(m.from);
+      el.style.left = p0.l + '%';
+      el.style.top = p0.t + '%';
+      lay.appendChild(el);
+
+      var at = m.from;
+      var hop = function () {
+        if (at >= m.to) {                       // 다 왔다
+          if (m.to >= 4) el.classList.add('scored');   // 홈으로 들어온 주자
+          setTimeout(function () { el.remove(); }, 160);
+          return;
+        }
+        var was = posOf(at);
+        at++;
+        var p = posOf(at);
+        el.classList.toggle('flip', p.l < was.l);      // 3루·홈 쪽으로 갈 땐 몸을 돌린다
+        el.style.left = p.l + '%';
+        el.style.top = p.t + '%';
+        setTimeout(hop, RUN_SEG);
+      };
+      setTimeout(hop, 30);
+    });
+
+    // 다 뛰고 나면 루에 선 주자를 다시 보여 준다
+    C.runTimer = setTimeout(function () {
+      if (C.wrap) C.wrap.classList.remove('running');
+      if (lay) lay.innerHTML = '';
+    }, longest * RUN_SEG + 220);
+  }
+
   function advance(n, mine) {
     var got = 0, i;
+    runRunners(planRun(n));
     if (n >= 4) {
       for (i = 0; i < 3; i++) { if (C.bases[i]) got++; C.bases[i] = false; }
       got++;                                  // 타자까지 홈인
