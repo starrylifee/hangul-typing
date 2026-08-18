@@ -1,0 +1,270 @@
+/* g-doble.css — 타자 도블 (기획 · LEE 팀)
+   기획서 4쪽 [디자인 2] 를 그대로 옮겼다.
+   왼쪽 위 「나 / 보유한 카드 N장」 · 오른쪽 위 「AI / 보유한 카드 N장」 ·
+   가운데 위 「1단계 · 기본자리」 · 오른쪽 위 「시간 25초 남음」 막대 ·
+   왼쪽 작은 동그란 카드(내 카드) · 가운데 큰 동그란 카드(더미) · 오른쪽 작은 카드(AI).
+   3쪽 승리 화면(축하합니다!!! / 승리하셨습니다~ / 다시하기 · 다음단계)은 맨 아래.
+   ========================================================= */
+
+.doble-table {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  padding: clamp(6px, 1.2vh, 14px) clamp(12px, 2vw, 30px) clamp(4px, .8vh, 10px);
+  gap: clamp(4px, .8vh, 10px);
+  background:
+    radial-gradient(ellipse 80% 70% at 50% 0%, #1b2b3f 0%, #121a28 55%, #0a0e16 100%);
+}
+
+/* ---------------------------------------------------------
+   위쪽 — 나 / 단계 / AI · 시간 막대
+   --------------------------------------------------------- */
+.doble-top {
+  flex: none;
+  display: grid; grid-template-columns: 1fr auto 1fr;
+  align-items: start; gap: clamp(8px, 1.5vw, 20px);
+}
+.doble-side { display: flex; flex-direction: column; }
+.doble-side.me { align-items: flex-start; }
+.doble-side.ai { align-items: flex-end; }
+.doble-side .who {
+  font-weight: 900; letter-spacing: 1px; color: #fff;
+  font-size: clamp(20px, 3.6vh, 38px); line-height: 1.1;
+}
+.doble-side.ai .who { color: #ffb4c4; }
+.doble-side .have {
+  color: #cfd9e8; font-weight: 800;
+  font-size: clamp(13px, 2.2vh, 22px); margin-top: 2px;
+}
+.doble-side .have b {
+  color: #3ee0c0; font-size: clamp(17px, 2.9vh, 30px); margin: 0 2px;
+}
+.doble-side.ai .have b { color: #ff8fab; }
+
+/* 가운데 위 — 1단계 · 기본자리 */
+.doble-stg {
+  text-align: center; padding: clamp(2px, .5vh, 6px) clamp(10px, 1.6vw, 22px);
+  border: 2px solid rgba(255, 255, 255, .18); border-radius: 999px;
+  background: rgba(255, 255, 255, .06);
+  white-space: nowrap;
+}
+.doble-stg b {
+  color: #ffd166; font-weight: 900; font-size: clamp(15px, 2.7vh, 27px);
+}
+.doble-stg span {
+  color: #dbe4f0; font-weight: 800; font-size: clamp(13px, 2.3vh, 23px); margin-left: 4px;
+}
+
+/* 오른쪽 위 — 시간 25초 남음 막대 */
+.doble-time { width: clamp(150px, 24vw, 300px); margin-top: clamp(3px, .6vh, 8px); }
+.doble-time .lb {
+  color: #e7edf7; font-weight: 800; text-align: right;
+  font-size: clamp(12px, 2vh, 19px); margin-bottom: 3px;
+}
+.doble-time .lb b { color: #ffd166; font-size: clamp(16px, 2.7vh, 26px); }
+.doble-time .bar {
+  height: clamp(11px, 1.8vh, 20px); border-radius: 999px; overflow: hidden;
+  background: rgba(255, 255, 255, .12); border: 1px solid rgba(255, 255, 255, .2);
+}
+.doble-time .bar i {
+  display: block; height: 100%; width: 100%;
+  background: linear-gradient(90deg, #7ee7c4, #3ee0c0);
+  transition: width .18s linear;
+}
+.doble-time .bar.hot i { background: linear-gradient(90deg, #ff9a5c, #ff4d6d); }
+
+/* ---------------------------------------------------------
+   가운데 — 내 카드 / 더미 / AI 카드
+   --------------------------------------------------------- */
+.doble-row {
+  flex: 1; min-height: 0;
+  display: flex; align-items: center; justify-content: center;
+  gap: clamp(10px, 3vw, 56px);
+}
+.doble-col {
+  display: flex; flex-direction: column; align-items: center;
+  gap: clamp(3px, .7vh, 9px);
+}
+.doble-lb {
+  color: #9fb0c6; font-weight: 800; white-space: nowrap;
+  font-size: clamp(11px, 1.9vh, 18px);
+}
+.doble-col.mid .doble-lb { color: #ffd166; }
+.doble-lb b { color: #fff; }
+
+/* 동그란 카드 — 그림 그대로 원 안에 낱말이 흩어져 있다 */
+.doble-card {
+  position: relative; border-radius: 50%;
+  background: radial-gradient(circle at 36% 26%, #fff 0%, #f6f1e8 55%, #e6ded0 100%);
+  border: clamp(2px, .42vh, 4px) solid #23262e;
+  box-shadow: 0 10px 22px -8px rgba(0, 0, 0, .75), inset 0 -10px 20px -12px rgba(0, 0, 0, .35);
+  flex: none;
+}
+.doble-card.small {
+  width: clamp(130px, 26vh, 232px); height: clamp(130px, 26vh, 232px);
+  font-size: clamp(12px, 2.1vh, 19px);
+}
+.doble-card.big {
+  width: clamp(196px, 38vh, 340px); height: clamp(196px, 38vh, 340px);
+  font-size: clamp(15px, 2.8vh, 26px);
+  box-shadow: 0 0 0 4px rgba(255, 209, 102, .25), 0 14px 28px -8px rgba(0, 0, 0, .8);
+}
+
+/* 카드 안 낱말 — 자리·기울기·크기가 조금씩 다르다 (도블답게) */
+.doble-w {
+  position: absolute;
+  transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) scale(var(--sc, 1));
+  white-space: nowrap; font-weight: 900; color: #23262e;
+  letter-spacing: -.02em; line-height: 1;
+  transition: color .2s;
+}
+.doble-w .hit { color: #e0338a; }
+.doble-w.lock { color: #0f8f77; }
+.doble-w.found {
+  color: #0f8f77;
+  text-shadow: 0 0 12px rgba(62, 224, 192, .8);
+}
+.doble-w.miss {
+  color: #d92847;
+  text-shadow: 0 0 12px rgba(255, 107, 129, .7);
+}
+
+/* 더미 — 카드가 쌓여 있는 느낌 */
+.doble-pilebox { position: relative; display: flex; align-items: center; justify-content: center; }
+.doble-stack {
+  position: absolute; left: 50%; top: 50%; border-radius: 50%;
+  width: clamp(196px, 38vh, 340px); height: clamp(196px, 38vh, 340px);
+  background: linear-gradient(180deg, #f3ecdf, #ded4c2);
+  border: clamp(2px, .38vh, 4px) solid #23262e;
+}
+.doble-stack.s1 { transform: translate(-50%, -50%) translate(-14px, 12px); opacity: .95; }
+.doble-stack.s2 { transform: translate(-50%, -50%) translate(-25px, 23px); opacity: .8; }
+.doble-stack.s3 { transform: translate(-50%, -50%) translate(-36px, 34px); opacity: .6; }
+.doble-pilebox .doble-card { position: relative; z-index: 2; }
+
+/* 카드가 들어오고 나가는 움직임 */
+.doble-card.in { animation: dobleIn .38s ease-out; }
+@keyframes dobleIn {
+  0% { transform: translateY(-14px) scale(.86); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+.doble-card.to-me {
+  transition: transform .55s cubic-bezier(.4, 0, .2, 1), opacity .5s .1s;
+  transform: translateX(-46vw) scale(.55) rotate(-16deg); opacity: 0;
+}
+.doble-card.to-ai {
+  transition: transform .8s cubic-bezier(.4, 0, .2, 1), opacity .7s .2s;
+  transform: translateX(46vw) scale(.55) rotate(16deg); opacity: 0;
+}
+.doble-card.pop { animation: doblePop .38s ease-out; }
+@keyframes doblePop {
+  0% { transform: scale(.7); }
+  60% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.doble-tip {
+  flex: none; text-align: center; margin: 0;
+  color: #9fb0c6; font-weight: 700; font-size: clamp(11px, 1.9vh, 18px);
+}
+.doble-tip b { color: #ffd166; }
+.doble-wrong { color: #ff8fab; font-weight: 800; }
+
+/* ---------------------------------------------------------
+   승리 화면 — 기획서 3쪽 그림 그대로
+   --------------------------------------------------------- */
+.doble-end {
+  position: absolute; inset: 0; z-index: 30;
+  display: flex; flex-direction: column;
+  background:
+    radial-gradient(ellipse 70% 60% at 50% 45%, #16233a 0%, #0b1220 55%, #070b12 100%);
+  padding: clamp(10px, 2vh, 24px) clamp(16px, 3vw, 44px);
+}
+.doble-endtop {
+  flex: none; display: flex; justify-content: space-between; align-items: flex-start;
+}
+.doble-endmid {
+  flex: 1; min-height: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: clamp(4px, .8vh, 10px);
+}
+.doble-endmid h2 {
+  margin: 0; font-weight: 900; color: #fff;
+  font-size: clamp(30px, 7vh, 66px); letter-spacing: -.02em;
+}
+.doble-end.win .doble-endmid h2 {
+  color: #ffd166; text-shadow: 0 0 26px rgba(255, 209, 102, .45);
+  animation: dobleCheer .7s ease-out;
+}
+@keyframes dobleCheer {
+  0% { transform: scale(.7); opacity: 0; }
+  60% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); }
+}
+.doble-endmid p {
+  margin: 0; color: #dbe4f0; font-weight: 800;
+  font-size: clamp(18px, 4vh, 40px);
+}
+.doble-endbtns {
+  display: flex; gap: clamp(10px, 2vw, 28px);
+  margin-top: clamp(10px, 2.4vh, 30px);
+}
+.doble-btn {
+  font-family: inherit; cursor: pointer;
+  padding: clamp(8px, 1.6vh, 18px) clamp(18px, 3vw, 46px);
+  font-size: clamp(16px, 3vh, 30px); font-weight: 900;
+  color: #16202e; background: #f2f5fa;
+  border: 3px solid #23262e; border-radius: 10px;
+  box-shadow: 0 5px 0 rgba(0, 0, 0, .45);
+}
+.doble-btn:hover { background: #fff; transform: translateY(-1px); }
+.doble-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 rgba(0, 0, 0, .45); }
+.doble-btn.go { background: linear-gradient(180deg, #ffe07a, #f0b03c); }
+.doble-btn:focus-visible { outline: 4px solid #3ee0c0; outline-offset: 3px; }
+.doble-more {
+  margin-top: clamp(8px, 1.6vh, 18px);
+  background: none; border: 0; cursor: pointer; font-family: inherit;
+  color: #8fa1b8; font-weight: 700; text-decoration: underline;
+  font-size: clamp(12px, 2vh, 18px);
+}
+.doble-more:hover { color: #cfd9e8; }
+
+/* ---------------------------------------------------------
+   인트로 한 장
+   --------------------------------------------------------- */
+.doble-introbg {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 60% 55% at 50% 40%, #2a4560 0%, #16233a 50%, #080d16 100%);
+}
+.doble-introbg::after {
+  content: ''; position: absolute; inset: 0;
+  background: repeating-linear-gradient(125deg,
+      rgba(255, 255, 255, .06) 0 6px, rgba(255, 255, 255, 0) 6px 16px);
+}
+.doble-introbox { background: rgba(10, 18, 30, .8); border-color: rgba(126, 231, 196, .4); }
+.doble-introrow {
+  display: flex; align-items: center; justify-content: center;
+  gap: clamp(8px, 1.6vw, 20px); margin: clamp(8px, 1.6vh, 18px) 0 4px;
+}
+.doble-minic {
+  position: relative; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 2px;
+  width: clamp(78px, 13vh, 120px); height: clamp(78px, 13vh, 120px);
+  border-radius: 50%; background: #f6f1e8; border: 3px solid #23262e;
+}
+.doble-minic i {
+  font-style: normal; font-weight: 900; color: #23262e;
+  font-size: clamp(11px, 1.8vh, 16px);
+}
+.doble-minic i:first-child { color: #d81b7a; }
+.doble-minic i:nth-child(2) { transform: rotate(-8deg); }
+.doble-minic i:last-child { transform: rotate(7deg); }
+.doble-eq { color: #7ee7c4; font-weight: 900; font-size: clamp(18px, 3.4vh, 32px); }
+
+/* 크롬북(1366×768) — 카드가 서로 붙지 않게 */
+@media (max-width: 1180px) {
+  .doble-row { gap: clamp(8px, 2vw, 26px); }
+  .doble-time { width: clamp(130px, 22vw, 230px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .doble-card.in, .doble-card.pop, .doble-endmid h2 { animation: none; }
+}
