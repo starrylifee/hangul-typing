@@ -41,11 +41,10 @@
 
   var firstPlay = true;   // 첫 판은 기획서 낱말 그대로, 다시 하면 무작위
 
-  /* 기획서 3쪽 왼쪽 "시작 (킹받으면 넘길 것)" 화면 — 제목과 놀이 버튼 */
+  /* 기획서 3쪽 왼쪽 시작 화면 — 제목과 놀이 버튼 */
   var INTRO =
     '<div class="bomb-intro">' +
     '  <div class="bomb-intro-paper">' +
-    '    <p class="bomb-intro-top">시작 <span>(킹받으면 넘길 것)</span></p>' +
     '    <h2 class="bomb-title"><i>폭</i><i>탄</i><b>피하기</b></h2>' +
     '    <button type="button" class="bomb-play">놀이</button>' +
     '    <p class="bomb-intro-by">학생이 만든 게임 · 기획 남자팀</p>' +

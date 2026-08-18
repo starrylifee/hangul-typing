@@ -188,13 +188,8 @@
   box-shadow: 0 22px 60px -16px #000;
   max-width: 90%;
 }
-.bomb-intro-top {
-  font-size: clamp(15px, 2.4vh, 24px); font-weight: 800; color: #3d434e;
-  letter-spacing: 2px;
-}
-.bomb-intro-top span { font-size: .7em; color: #7b8494; letter-spacing: 0; }
 .bomb-title {
-  margin: clamp(6px, 1.4vh, 16px) 0 clamp(12px, 2.2vh, 26px);
+  margin: 0 0 clamp(12px, 2.2vh, 26px);
   font-size: clamp(38px, 9.5vh, 96px); font-weight: 900; color: #14161a;
   line-height: 1; letter-spacing: -.02em;
 }
