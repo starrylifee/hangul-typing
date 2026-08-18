@@ -251,7 +251,8 @@
     '  <path d="M40 150 C34 200 36 228 40 240 L92 240 C96 228 98 200 92 150 Z" fill="#eef3f8" stroke="#3a2c22" stroke-width="4" stroke-linejoin="round"/>' +
     '  <path d="M46 240 v40 M86 240 v40" fill="none" stroke="#3a2c22" stroke-width="5"/>' +
     '  <path d="M32 278 h28 v14 h-28 z M74 278 h28 v14 h-28 z" fill="#f6efe2" stroke="#3a2c22" stroke-width="4" stroke-linejoin="round"/>' +
-    '  <path d="M30 162 h66 M30 178 h66" fill="none" stroke="#3a2c22" stroke-width="4.4" stroke-linecap="round"/>' +
+    /* 팔 — 몸통 밖으로 충분히 나와야 "셔츠 줄무늬" 가 아니라 팔로 읽힌다 */
+    '  <path d="M14 158 h102" fill="none" stroke="#3a2c22" stroke-width="4.4" stroke-linecap="round"/>' +
     '  <circle cx="66" cy="120" r="26" fill="#fdf6ee" stroke="#3a2c22" stroke-width="4"/>' +
     '  <circle cx="58" cy="116" r="3.2" fill="#3a2c22"/>' +
     '  <circle cx="74" cy="116" r="3.2" fill="#3a2c22"/>' +

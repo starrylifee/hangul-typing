@@ -198,8 +198,8 @@
       '<stop offset="1" stop-color="#63300e" stop-opacity="0"/></radialGradient>' +
       '</defs>' +
       // 팔 — 손목에서 오른쪽 아래로 (기획서 그림). 굵은 선 두 겹으로 테두리를 만든다
-      '<path d="M114 148 L146 184" stroke="#5a2c0d" stroke-width="34" stroke-linecap="round" fill="none"/>' +
-      '<path d="M114 148 L146 184" stroke="#f2c79b" stroke-width="27" stroke-linecap="round" fill="none"/>' +
+      '<path d="M114 148 L152 192" stroke="#5a2c0d" stroke-width="34" stroke-linecap="round" fill="none"/>' +
+      '<path d="M114 148 L152 192" stroke="#f2c79b" stroke-width="27" stroke-linecap="round" fill="none"/>' +
       // 하얀 소매(손목 밴드)
       '<g transform="rotate(-45 134 170)">' +
       '<rect x="114" y="156" width="40" height="28" rx="6" fill="#f8f9fc" stroke="#5a2c0d" stroke-width="3.2"/></g>' +

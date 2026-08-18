@@ -89,8 +89,11 @@
   width: min(78%, 900px);
   display: flex; align-items: center; gap: clamp(6px, 1vw, 14px);
 }
+/* 입력창 옆에 누운 배트 (기획서 그림). 타자도 배트를 쥐고 있어서 둘이 겹쳐 보이므로
+   이쪽은 흐리게 깔아 둔다 */
 .base-batsvg {
   width: clamp(110px, 15vw, 220px); height: auto; flex: none;
+  opacity: .55;
   filter: drop-shadow(0 4px 8px rgba(0, 0, 0, .4));
 }
 .base-inbox {
