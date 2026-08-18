@@ -71,6 +71,67 @@ var GAMES = (function () {
   function esc(s) {
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
+
+  /* =========================================================
+     소리 — 짧은 톤 몇 개. 파일을 받지 않고 그 자리에서 만든다.
+     아이가 잘했는지 못했는지 화면만 보고는 잘 모른다는 지적이 있었다.
+     ========================================================= */
+  var actx = null;
+  var SFX = {
+    hit: [660, 0.07, 'triangle', 0.16],      // 낱말 하나 맞힘
+    big: [0, 0, 'big', 0],                   // 큰 보상 (아래에서 따로 만든다)
+    bad: [180, 0.16, 'sawtooth', 0.14],      // 틀림·놓침
+    tick: [1040, 0.04, 'square', 0.08]       // 한 글자
+  };
+  function sfx(name) {
+    if (!APP.rec || APP.rec.mute) return;
+    try {
+      if (!actx) {
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        actx = new AC();
+      }
+      if (actx.state === 'suspended') actx.resume();
+      if (name === 'big') { chord([523, 659, 784, 1047]); return; }
+      var s = SFX[name];
+      if (!s) return;
+      tone(s[0], s[1], s[2], s[3], 0);
+    } catch (e) { /* 소리는 없어도 게임은 된다 */ }
+  }
+  function tone(hz, len, type, vol, at) {
+    var t0 = actx.currentTime + (at || 0);
+    var o = actx.createOscillator(), g = actx.createGain();
+    o.type = type; o.frequency.setValueAtTime(hz, t0);
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime(vol, t0 + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + len);
+    o.connect(g); g.connect(actx.destination);
+    o.start(t0); o.stop(t0 + len + 0.02);
+  }
+  function chord(hzs) {
+    hzs.forEach(function (hz, i) { tone(hz, 0.42, 'triangle', 0.13, i * 0.06); });
+  }
+
+  /* =========================================================
+     큰 보상 — 그 게임에서 제일 좋은 순간에만 쓴다.
+     작은 토스트(flashItem) 로는 100점 유니콘과 10점 토끼가 화면상 똑같았다.
+     ========================================================= */
+  function cheer(info) {
+    var st = $('stage');
+    if (!st) return;
+    sfx('big');
+    var el = document.createElement('div');
+    el.className = 'gcheer';
+    el.innerHTML =
+      '<span class="ic">' + esc(info.icon || '★') + '</span>' +
+      '<span class="tx">' + esc(info.name || '') + '</span>' +
+      (info.sub ? '<span class="sb">' + esc(info.sub) + '</span>' : '');
+    if (info.color) el.style.setProperty('--ch', info.color);
+    st.appendChild(el);
+    st.classList.add('flashwin');
+    setTimeout(function () { st.classList.remove('flashwin'); }, 420);
+    setTimeout(function () { el.remove(); }, 1500);
+  }
   function diffOf() {
     for (var i = 0; i < DIFFS.length; i++) if (DIFFS[i].id === sel.diff) return DIFFS[i];
     return DIFFS[1];
@@ -185,6 +246,7 @@ var GAMES = (function () {
     APP.show('game');
     // 주소에 게임을 적어 둔다 — 새로고침하면 이 게임이 다시 뜬다
     if (APP.route) APP.route('game/' + gameId);
+    setKb(kbOn());          // 자판 안내를 켜 뒀으면 이 게임에도 그려 준다
     var go = function () {
       G.running = true;
       G.startAt = Date.now();
@@ -284,7 +346,9 @@ var GAMES = (function () {
     G.combo++;
     if (G.combo > G.bestCombo) G.bestCombo = G.combo;
     var base = keyLen(word) * 10;
-    var bonus = 1 + Math.min(G.combo, 20) * 0.05;
+    /* 콤보 상한 — 20 에서 멈추면 잘 치는 아이가 80 연속을 이어도 21번째부터
+       보상이 하나도 안 늘었다. 40 까지 열어 둔다 (최대 3배). */
+    var bonus = 1 + Math.min(G.combo, 40) * 0.05;
     if (G.doubleUntil > G.elapsed) bonus *= 2;
     G.score += Math.round(base * bonus);
     G.keys += keyLen(word);
@@ -343,7 +407,7 @@ var GAMES = (function () {
 
     if (!best) {
       input.style.borderColor = 'var(--warn)';
-      if (!G.wasBad) { G.errors++; G.wasBad = true; breakCombo(); }
+      if (!G.wasBad) { G.errors++; G.wasBad = true; breakCombo(); sfx('bad'); }
       // 한/영 키가 영문 상태인지 살펴서 알려 준다
       var eng = G.items.some(function (it) {
         return !it.dead && HG.judge(it.word, v).engMode;
@@ -360,6 +424,7 @@ var GAMES = (function () {
     // 조합이 끝나야(엔터·스페이스 등) 성공 처리한다 — IME 상태를 깨지 않기 위해
     if (bestJ.complete && !composing) {
       var done = best.word;
+      sfx('hit');
       hit(best);
       clearInput(done);
     }
@@ -411,6 +476,7 @@ var GAMES = (function () {
 
   function draw() {
     if (!G) return;
+    hintKey();
     if (G.id === 'defense') drawDefense();
     else if (G.id === 'mole') drawMole();
     else if (G.id === 'race') drawRaceWord();
@@ -419,6 +485,42 @@ var GAMES = (function () {
     else if (G.id === 'dig') drawDig();
     else if (G.id === 'fire') drawFire();
     else if (EXT[G.id] && EXT[G.id].draw) EXT[G.id].draw();
+  }
+
+  /* =========================================================
+     게임 안 자판 안내
+     아이가 게임에서 지는 진짜 이유는 "시간 안에 못 쳐서" 가 아니라
+     "ㅁ이 어디 있는지 찾다가" 다. 이걸 켜면 아이들이 정한 수치를 하나도 안 건드리고
+     여섯 게임이 다 할 만해진다. 켜고 끄는 것은 이 컴퓨터에 저장된다.
+     ========================================================= */
+  function kbOn() { return !!(APP.rec && APP.rec.gameKb); }
+
+  function setKb(on) {
+    APP.rec.gameKb = !!on;
+    APP.save();
+    var box = $('game-kb'), btn = $('btn-game-kb');
+    if (btn) btn.classList.toggle('on', !!on);
+    if (!box) return;
+    box.hidden = !on;
+    if (on) {
+      var lv = G ? G.level : DATA.getLevel(sel.level);
+      // 학생 게임은 자판 전체를 쓴다 (단계 제한이 없다)
+      KB.render($('gkb'), $('gkb-hint'), (G && G.student) ? null : (lv && lv.allowed));
+      hintKey();
+    }
+  }
+
+  /** 지금 쳐야 할 다음 키를 자판에 밝힌다 */
+  function hintKey() {
+    if (!kbOn() || !G) return;
+    var v = $('gamein') ? $('gamein').value : '';
+    var it = null, alive = [];
+    G.items.forEach(function (x) { if (!x.dead) alive.push(x); });
+    // 치는 중인 낱말이 있으면 그것, 없고 대상이 하나뿐이면 그것
+    for (var i = 0; i < alive.length; i++) if (alive[i].lock) { it = alive[i]; break; }
+    if (!it && alive.length === 1) it = alive[0];
+    if (!it) { KB.highlight(null); return; }
+    KB.highlight(HG.nextKey(it.word, it.lock ? v : ''));
   }
 
   /** 낱말을 "친 부분 / 남은 부분" 으로 나눠 그린다 */
@@ -2041,7 +2143,13 @@ var GAMES = (function () {
     if (G.raf) cancelAnimationFrame(G.raf);
     $('gamein').disabled = true;
 
-    var key = G.student ? G.id + '_student' : G.id + '_' + G.level.no + '_' + G.diff.id;
+    /* 최고 기록 키.
+       학생 게임은 예전에 게임당 하나뿐이었다. 그런데 네 게임이 끝 화면에 "다음단계" 를
+       달아 놔서, 그 버튼을 누르는 순간 아이가 자기 최고 기록을 다시는 못 넘겼다.
+       게임이 스스로 단계·난이도를 갖고 있으면 G.recKey 에 적어 두고, 그러면 키가 갈린다. */
+    var key = G.student
+      ? G.id + '_student' + (G.recKey ? '_' + G.recKey : '')
+      : G.id + '_' + G.level.no + '_' + G.diff.id;
     var prev = APP.rec.games[key] || 0;
     var isNew = G.score > prev;
     if (isNew) { APP.rec.games[key] = G.score; APP.save(); }
@@ -2165,6 +2273,14 @@ var GAMES = (function () {
     randWord: randWord, wordPool: wordPool,
     wordHtml: wordHtml, flashItem: flashItem, clearInput: clearInput,
     gameOver: gameOver,
+    /** 그 게임에서 제일 좋은 순간에만 쓴다 — 화면 가운데 큰 글자 + 소리 + 번쩍임.
+        {icon, name, sub, color} */
+    cheer: cheer,
+    /** 짧은 소리. 'hit'(맞힘) 'big'(큰 보상) 'bad'(틀림) 'tick'(한 글자) */
+    sfx: sfx,
+    /** 게임이 단계·난이도를 스스로 가질 때 최고 기록을 그 단위로 나눠 준다.
+        예: A.recKey('3단계-하드') */
+    recKey: function (k) { if (G) G.recKey = k; },
     addScore: addScore, breakCombo: breakCombo,
     /** 점수를 그냥 더하거나 뺀다 (기획서에 점수가 딱 정해진 게임용). 0 밑으로는 안 내려간다 */
     bump: function (n) {
@@ -2192,6 +2308,15 @@ var GAMES = (function () {
     });
     var shopBtn = $('btn-shop');
     if (shopBtn) shopBtn.onclick = openShop;
+    var kbBtn = $('btn-game-kb');
+    if (kbBtn) {
+      kbBtn.onclick = function () {
+        setKb(!kbOn());
+        var i = $('gamein');
+        if (i && !i.disabled) i.focus();
+      };
+      kbBtn.classList.toggle('on', kbOn());
+    }
     renderExtCards();
     renderStudent();
     var gi = $('gamein');

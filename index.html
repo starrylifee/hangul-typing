@@ -28,7 +28,7 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="stylesheet" href="css/style.css?v=9">
+<link rel="stylesheet" href="css/style.css?v=10">
 <!-- 학생이 만든 게임 — 게임마다 파일을 따로 둔다 (js/g-*.js 와 짝) -->
 <link rel="stylesheet" href="css/g-claw.css?v=1">
 <link rel="stylesheet" href="css/g-bomb.css?v=1">
@@ -353,6 +353,7 @@
         <span class="tag v" id="game-lv">2단계</span>
         <span class="title" id="game-title">낱말 방어전</span>
         <div class="spacer"></div>
+        <button class="btn ghost sm" id="btn-game-kb" title="게임 중에도 자판을 보여 줍니다">⌨️ 자판</button>
         <div class="stats">
           <div class="stat"><div class="k">점수</div><div class="v cpm" id="g-score">0</div></div>
           <div class="stat"><div class="k">연속</div><div class="v" id="g-combo">0</div></div>
@@ -364,6 +365,12 @@
       <div class="gameinput">
         <input type="text" id="gamein" autocomplete="off" autocorrect="off"
                autocapitalize="off" spellcheck="false" lang="ko" placeholder="낱말을 치고 엔터">
+      </div>
+      <!-- 게임에서도 자판 안내를 볼 수 있다. 아이가 지는 진짜 이유는 시간이 아니라
+           "ㅁ이 어디 있지" 라서, 이걸 켜면 수치를 안 건드리고도 게임이 할 만해진다. -->
+      <div class="gamekb" id="game-kb" hidden>
+        <div class="kb" id="gkb"></div>
+        <div class="finger-hint" id="gkb-hint"></div>
       </div>
     </div>
   </section>
@@ -440,7 +447,7 @@
 <script src="js/data.js?v=3"></script>
 <script src="js/keyboard.js?v=3"></script>
 <script src="js/app.js?v=7"></script>
-<script src="js/games.js?v=7"></script>
+<script src="js/games.js?v=8"></script>
 <!-- 학생이 만든 게임 (게임 하나에 파일 하나). games.js 뒤에 와야 한다 -->
 <script src="js/g-claw.js?v=1"></script>
 <script src="js/g-bomb.js?v=1"></script>

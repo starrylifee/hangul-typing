@@ -238,6 +238,27 @@ input, textarea { font-family: inherit; }
   display: grid;
   grid-template-rows: auto auto 1fr auto;
 }
+/* 게임 화면에서 자판 안내를 켜면 한 줄이 더 생긴다 */
+#s-game .play { grid-template-rows: auto auto 1fr auto auto; }
+
+/* 게임 안 자판 안내 — 연습 화면 자판보다 납작하게 눌러 게임판을 덜 잡아먹는다 */
+.gamekb {
+  border-top: 1px solid var(--line);
+  background: rgba(10, 14, 21, .72);
+  padding: clamp(5px, .9vh, 10px) 20px clamp(6px, 1.1vh, 12px);
+  display: flex; flex-direction: column; align-items: center;
+  gap: clamp(3px, .5vh, 6px);
+}
+.gamekb[hidden] { display: none; }
+.gamekb .key {
+  width: clamp(26px, 3.6vh, 40px);
+  height: clamp(26px, 3.6vh, 40px);
+  border-radius: 7px;
+}
+.gamekb .key .main { font-size: clamp(11px, 1.7vh, 17px); }
+.gamekb .key .sub { display: none; }
+.gamekb .finger-hint { font-size: clamp(11px, 1.6vh, 15px); }
+#btn-game-kb.on { background: var(--accent); color: #06231d; border-color: transparent; }
 
 .play-head {
   display: flex; align-items: center; gap: 12px;
@@ -1526,6 +1547,43 @@ ul.notyet li {
   font-size: clamp(16px, 3vh, 26px);
   animation: burstpop .9s forwards ease-out; pointer-events: none; z-index: 4;
 }
+
+/* 큰 보상 — 그 게임 최고의 순간에만. 작은 토스트로는 유니콘과 토끼가 똑같아 보였다 */
+.gcheer {
+  position: absolute; left: 50%; top: 44%; z-index: 30;
+  transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  pointer-events: none; text-align: center;
+  animation: gcheerIn 1.5s forwards cubic-bezier(.2, .9, .3, 1);
+  --ch: #ffd166;
+}
+.gcheer .ic {
+  font-size: clamp(48px, 12vh, 120px); line-height: 1;
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, .55));
+}
+.gcheer .tx {
+  font-size: clamp(26px, 6vh, 62px); font-weight: 900; color: var(--ch);
+  text-shadow: 0 3px 14px rgba(0, 0, 0, .7), 0 0 26px var(--ch);
+  letter-spacing: -1px;
+}
+.gcheer .sb {
+  font-size: clamp(14px, 2.6vh, 24px); font-weight: 800; color: #fff6da;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, .8);
+}
+@keyframes gcheerIn {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.5); }
+  14% { opacity: 1; transform: translate(-50%, -50%) scale(1.16); }
+  26% { transform: translate(-50%, -50%) scale(1); }
+  74% { opacity: 1; transform: translate(-50%, -54%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -70%) scale(.94); }
+}
+/* 큰 보상이 뜨는 순간 판 전체가 한 번 번쩍인다 */
+.stage.flashwin::after {
+  content: ''; position: absolute; inset: 0; z-index: 29; pointer-events: none;
+  background: radial-gradient(circle at 50% 44%, rgba(255, 255, 255, .5), transparent 62%);
+  animation: gflash .42s forwards ease-out;
+}
+@keyframes gflash { to { opacity: 0; } }
 
 /* 게임 인트로 — 시작 전에 한 장 보여 주고 엔터로 넘어간다 */
 .gintro {
