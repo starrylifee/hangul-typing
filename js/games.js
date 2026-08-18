@@ -33,6 +33,12 @@ var GAMES = (function () {
   /* 학생 게임의 기획 모둠 — 크레딧은 기획서 원문 그대로 */
   var STUDENT_CREDIT = { flip: '남자팀', dig: '쭈꾸미', fire: '3학년 아이들' };
 
+  /* 바깥 파일로 만든 학생 게임 (js/g-*.js).
+     게임이 늘어날수록 이 파일이 비대해져서, 새 게임은 파일을 따로 두고 여기에 등록만 한다.
+     등록한 게임은 start/step/hit/draw 를 스스로 갖고, 홈 카드도 자동으로 붙는다. */
+  var EXT = {};
+  var EXT_ORDER = [];
+
   /* 아이템 — 아이템이 붙은 낱말을 쳐서 없애면 효과가 걸린다.
      게임 성격에 맞는 곳에만 넣는다 (두더지는 칸이 빽빽해 넣지 않음). */
   var ITEMS = {
@@ -259,6 +265,7 @@ var GAMES = (function () {
     else if (G.id === 'flip') stepFlip(dt);
     else if (G.id === 'dig') stepDig(dt);
     else if (G.id === 'fire') stepFire(dt);
+    else if (EXT[G.id] && EXT[G.id].step) EXT[G.id].step(dt);
 
     var cpm = G.elapsed > 1 ? Math.round(G.keys / (G.elapsed / 60)) : 0;
     $('g-cpm').textContent = cpm;
@@ -381,6 +388,8 @@ var GAMES = (function () {
   }
 
   function hit(item) {
+    // 바깥 파일 게임은 점수 규칙을 스스로 정한다 (덫·감점이 있는 게임이 많다)
+    if (EXT[G.id]) { EXT[G.id].hit(item); return; }
     // 치면 안 되는 동물은 점수를 주지 않고 깎는다
     if (G.id === 'mole' && item.bad) { moleBadHit(item); return; }
     // 폭죽 놀이는 점수 규칙이 다르고(+5점 고정) 폭탄 판정이 있어서 따로 처리한다
@@ -403,6 +412,7 @@ var GAMES = (function () {
     else if (G.id === 'flip') drawFlip();
     else if (G.id === 'dig') drawDig();
     else if (G.id === 'fire') drawFire();
+    else if (EXT[G.id] && EXT[G.id].draw) EXT[G.id].draw();
   }
 
   /** 낱말을 "친 부분 / 남은 부분" 으로 나눠 그린다 */
@@ -2082,7 +2092,86 @@ var GAMES = (function () {
     else if (id === 'flip') startFlip();
     else if (id === 'dig') startDig();
     else if (id === 'fire') startFire();
+    else if (EXT[id]) EXT[id].start();
   }
+
+  /* =========================================================
+     바깥 파일 게임 등록 — js/g-*.js 가 부르는 창구
+     ========================================================= */
+  /**
+   * @param id     게임 아이디 (영문 소문자, 다른 게임과 겹치지 않게)
+   * @param def    { name, credit, icon, desc, pdf, start, step, hit, draw }
+   *   name   화면에 나오는 게임 이름 (기획서의 이름 그대로)
+   *   credit 기획한 모둠 닉네임
+   *   icon   홈 카드 아이콘 (이모지 1~2자)
+   *   desc   홈 카드 설명 한두 줄
+   *   pdf    기획서 원본 경로 (game_vibe/…pdf)
+   *   start  게임 시작. GAMES.api.prepare(id, introHtml) 로 시작한다
+   *   step   매 프레임 (dt 초). 없어도 된다
+   *   hit    낱말을 다 쳤을 때 (item). 점수도 스스로 준다
+   *   draw   낱말 표시 갱신. 없어도 된다
+   */
+  function register(id, def) {
+    if (EXT[id]) return;
+    GAME_NAME[id] = def.name;
+    STUDENT_CREDIT[id] = def.credit;
+    EXT[id] = def;
+    EXT_ORDER.push(id);
+  }
+
+  /** 홈 "학생이 만든 게임" 목록에 등록된 게임 카드를 붙인다 */
+  function renderExtCards() {
+    var grid = document.querySelector('.student-grid');
+    if (!grid) return;
+    EXT_ORDER.forEach(function (id) {
+      if (grid.querySelector('[data-sgame="' + id + '"]')) return;
+      var d = EXT[id];
+      var c = document.createElement('div');
+      c.className = 'sgame-card';
+      c.setAttribute('data-sgame', id);
+      c.setAttribute('role', 'button');
+      c.setAttribute('tabindex', '0');
+      c.innerHTML =
+        '<div class="ico">' + esc(d.icon || '🎮') + '</div>' +
+        '<div class="body"><h3>' + esc(d.name) + '</h3><p>' + esc(d.desc || '') + '</p></div>' +
+        '<div class="side"><span class="credit">기획 · ' + esc(d.credit) + '</span>' +
+        (d.pdf ? '<a class="pdflink" href="' + esc(d.pdf) + '" target="_blank" rel="noopener">📄 기획서</a>' : '') +
+        '</div>';
+      c.onclick = function (e) {
+        if (e.target.closest && e.target.closest('a')) return;
+        start(id);
+      };
+      grid.appendChild(c);
+    });
+  }
+
+  /* 게임 파일들이 쓰는 공용 도구 — 여기 있는 것만 쓴다 */
+  var api = {
+    el: $, esc: esc, keyLen: keyLen,
+    /** 게임 화면을 띄우고 인트로·카운트다운 뒤 시작한다 */
+    prepare: function (id, introHtml) {
+      prepare(id, introHtml);
+      G.student = true;
+      $('game-lv').textContent = '학생 게임 · 기획 ' + (STUDENT_CREDIT[id] || '');
+    },
+    state: function () { return G; },
+    stage: function () { return $('stage'); },
+    randWord: randWord, wordPool: wordPool,
+    wordHtml: wordHtml, flashItem: flashItem, clearInput: clearInput,
+    gameOver: gameOver,
+    addScore: addScore, breakCombo: breakCombo,
+    /** 점수를 그냥 더하거나 뺀다 (기획서에 점수가 딱 정해진 게임용). 0 밑으로는 안 내려간다 */
+    bump: function (n) {
+      G.score += n;
+      if (G.score < 0) G.score = 0;
+      $('g-score').textContent = G.score;
+      return G.score;
+    },
+    /** 진행 막대 (0~1) */
+    progress: function (r) {
+      $('g-prog').style.width = Math.max(0, Math.min(1, r)) * 100 + '%';
+    }
+  };
 
   function init() {
     document.querySelectorAll('.game-card').forEach(function (b) {
@@ -2097,6 +2186,7 @@ var GAMES = (function () {
     });
     var shopBtn = $('btn-shop');
     if (shopBtn) shopBtn.onclick = openShop;
+    renderExtCards();
     renderStudent();
     var gi = $('gamein');
     gi.addEventListener('input', onGameInput);
@@ -2144,6 +2234,7 @@ var GAMES = (function () {
 
   return {
     init: init, openSelect: openSelect, openStudent: openStudent,
-    start: start, stop: stop, renderStudent: renderStudent
+    start: start, stop: stop, renderStudent: renderStudent,
+    register: register, api: api
   };
 })();

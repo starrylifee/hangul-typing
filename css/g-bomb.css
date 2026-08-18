@@ -1,0 +1,233 @@
+/* g-bomb.css — 폭탄 피하기 (기획 · 남자팀)
+   기획서(game_vibe/20260818105008.pdf) 3·4쪽 그림 그대로:
+   시작 화면(제목 + 놀이 버튼), 굵은 검은 선의 3×3 / 4×4 표. */
+
+.bomb-wrap {
+  --bsz: min(64vh, 44vw);
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center;
+  padding: clamp(6px, 1.2vh, 14px) 12px clamp(4px, 1vh, 10px);
+  background: radial-gradient(120% 90% at 50% 0%, #1b2233 0%, #0b0f17 70%);
+}
+
+/* ---------- 위쪽 표시줄 — 단계 / 남은 시간 / 친 개수 / 숨은 폭탄 ---------- */
+.bomb-hud {
+  display: flex; align-items: stretch; gap: clamp(8px, 1.6vw, 20px);
+  flex: 0 0 auto;
+}
+.bomb-h {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-width: clamp(96px, 12vw, 170px);
+  padding: clamp(3px, .6vh, 7px) clamp(10px, 1.4vw, 20px);
+  border: 2px solid #2f3a4d;
+  border-radius: 12px; background: rgba(16, 22, 34, .92);
+}
+.bomb-h .k {
+  font-size: clamp(11px, 1.6vh, 15px); font-weight: 700; color: #93a2ba;
+  letter-spacing: .5px;
+}
+.bomb-h .v {
+  font-size: clamp(20px, 3.4vh, 34px); font-weight: 900; color: #eaf1ff;
+  line-height: 1.15;
+}
+.bomb-h.step .v { color: #ffd977; }
+.bomb-h.goal .v i { font-style: normal; }
+.bomb-h.goal .v i:first-child { color: #6ee7a0; }
+.bomb-h.mine .v { color: #ff9aad; }
+.bomb-h.time .v { font-variant-numeric: tabular-nums; }
+.bomb-h.time.low {
+  border-color: #e2504f; background: rgba(58, 16, 22, .95);
+  animation: bombLow 1s infinite ease-in-out;
+}
+.bomb-h.time.low .v { color: #ff8a8a; }
+@keyframes bombLow { 50% { box-shadow: 0 0 0 4px rgba(226, 80, 79, .22); } }
+
+/* ---------- 격자 — 기획서 그림처럼 굵은 검은 선의 표 ---------- */
+.bomb-boardbox {
+  position: relative;
+  flex: 1 1 auto; min-height: 0;
+  display: flex; align-items: center; justify-content: center;
+  width: 100%;
+  margin-top: clamp(4px, 1vh, 12px);
+}
+.bomb-boardin { position: relative; }
+.bomb-board {
+  --n: 3;
+  --cell: calc(var(--bsz) / var(--n));
+  width: var(--bsz); height: var(--bsz);
+  max-height: 100%;
+  display: grid;
+  grid-template-columns: repeat(var(--n), 1fr);
+  grid-template-rows: repeat(var(--n), 1fr);
+  background: #faf6ea;
+  border: 5px solid #16181c;
+  box-shadow: 0 18px 46px -14px #000;
+  transition: opacity .3s;
+}
+.bomb-board.done { opacity: .5; filter: grayscale(.45); }
+.bomb-board.shake { animation: bombShake .45s cubic-bezier(.36,.07,.19,.97); }
+@keyframes bombShake {
+  10%, 90% { transform: translate(-3px, 1px); }
+  30%, 70% { transform: translate(6px, -2px); }
+  50% { transform: translate(-8px, 3px); }
+}
+
+.bomb-cell {
+  position: relative;
+  border: 3px solid #16181c;
+  margin: -1.5px;                 /* 선이 겹쳐 한 줄로 보이게 */
+  display: flex; align-items: center; justify-content: center;
+  padding: 4px;
+  overflow: hidden;
+  background: #faf6ea;
+  transition: background .18s;
+}
+.bomb-cell .bw {
+  color: #14161a; font-weight: 800; line-height: 1.14;
+  text-align: center; overflow-wrap: anywhere; text-wrap: balance;
+  font-size: calc(var(--cell) * .30);
+}
+.bomb-cell .bw.n1, .bomb-cell .bw.n2 { font-size: calc(var(--cell) * .32); }
+.bomb-cell .bw.n3 { font-size: calc(var(--cell) * .26); }
+.bomb-cell .bw.n4 { font-size: calc(var(--cell) * .21); }
+.bomb-cell .bw.n5 { font-size: calc(var(--cell) * .205); }
+.bomb-cell .bw.n6 { font-size: calc(var(--cell) * .195); }
+.bomb-cell .bw .hit { color: #12925f; }
+
+.bomb-cell.lock { background: #fff3bf; }
+.bomb-cell.lock .bw { color: #4a3b00; }
+
+/* 친 칸 — 낱말이 사라지고 둘레의 폭탄 수가 남는다 */
+.bomb-cell .bnum {
+  display: none;
+  font-size: calc(var(--cell) * .34); font-weight: 900; color: #2f7d5b;
+}
+.bomb-cell.open { background: #dff3e4; }
+.bomb-cell.open .bnum { display: block; }
+
+/* 숨어 있던 폭탄이 드러난다 */
+.bomb-cell .bmine {
+  display: none; position: absolute; inset: 0;
+  align-items: center; justify-content: center;
+  font-size: calc(var(--cell) * .42);
+  background: #ffe0e4;
+}
+.bomb-cell.shown .bmine { display: flex; }
+.bomb-cell.shown .bw { opacity: 0; }
+.bomb-cell.boom { background: #ff5a5a; transition: none; }
+.bomb-cell.boom .bmine {
+  display: flex; background: #ff5a5a;
+  animation: bombPop .5s ease-out;
+}
+@keyframes bombPop {
+  0% { transform: scale(.4); }
+  55% { transform: scale(1.45); }
+  100% { transform: scale(1); }
+}
+.bomb-flash {
+  position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: min(30vh, 22vw);
+  pointer-events: none;
+  animation: bombFlash 1.1s forwards ease-out;
+}
+@keyframes bombFlash {
+  0% { transform: translate(-50%, -50%) scale(.2); opacity: 0; }
+  25% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1.7); opacity: 0; }
+}
+
+/* ---------- 1단계를 통과하면 모서리에 나타나는 낱말 (기획서 규칙 6) ---------- */
+.bomb-corner { display: none; }
+.bomb-corner.on {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  position: absolute; right: 0; top: 0;
+  transform: translate(62%, -18%);
+  white-space: nowrap;
+  padding: clamp(8px, 1.4vh, 16px) clamp(14px, 1.8vw, 28px);
+  background: #fff9e2; border: 4px solid #16181c; border-radius: 10px;
+  box-shadow: 0 12px 34px -8px #000, 0 0 0 6px rgba(255, 217, 119, .18);
+  opacity: 1;
+  animation: bombCorner .45s ease-out;
+  z-index: 6;
+}
+.bomb-corner .clab {
+  font-size: clamp(11px, 1.8vh, 17px); font-weight: 800; color: #8a5a12;
+}
+.bomb-corner .cw {
+  font-size: clamp(24px, 4.6vh, 48px); font-weight: 900; color: #14161a;
+  line-height: 1.1;
+}
+.bomb-corner .cw .hit { color: #12925f; }
+@keyframes bombCorner {
+  0% { transform: translate(62%, -18%) scale(.55); }
+  60% { transform: translate(62%, -18%) scale(1.12); }
+  100% { transform: translate(62%, -18%) scale(1); }
+}
+
+.bomb-tip {
+  flex: 0 0 auto;
+  margin-top: clamp(3px, .8vh, 10px);
+  color: #93a2ba; font-size: clamp(11px, 1.7vh, 16px); font-weight: 600;
+}
+.bomb-tip b { color: #cfe0f5; }
+
+/* =========================================================
+   시작 화면 — 기획서 3쪽 왼쪽 그림 (제목 + 놀이 버튼)
+   ========================================================= */
+.bomb-intro {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(120% 90% at 50% 20%, #232c3f 0%, #080b11 75%);
+}
+.bomb-intro-paper {
+  text-align: center;
+  padding: clamp(16px, 3vh, 36px) clamp(28px, 5vw, 80px);
+  background: #faf6ea;
+  border: 5px solid #16181c;
+  box-shadow: 0 22px 60px -16px #000;
+  max-width: 90%;
+}
+.bomb-intro-top {
+  font-size: clamp(15px, 2.4vh, 24px); font-weight: 800; color: #3d434e;
+  letter-spacing: 2px;
+}
+.bomb-intro-top span { font-size: .7em; color: #7b8494; letter-spacing: 0; }
+.bomb-title {
+  margin: clamp(6px, 1.4vh, 16px) 0 clamp(12px, 2.2vh, 26px);
+  font-size: clamp(38px, 9.5vh, 96px); font-weight: 900; color: #14161a;
+  line-height: 1; letter-spacing: -.02em;
+}
+.bomb-title i { font-style: normal; margin-right: .18em; }
+.bomb-title b { font-weight: 900; }
+.bomb-play {
+  font: inherit; cursor: pointer;
+  font-size: clamp(22px, 4.2vh, 44px); font-weight: 900; color: #14161a;
+  padding: clamp(4px, .8vh, 10px) clamp(28px, 4vw, 64px);
+  background: #faf6ea; border: 4px solid #16181c; border-radius: 4px;
+  transform: rotate(-1.2deg);
+  box-shadow: 4px 5px 0 #16181c;
+}
+.bomb-play:hover { background: #ffe9a8; }
+.bomb-intro-by {
+  margin-top: clamp(12px, 2.2vh, 26px);
+  font-size: clamp(12px, 1.9vh, 18px); font-weight: 800; color: #8a5a12;
+}
+.bomb-intro-desc {
+  margin-top: 6px; color: #3d434e; font-weight: 600;
+  font-size: clamp(13px, 2.1vh, 20px); line-height: 1.55;
+}
+.bomb-intro-go {
+  display: inline-block; margin-top: clamp(10px, 1.8vh, 20px);
+  background: #16181c; color: #faf6ea; font-weight: 900;
+  font-size: clamp(13px, 2.1vh, 20px);
+  padding: 7px 22px; border-radius: 999px;
+  animation: bombGo 1.4s infinite ease-in-out;
+}
+@keyframes bombGo { 50% { transform: scale(1.06); } }
+
+/* 크롬북(1366×768)보다 낮은 화면 — 격자를 폭 기준으로 줄인다 */
+@media (max-height: 620px) {
+  .bomb-wrap { --bsz: min(58vh, 38vw); }
+  .bomb-tip { display: none; }
+}
