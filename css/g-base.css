@@ -1,0 +1,352 @@
+/* g-base.css — 야구게임 (기획 · 해산물 연합팀)
+   기획서 3쪽(공격) — 초록 잔디와 주황 다이아몬드가 있는 야구장, 가운데 위 투수,
+     낱말이 적힌 야구공, 아래쪽 배트와 "단어를 입력하세요" 입력 상자, 왼쪽 위 스코어 2:0.
+   기획서 4쪽(수비) — 왼쪽 위 해, 갈색 글러브와 그 위의 낱말 공,
+     아래 "단어를 쓰시오" 입력 상자(파란 모서리·빨간 모서리), 오른쪽 위 스코어보드와 아웃 카운트.
+   ========================================================= */
+
+.base-wrap {
+  position: absolute; inset: 0; overflow: hidden;
+  --me1: #3b82f6; --me2: #1d4ed8; --meink: #eaf2ff;
+  --you1: #f4f6fa; --you2: #c8ced9; --youink: #1b2333;
+  font-family: inherit;
+}
+
+/* 공격 / 수비 화면 바꿔 달기 — 둘 다 스크롤 없이 한 화면 */
+.base-att, .base-def { position: absolute; inset: 0; opacity: 0; pointer-events: none; }
+.base-wrap.attack .base-att { opacity: 1; }
+.base-wrap.defense .base-def { opacity: 1; }
+
+/* =========================================================
+   공격 화면 — 야구장
+   ========================================================= */
+.base-fieldsvg { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+/* 투수 — 마운드 위 */
+.base-pitcher {
+  position: absolute; left: 50%; top: 47%;
+  height: clamp(96px, 23vh, 200px);
+  transform: translate(-50%, -86%);
+}
+.base-pitcher svg, .base-batter svg { height: 100%; width: auto; display: block; overflow: visible; }
+/* 유니폼은 상대 팀 색, 타자는 우리 팀 색 */
+.base-pitcher .bpj { fill: var(--you1); stroke: #2b2f3a; stroke-width: 2.4; }
+.base-pitcher .bpc { fill: var(--you2); stroke: #2b2f3a; stroke-width: 2.2; }
+.base-batter .bpj { fill: var(--me1); stroke: #2b2f3a; stroke-width: 2.4; }
+.base-batter .bpc { fill: var(--me2); stroke: #2b2f3a; stroke-width: 2.2; }
+.bpn { stroke: rgba(0, 0, 0, .18); stroke-width: 1.4; fill: none; }
+.bph { fill: #f3c9a0; stroke: #8a5a2c; stroke-width: 2.2; }
+.bpa { stroke: #f3c9a0; stroke-width: 8; stroke-linecap: round; fill: none; }
+.bpk { stroke: #2b3242; stroke-width: 9; stroke-linecap: round; fill: none; }
+.bps { stroke: #1a1d26; stroke-width: 7; stroke-linecap: round; fill: none; }
+
+.base-batter {                 /* 왼쪽 타석(야구장 SVG 의 x 33~40) 안에 세운다 */
+  position: absolute; left: 36%; top: 88%;
+  height: clamp(84px, 20vh, 172px);
+  transform: translate(-50%, -88%);
+  transform-origin: 60% 100%;
+}
+.base-wrap.swing .base-batter { animation: baseSwing .5s ease-out; }
+@keyframes baseSwing {
+  0% { transform: translate(-50%, -88%) rotate(0deg); }
+  35% { transform: translate(-50%, -88%) rotate(-16deg); }
+  100% { transform: translate(-50%, -88%) rotate(0deg); }
+}
+
+/* 주자 — 진루한 베이스에 우리 팀 색 점이 앉는다 */
+.base-runner {
+  position: absolute; width: clamp(15px, 2.6vh, 24px); height: clamp(15px, 2.6vh, 24px);
+  border-radius: 50%; background: var(--me1); border: 2px solid #fff;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, .35);
+  transform: translate(-50%, -50%) scale(.4); opacity: 0;
+  transition: opacity .25s, transform .25s;
+}
+.base-runner.on { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+.base-runner.r1 { left: 88%; top: 52%; }
+.base-runner.r2 { left: 50%; top: 14%; }
+.base-runner.r3 { left: 12%; top: 52%; }
+
+/* 왼쪽 위 스코어 2:0 (기획서 그림 그대로 네모 상자) */
+.base-scorebox {
+  position: absolute; left: clamp(10px, 1.6vw, 22px); top: clamp(10px, 1.6vh, 20px);
+  background: rgba(255, 255, 255, .94); border: 3px solid #1b2333; border-radius: 10px;
+  padding: clamp(4px, .8vh, 10px) clamp(12px, 1.6vw, 22px);
+  display: flex; align-items: center; gap: clamp(6px, .8vw, 12px);
+  font-size: clamp(22px, 4.6vh, 44px); font-weight: 900; color: #14203a;
+  box-shadow: 0 6px 18px -8px rgba(0, 0, 0, .6);
+}
+.base-scorebox i { font-style: normal; opacity: .55; }
+
+/* =========================================================
+   아래쪽 배트 + 입력 상자 (공격·수비 공통 모양)
+   ========================================================= */
+/* z-index 7 — 수비 화면의 잔디(1)·글러브(2)·공(6) 어느 것에도 가리면 안 된다.
+   여기를 손대면 수비 때 "단어를 쓰시오" 상자가 잔디 밑으로 깔린다. */
+.base-inbar {
+  position: absolute; left: 50%; bottom: clamp(8px, 1.8vh, 20px);
+  z-index: 7;
+  transform: translateX(-50%);
+  width: min(78%, 900px);
+  display: flex; align-items: center; gap: clamp(6px, 1vw, 14px);
+}
+.base-batsvg {
+  width: clamp(110px, 15vw, 220px); height: auto; flex: none;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, .4));
+}
+.base-inbox {
+  flex: 1; min-width: 0;
+  height: clamp(38px, 7vh, 62px);
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255, 255, 255, .95);
+  border: 3px solid #1b2333; border-radius: 10px;
+  font-size: clamp(17px, 3.2vh, 30px); font-weight: 800; color: #14203a;
+  overflow: hidden; white-space: nowrap;
+  box-shadow: 0 6px 18px -8px rgba(0, 0, 0, .6);
+}
+.base-inbox .ph { color: #8b93a5; font-weight: 700; }
+.base-inbox b { color: #0e7a5f; letter-spacing: .5px; }
+
+/* 기획서 4쪽의 입력 상자 — 왼쪽 위 파란 모서리, 오른쪽 아래 빨간 모서리 */
+.base-inbox.def { position: relative; }
+.base-inbox.def::before, .base-inbox.def::after {
+  content: ''; position: absolute; width: clamp(20px, 3vw, 42px); height: clamp(10px, 1.6vh, 16px);
+}
+.base-inbox.def::before {
+  left: -3px; top: -3px; border-left: 7px solid #1273e6; border-top: 7px solid #1273e6;
+  height: clamp(16px, 2.6vh, 26px);
+}
+.base-inbox.def::after {
+  right: -3px; bottom: -3px; border-right: 7px solid #e0223c; border-bottom: 7px solid #e0223c;
+  height: clamp(16px, 2.6vh, 26px);
+}
+
+/* =========================================================
+   수비 화면 — 해 · 글러브 · 낱말 공
+   ========================================================= */
+.base-def {
+  background: linear-gradient(180deg, #bfe6ff 0%, #e8f6ff 58%, #f6fbff 100%);
+}
+.base-def::after {                     /* 아래쪽 잔디 — 맨 밑에 깔린다 */
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 26%; z-index: 1;
+  background: linear-gradient(180deg, #6fbb3d 0 6%, #62b134 6% 100%);
+}
+.base-def > * { position: absolute; z-index: 2; }
+.base-def > .base-glove { z-index: 3; }
+.base-def > .base-inbar { z-index: 7; }
+.base-sun {
+  position: absolute; left: clamp(12px, 3vw, 46px); top: clamp(10px, 3vh, 34px);
+  width: clamp(74px, 15vh, 140px);
+}
+.base-sunsvg { width: 100%; height: auto; display: block; }
+.base-sun .rays { animation: baseSunSpin 26s linear infinite; transform-origin: 50% 50%; }
+@keyframes baseSunSpin { to { transform: rotate(360deg); } }
+.base-cloud {
+  position: absolute; background: rgba(255, 255, 255, .9); border-radius: 999px;
+  filter: blur(.4px);
+}
+.base-cloud.c1 { left: 24%; top: 12%; width: 16%; height: 6%; box-shadow: 3vw 1vh 0 -.4vh rgba(255,255,255,.9); }
+.base-cloud.c2 { left: 62%; top: 26%; width: 12%; height: 4.6%; box-shadow: 2.4vw .8vh 0 -.4vh rgba(255,255,255,.85); }
+
+.base-glove {
+  position: absolute; left: 42%; top: 56%;
+  height: clamp(190px, 46vh, 430px);
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 12px 18px rgba(0, 0, 0, .28));
+  transition: transform .18s;
+}
+.base-glovesvg { height: 100%; width: auto; display: block; overflow: visible; }
+.base-glove.pop { animation: baseCatch .46s ease-out; }
+@keyframes baseCatch {
+  0% { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+  40% { transform: translate(-50%, -54%) scale(1.12) rotate(-7deg); }
+  100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+}
+
+/* =========================================================
+   야구공 — 낱말이 공에 쓰여 있다 (규칙 6)
+   ========================================================= */
+.base-ball {
+  position: absolute; left: 50%; top: 34%;
+  width: clamp(70px, 13vh, 130px); height: clamp(70px, 13vh, 130px);
+  --sc: 1;
+  transform: translate(-50%, -50%) scale(var(--sc));
+  opacity: 0; pointer-events: none; z-index: 6;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, .35));
+}
+.base-ball.on { opacity: 1; }
+.base-ballsvg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.base-word {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  white-space: nowrap; font-weight: 900; letter-spacing: -.5px;
+  color: #14203a; background: rgba(255, 255, 255, .88);
+  border-radius: 999px; padding: .12em .5em;
+  border: 2px solid rgba(27, 35, 51, .35);
+  font-size: clamp(15px, 2.9vh, 27px);
+}
+.base-word.n5 { font-size: clamp(13px, 2.5vh, 24px); }
+.base-word.n6 { font-size: clamp(12px, 2.3vh, 22px); }
+.base-word.n7 { font-size: clamp(11px, 2.1vh, 20px); }
+.base-word .hit { color: #0e9c78; }
+.base-ball.lock .base-word { border-color: #0e9c78; box-shadow: 0 0 0 3px rgba(14, 156, 120, .3); }
+
+/* =========================================================
+   오른쪽 위 스코어보드 (기획서 4쪽) — 백/청 두 줄 표 + 진루 + 아웃
+   ========================================================= */
+.base-board {
+  position: absolute; right: clamp(10px, 1.6vw, 22px); top: clamp(10px, 1.6vh, 20px);
+  z-index: 8;
+  display: flex; align-items: stretch; gap: clamp(6px, .8vw, 12px);
+  background: rgba(255, 255, 255, .95); border: 3px solid #1b2333; border-radius: 12px;
+  padding: clamp(5px, .9vh, 10px) clamp(8px, 1vw, 14px);
+  box-shadow: 0 8px 22px -10px rgba(0, 0, 0, .7);
+}
+.base-btable { display: flex; flex-direction: column; justify-content: center; }
+.base-btable .row {
+  display: flex; align-items: center; gap: clamp(6px, .8vw, 12px);
+  padding: clamp(1px, .3vh, 4px) 0;
+  border-bottom: 2px solid #1b2333;
+}
+.base-btable .row:last-child { border-bottom: 0; }
+.base-btable .t {
+  width: 1.6em; text-align: center; font-weight: 900; color: #14203a;
+  font-size: clamp(15px, 2.7vh, 26px);
+  border-right: 2px solid #1b2333;
+}
+.base-btable .row.blue .t { color: #1257c9; }
+.base-btable .n {
+  min-width: 1.2em; text-align: center; font-weight: 900; color: #14203a;
+  font-size: clamp(18px, 3.4vh, 32px);
+}
+/* 내 팀 줄에 팀 색 띠 (기획서 그림의 파란 칠) */
+.base-board.mine-blue .row.blue, .base-board.mine-white .row.white {
+  box-shadow: inset 4px 0 0 0 var(--me1);
+  padding-left: 6px;
+}
+
+.base-bside {
+  display: flex; flex-direction: column; justify-content: center; gap: clamp(2px, .5vh, 5px);
+  border-left: 2px solid #1b2333; padding-left: clamp(6px, .8vw, 12px);
+}
+.base-inn {
+  display: flex; align-items: baseline; gap: 2px;
+  font-weight: 900; color: #14203a; font-size: clamp(14px, 2.5vh, 24px);
+}
+.base-inn i { font-style: normal; color: #e0223c; }
+.base-inn span { font-size: .7em; }
+.base-inn em {
+  font-style: normal; font-size: clamp(10px, 1.6vh, 15px);
+  font-weight: 800; color: #56607a; margin-left: 4px;
+}
+.base-onbase, .base-outs, .base-strikes {
+  display: flex; align-items: center; gap: clamp(3px, .4vw, 6px);
+}
+.base-bside .lb {
+  font-size: clamp(10px, 1.6vh, 15px); font-weight: 800; color: #56607a;
+  width: 4.4em; letter-spacing: -.5px;
+}
+.base-onbase .dia {
+  width: clamp(9px, 1.5vh, 15px); height: clamp(9px, 1.5vh, 15px);
+  transform: rotate(45deg); border: 2px solid #1b2333; background: #fff;
+}
+.base-onbase .dia.on { background: var(--me1); }
+.base-outs .o {
+  width: clamp(10px, 1.7vh, 16px); height: clamp(10px, 1.7vh, 16px);
+  border-radius: 50%; border: 2px solid #b3273c; background: #fff;
+}
+.base-outs .o.on { background: #e0223c; box-shadow: 0 0 0 2px rgba(224, 34, 60, .25); }
+.base-strikes .s {
+  width: clamp(10px, 1.7vh, 16px); height: clamp(10px, 1.7vh, 16px);
+  border-radius: 50%; border: 2px solid #b8860b; background: #fff;
+}
+.base-strikes .s.on { background: #f0b03c; }
+
+/* =========================================================
+   이닝 알림 · 판정 배너
+   ========================================================= */
+.base-half {
+  position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%) scale(.9);
+  z-index: 12; text-align: center; opacity: 0; pointer-events: none;
+  transition: opacity .2s, transform .2s;
+  background: rgba(12, 18, 30, .82); border: 2px solid rgba(255, 255, 255, .5);
+  border-radius: 18px; padding: clamp(10px, 2vh, 22px) clamp(22px, 4vw, 54px);
+}
+.base-half.on { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+.base-half b { display: block; font-size: clamp(30px, 7vh, 64px); font-weight: 900; color: #fff6da; }
+.base-half span { display: block; font-size: clamp(15px, 2.8vh, 26px); font-weight: 800; color: #9de8f5; margin-top: 4px; }
+.base-half em { display: block; font-style: normal; margin-top: 4px; color: #ffd166; font-weight: 800; font-size: clamp(13px, 2.2vh, 20px); }
+
+.base-banner {
+  position: absolute; left: 50%; top: 34%; transform: translate(-50%, -50%) scale(.8);
+  z-index: 11; text-align: center; opacity: 0; pointer-events: none;
+  transition: opacity .18s, transform .18s;
+  border-radius: 16px; padding: clamp(8px, 1.6vh, 18px) clamp(20px, 3.6vw, 46px);
+  border: 3px solid #1b2333; background: rgba(255, 255, 255, .95);
+  box-shadow: 0 12px 30px -12px rgba(0, 0, 0, .8);
+}
+.base-banner.on { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+.base-banner b { display: block; font-size: clamp(26px, 6vh, 56px); font-weight: 900; color: #14203a; }
+.base-banner span { display: block; font-size: clamp(13px, 2.3vh, 21px); font-weight: 700; color: #56607a; margin-top: 2px; }
+.base-banner.hit b { color: #0e7a5f; }
+.base-banner.hr { background: linear-gradient(180deg, #fff3c4, #ffd166); }
+.base-banner.hr b { color: #9a5b00; }
+.base-banner.strike b { color: #b8860b; }
+.base-banner.out b { color: #b3273c; }
+.base-banner.bad b { color: #b3273c; }
+
+/* =========================================================
+   시작 화면 (인트로) — 기획서 3쪽 오른쪽 "시작화면"
+   "단계를 선택하세요 / 1~7단계", "난이도: 쉬움, 보통, 하드"
+   ========================================================= */
+.base-introbg {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 105%, #4fa32b 0%, #2f6b3a 40%, #0f2a1c 75%, #08131a 100%);
+}
+.base-introbg::after {
+  content: ''; position: absolute; left: 50%; bottom: -18%; transform: translateX(-50%);
+  width: 78%; height: 46%;
+  background: linear-gradient(180deg, rgba(240, 163, 94, .55), rgba(217, 118, 47, .25));
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+}
+.base-introbox { margin-top: 2vh; max-width: 46em; }
+.base-introbox h2 { margin-bottom: 4px; }
+.base-teams {
+  display: flex; align-items: center; justify-content: center; gap: clamp(6px, 1vw, 14px);
+  margin: clamp(4px, .8vh, 10px) 0;
+  flex-wrap: wrap;
+}
+.base-tteam {
+  padding: 4px 14px; border-radius: 999px; font-weight: 900;
+  font-size: clamp(14px, 2.4vh, 21px); border: 2px solid rgba(255, 255, 255, .5);
+}
+.base-tteam.blue { background: #1d4ed8; color: #eaf2ff; }
+.base-tteam.white { background: #f4f6fa; color: #1b2333; }
+.base-tteam.me { box-shadow: 0 0 0 3px #ffd166; }
+.base-vs { color: #ffd166; font-weight: 900; font-size: clamp(13px, 2.2vh, 19px); }
+.base-teams em { color: #9de8f5; font-style: normal; font-size: clamp(11px, 1.8vh, 16px); font-weight: 700; }
+
+.base-selt {
+  color: #ffd977; font-weight: 900; font-size: clamp(13px, 2.2vh, 20px);
+  margin: clamp(5px, 1vh, 11px) 0 3px;
+}
+.base-chiprow {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: clamp(4px, .7vw, 9px);
+}
+.base-chip {
+  cursor: pointer; font-family: inherit;
+  background: rgba(255, 255, 255, .1); color: #f0e3cc;
+  border: 2px solid rgba(255, 255, 255, .35); border-radius: 10px;
+  padding: clamp(4px, .8vh, 9px) clamp(9px, 1.2vw, 16px);
+  font-size: clamp(13px, 2.2vh, 20px); font-weight: 800;
+}
+.base-chip:hover { border-color: #ffd166; }
+.base-chip.on {
+  background: linear-gradient(180deg, #ffd977, #f0b03c); color: #2a1a08;
+  border-color: transparent;
+}
+
+/* 크롬북(768px 높이)에서도 인트로가 한 화면에 들어가게 */
+@media (max-height: 760px) {
+  .base-introbox { margin-top: 1vh; padding-top: 10px; padding-bottom: 10px; }
+  .base-introbox h2 { font-size: clamp(26px, 5.4vh, 44px); }
+}
