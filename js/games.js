@@ -176,7 +176,19 @@ var GAMES = (function () {
   /* =========================================================
      게임 선택 화면
      ========================================================= */
+
+  /** 교사가 정한 게임 열림 규칙(요일·시간) 확인. 닫혀 있으면 홈으로. */
+  function gateOk() {
+    if (!window.CLOUD || !CLOUD.gameGate) return true;
+    var r = CLOUD.gameGate();
+    if (r.open) return true;
+    APP.show('home');
+    APP.toast('🔒 ' + r.msg);
+    return false;
+  }
+
   function openSelect() {
+    if (!gateOk()) return;
     var lvBox = $('game-levels');
     lvBox.innerHTML = '';
     DATA.LEVELS.forEach(function (lv) {
@@ -1629,6 +1641,7 @@ var GAMES = (function () {
 
   /** 학생 게임 선택 화면 */
   function openStudent() {
+    if (!gateOk()) return;
     renderStudent();
     APP.show('studentsel');
   }
@@ -2198,6 +2211,7 @@ var GAMES = (function () {
      시작 / 초기화
      ========================================================= */
   function start(id) {
+    if (!gateOk()) return;
     if (id === 'defense') startDefense();
     else if (id === 'race') startRace();
     else if (id === 'mole') startMole();

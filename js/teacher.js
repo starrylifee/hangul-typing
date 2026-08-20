@@ -101,6 +101,12 @@
     /* 목표 */
     $('btn-save-goal').onclick = saveGoal;
 
+    /* 게임 설정 */
+    $('btn-save-game').onclick = saveGameCfg;
+    document.querySelectorAll('#game-days .chip').forEach(function (b) {
+      b.onclick = function () { b.classList.toggle('sel'); };
+    });
+
     /* 그라운드 */
     $('btn-save-grownd').onclick = saveGrowndCfg;
     $('btn-send-grownd').onclick = sendGrowndPoints;
@@ -115,7 +121,7 @@
         classes = [];
         snap.forEach(function (doc) {
           var d = doc.data();
-          classes.push({ code: doc.id, name: d.name || doc.id, goal: d.goal || null });
+          classes.push({ code: doc.id, name: d.name || doc.id, goal: d.goal || null, game: d.game || null });
         });
         classes.sort(function (a, b) { return a.name < b.name ? -1 : 1; });
         renderClassSelect();
@@ -174,6 +180,7 @@
     $('class-select').value = code;
     $('class-code').textContent = code;
     fillGoalForm(curClass.goal);
+    fillGameForm(curClass.game);
     loadGrowndCfg();
     loadStudents();
   }
@@ -445,6 +452,45 @@
         $('goal-saved').textContent = '오늘 목표로 저장했습니다.';
         toast('오늘의 목표를 저장했습니다');
         renderStudents();
+      })
+      .catch(function (e) { toast('저장 실패: ' + e.message); });
+  }
+
+  /* =========================================================
+     게임 설정 — 반 학생들의 게임 열림 여부·요일·시간(한국시간)
+     ========================================================= */
+  function fillGameForm(g) {
+    $('game-on').checked = g ? g.on !== false : true;
+    document.querySelectorAll('#game-days .chip').forEach(function (b) {
+      var day = Number(b.dataset.day);
+      b.classList.toggle('sel', !!(g && g.days && g.days.indexOf(day) >= 0));
+    });
+    $('game-from').value = (g && g.from) || '';
+    $('game-to').value = (g && g.to) || '';
+    $('game-saved').textContent = g ? '저장된 설정이 있습니다.' : '아직 설정이 없습니다 (항상 열림).';
+  }
+
+  function saveGameCfg() {
+    if (!curClass) return;
+    var days = [];
+    document.querySelectorAll('#game-days .chip.sel').forEach(function (b) {
+      days.push(Number(b.dataset.day));
+    });
+    var from = $('game-from').value, to = $('game-to').value;
+    if ((from && !to) || (!from && to)) {
+      toast('여는 시간과 닫는 시간을 둘 다 정하거나, 둘 다 비워 주세요');
+      return;
+    }
+    if (from && to && from >= to) {
+      toast('여는 시간이 닫는 시간보다 빨라야 합니다');
+      return;
+    }
+    var game = { on: $('game-on').checked, days: days, from: from, to: to };
+    db.collection('classes').doc(curClass.code).update({ game: game })
+      .then(function () {
+        curClass.game = game;
+        $('game-saved').textContent = '저장했습니다. 학생 화면에 1분 안에 적용됩니다.';
+        toast('게임 설정을 저장했습니다');
       })
       .catch(function (e) { toast('저장 실패: ' + e.message); });
   }

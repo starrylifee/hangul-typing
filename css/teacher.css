@@ -72,6 +72,12 @@ body.teacher { overflow: auto; }
 .t-table tr.clickable { cursor: pointer; }
 .t-table tr.clickable:hover td { background: rgba(255, 255, 255, .03); }
 
+/* ---------- 게임 설정 ---------- */
+.day-chips { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.day-chips .chip { min-width: 44px; }
+.t-check { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+.t-check input { width: 18px; height: 18px; accent-color: var(--accent); }
+
 /* ---------- 학생 상세 모달 ---------- */
 .td-box-wrap { width: min(880px, 96vw); }
 .td-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }

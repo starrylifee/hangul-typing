@@ -8,7 +8,7 @@
 <meta name="robots" content="noindex">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="css/style.css?v=5">
-<link rel="stylesheet" href="css/teacher.css?v=2">
+<link rel="stylesheet" href="css/teacher.css?v=3">
 </head>
 <body class="teacher">
 
@@ -56,6 +56,7 @@
       <div class="t-tabs">
         <button class="t-tab on" data-tab="students">학생 현황</button>
         <button class="t-tab" data-tab="goal">오늘의 목표</button>
+        <button class="t-tab" data-tab="game">게임 설정</button>
         <button class="t-tab" data-tab="grownd">그라운드 연동</button>
       </div>
 
@@ -98,6 +99,40 @@
             <div class="t-btnrow">
               <button class="btn primary" id="btn-save-goal">오늘 목표로 저장</button>
               <span class="t-note" id="goal-saved"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 게임 설정 -->
+      <div class="t-pane" id="pane-game">
+        <div class="t-card">
+          <h3>게임 열기 / 닫기</h3>
+          <p class="t-note">우리 반으로 로그인한 학생에게 적용됩니다 (타자 게임·학생 게임 모두).
+            시간은 한국시간 기준입니다.</p>
+          <div class="t-form">
+            <label class="t-check"><input type="checkbox" id="game-on" checked> 게임 사용
+              <span class="t-note">— 끄면 요일·시간과 상관없이 항상 닫힙니다</span></label>
+            <div>
+              <span class="t-note">여는 요일 (하나도 안 고르면 매일 열립니다)</span>
+              <div class="day-chips" id="game-days">
+                <button type="button" class="chip" data-day="1">월</button>
+                <button type="button" class="chip" data-day="2">화</button>
+                <button type="button" class="chip" data-day="3">수</button>
+                <button type="button" class="chip" data-day="4">목</button>
+                <button type="button" class="chip" data-day="5">금</button>
+                <button type="button" class="chip" data-day="6">토</button>
+                <button type="button" class="chip" data-day="0">일</button>
+              </div>
+            </div>
+            <div class="t-row3">
+              <label>여는 시간 <input type="time" id="game-from"></label>
+              <label>닫는 시간 <input type="time" id="game-to"></label>
+              <span class="t-note" style="align-self:end">둘 다 비워 두면 하루 종일 열립니다</span>
+            </div>
+            <div class="t-btnrow">
+              <button class="btn primary" id="btn-save-game">저장</button>
+              <span class="t-note" id="game-saved"></span>
             </div>
           </div>
         </div>
@@ -162,6 +197,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script src="js/fb-config.js?v=1"></script>
-<script src="js/teacher.js?v=2"></script>
+<script src="js/teacher.js?v=3"></script>
 </body>
 </html>

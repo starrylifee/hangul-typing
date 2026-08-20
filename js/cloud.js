@@ -83,6 +83,62 @@ var CLOUD = (function () {
     return db.collection('classes').doc(c.code).collection('students').doc(c.nick);
   }
 
+  /* ---------- 게임 열림 규칙 — 교사가 대시보드에서 정한다 ----------
+     반 문서의 game: { on, days:[0(일)~6(토)], from:'HH:MM', to:'HH:MM' }.
+     반에 로그인하지 않은 학생에게는 적용되지 않는다. */
+  var DAY_NAME = ['일', '월', '화', '수', '목', '금', '토'];
+  var ruleAt = 0;          // 규칙을 마지막으로 받아 온 시각
+
+  function fetchGameRule() {
+    var c = sess();
+    if (!c) return;
+    needFirebase().then(function () {
+      return db.collection('classes').doc(c.code).get();
+    }).then(function (doc) {
+      var cc = sess();
+      if (!doc.exists || !cc || cc.code !== c.code) return;
+      cc.gameRule = doc.data().game || null;
+      ruleAt = Date.now();
+      APP.save();
+    }).catch(function () { });
+  }
+
+  /** 지금 한국시간 */
+  function kstNow() {
+    return new Date(Date.now() + (new Date().getTimezoneOffset() + 540) * 60000);
+  }
+
+  /** 게임을 열어도 되는가. { open, msg } 를 돌려준다. */
+  function gameGate() {
+    var c = sess();
+    if (!c) return { open: true };
+    // 규칙이 오래됐으면 새로 받아 둔다 (이번 판정은 갖고 있던 규칙으로)
+    if (Date.now() - ruleAt > 60000) fetchGameRule();
+    var g = c.gameRule;
+    if (!g) return { open: true };
+    if (g.on === false) return { open: false, msg: '지금은 선생님이 게임을 닫아 두었어요.' };
+
+    var kst = kstNow();
+    var when = [];
+    if (g.days && g.days.length && g.days.length < 7) {
+      var order = [1, 2, 3, 4, 5, 6, 0];   // 월화수목금토일 순서로 보여 준다
+      when.push(order.filter(function (d) { return g.days.indexOf(d) >= 0; })
+        .map(function (d) { return DAY_NAME[d]; }).join('·') + '요일');
+    }
+    if (g.from && g.to) when.push(g.from + '~' + g.to);
+    var msg = '게임은 ' + when.join(' ') + '에 열려요. (한국시간)';
+
+    if (g.days && g.days.length && g.days.indexOf(kst.getDay()) < 0) {
+      return { open: false, msg: msg };
+    }
+    if (g.from && g.to) {
+      var p = function (n) { return (n < 10 ? '0' : '') + n; };
+      var hm = p(kst.getHours()) + ':' + p(kst.getMinutes());
+      if (hm < g.from || hm >= g.to) return { open: false, msg: msg };
+    }
+    return { open: true };
+  }
+
   /* ---------- 핀은 그대로 저장하지 않고 지문(해시)만 저장 ---------- */
   function pinHash(code, nick, pin) {
     var raw = new TextEncoder().encode(code + '|' + nick + '|' + pin);
@@ -129,6 +185,7 @@ var CLOUD = (function () {
       APP.save();
       renderBadge();
       scheduleSync();          // 이 컴퓨터에 쌓인 오늘 기록을 바로 올린다
+      fetchGameRule();         // 게임 열림 규칙도 받아 둔다
       return APP.rec.cloud;
     });
   }
@@ -289,10 +346,13 @@ var CLOUD = (function () {
     });
     renderBadge();
     // 어제 하다 만 세션이 있으면 오늘 기록을 이어 올린다
-    if (sess()) scheduleSync();
+    if (sess()) { scheduleSync(); fetchGameRule(); }
   }
 
   document.addEventListener('DOMContentLoaded', init);
 
-  return { onActivity: onActivity, renderBadge: renderBadge, sync: sync, join: join, perks: perks };
+  return {
+    onActivity: onActivity, renderBadge: renderBadge, sync: sync, join: join,
+    perks: perks, gameGate: gameGate
+  };
 })();
