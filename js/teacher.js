@@ -206,6 +206,20 @@
     return true;
   }
 
+  /** 목표를 못 이룬 이유를 사람 말로 — 마우스를 올리면 보인다 */
+  function goalMissReason(stu) {
+    var g = curClass && curClass.goal;
+    if (!g || g.date !== todayKey()) return '';
+    var d = (stu.days || {})[todayKey()];
+    if (!d) return '오늘 연습 기록이 아직 없습니다';
+    var r = [];
+    var min = Math.round((d.sec || 0) / 60);
+    if (min < (g.min || 0)) r.push('연습 시간 ' + min + '분 (목표 ' + g.min + '분)');
+    if ((d.acc || 0) < (g.acc || 0)) r.push('정확도 ' + (d.acc || 0) + '% (목표 ' + g.acc + '%)');
+    if ((d.cpm || 0) < (g.cpm || 0)) r.push('최고 타수 ' + (d.cpm || 0) + '타 (목표 ' + g.cpm + '타)');
+    return r.join(' · ');
+  }
+
   function renderStudents() {
     var tbody = $('stu-rows');
     tbody.innerHTML = '';
@@ -232,8 +246,10 @@
       tr.appendChild(td(d.acc ? d.acc + '%' : '-', 'num'));
       tr.appendChild(td(String(s.points || 0), 'num'));
       tr.appendChild(td('Lv.' + (s.level || 1), 'num'));
+      var sent = s.grSent === todayKey();
       tr.appendChild(td(ok === null ? '<span class="goal-no">목표 없음</span>'
-        : ok ? '<span class="goal-ok">✓</span>' : '<span class="goal-no">아직</span>'));
+        : ok ? '<span class="goal-ok">✓</span>' + (sent ? ' <span class="gr-sent">보냄</span>' : '')
+          : '<span class="goal-no why" title="' + esc(goalMissReason(s)) + '">아직</span>'));
 
       var act = document.createElement('td');
       act.className = 'rowbtns';
@@ -254,7 +270,7 @@
   }
 
   function esc(s) {
-    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
   function resetPin(nick) {
@@ -338,10 +354,14 @@
     try { cfg = JSON.parse(localStorage.getItem(grKey()) || '{}'); } catch (e) { }
     if (!cfg.apiKey || !cfg.classId) { toast('그라운드 API 키와 학급 ID를 먼저 저장해 주세요'); return; }
 
-    var targets = students.filter(function (s) { return metGoal(s) === true && s.no; });
+    // 오늘 이미 받은 학생은 뺀다 — 나중에 달성한 학생 몫을 보낼 때 중복 지급을 막는다
+    var already = students.filter(function (s) { return metGoal(s) === true && s.grSent === todayKey(); });
+    var targets = students.filter(function (s) { return metGoal(s) === true && s.no && s.grSent !== todayKey(); });
     var skipped = students.filter(function (s) { return metGoal(s) === true && !s.no; });
     if (!targets.length) {
-      $('gr-result').textContent = '보낼 학생이 없습니다. (목표 달성 + 출석번호 있는 학생만 보냅니다)';
+      $('gr-result').textContent = already.length
+        ? '새로 보낼 학생이 없습니다. (' + already.length + '명은 오늘 이미 받았습니다)'
+        : '보낼 학생이 없습니다. (목표 달성 + 출석번호 있는 학생만 보냅니다)';
       return;
     }
     if (!confirm(targets.length + '명에게 그라운드 ' + g.points + '점씩 보낼까요?\n'
@@ -364,14 +384,24 @@
             description: '타자 연습 목표 달성' + (g.text ? ' — ' + g.text : '')
           })
         }).then(function (r) {
-          if (r.ok) okCnt++;
-          else failList.push(s.nick + '(' + r.status + ')');
+          if (r.ok) {
+            okCnt++;
+            // 오늘 받았다고 서버에 표시해 두면 다시 눌러도 두 번 안 간다
+            s.grSent = todayKey();
+            return db.collection('classes').doc(curClass.code)
+              .collection('students').doc(s.nick)
+              .update({ grSent: todayKey() })
+              .catch(function () { });
+          }
+          failList.push(s.nick + '(' + r.status + ')');
         }).catch(function () { failList.push(s.nick); });
       });
     });
     chain.then(function () {
       btn.disabled = false;
+      renderStudents();
       var msg = okCnt + '명에게 보냈습니다.';
+      if (already.length) msg += ' (오늘 이미 받은 ' + already.length + '명 제외)';
       if (failList.length) msg += ' 실패: ' + failList.join(', ');
       if (skipped.length) msg += ' (출석번호 없어 건너뜀: '
         + skipped.map(function (s) { return s.nick; }).join(', ') + ')';

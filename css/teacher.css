@@ -68,6 +68,12 @@ body.teacher { overflow: auto; }
 .t-table .num { font-variant-numeric: tabular-nums; }
 .t-table .goal-ok { color: var(--ok); font-weight: 900; font-size: 17px; }
 .t-table .goal-no { color: var(--dim2); }
+.t-table .goal-no.why { cursor: help; border-bottom: 1px dotted var(--dim2); }
+.t-table .gr-sent {
+  font-size: 11px; font-weight: 700; color: var(--ok);
+  border: 1px solid var(--ok); border-radius: 8px; padding: 1px 6px;
+  vertical-align: 1px;
+}
 .t-table .rowbtns { display: flex; gap: 6px; justify-content: flex-end; }
 .t-empty { text-align: center; color: var(--dim2); padding: 40px 0; display: none; }
 
