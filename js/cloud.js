@@ -194,9 +194,18 @@ var CLOUD = (function () {
         level: c.level || 1,
         days: {}
       };
+      // 교사 대시보드에서 학생 리포트 수준으로 볼 수 있게 상세도 함께 올린다
+      var byLevel = {};
+      for (var lv in s.byLevel) {
+        byLevel[lv] = { n: s.byLevel[lv].n | 0, cpm: s.byLevel[lv].cpm | 0, acc: s.byLevel[lv].acc | 0 };
+      }
+      var missTop = REPORT.missTop(s.miss, 5).map(function (t) {
+        return { jamo: t.jamo, finger: t.finger, count: t.count | 0 };
+      });
       payload.days[today] = {
         sec: s.sec | 0, keys: s.keys | 0, err: s.err | 0,
-        acc: s.acc | 0, cpm: s.cpm | 0
+        acc: s.acc | 0, cpm: s.cpm | 0,
+        modes: s.modes, byLevel: byLevel, miss: missTop
       };
       return stuRef(c).set(payload, { merge: true });
     }).catch(function (e) {

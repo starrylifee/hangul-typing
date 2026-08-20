@@ -93,6 +93,10 @@
 
     /* 학생 */
     $('btn-refresh').onclick = loadStudents;
+    $('td-close').onclick = function () { $('stu-modal').hidden = true; };
+    $('stu-modal').onclick = function (e) {
+      if (e.target === this) this.hidden = true;
+    };
 
     /* 목표 */
     $('btn-save-goal').onclick = saveGoal;
@@ -265,6 +269,13 @@
       act.appendChild(delBtn);
       tr.appendChild(act);
 
+      // 줄을 누르면 그 학생의 쌓인 기록을 자세히 보여 준다
+      tr.classList.add('clickable');
+      tr.onclick = function (e) {
+        if (e.target.tagName === 'BUTTON') return;
+        openDetail(s);
+      };
+
       tbody.appendChild(tr);
     });
   }
@@ -287,6 +298,121 @@
       .delete()
       .then(function () { toast('삭제했습니다'); loadStudents(); })
       .catch(function (e) { toast('실패: ' + e.message); });
+  }
+
+  /* =========================================================
+     학생 상세 — 서버에 쌓인 날짜별 기록을 리포트처럼 보여 준다
+     ========================================================= */
+  var MODE_LABEL = {
+    place: '자리 연습', word: '낱말 연습', short: '짧은 글',
+    long: '긴 글', game: '타자 게임'
+  };
+
+  function fmtMin(sec) {
+    if (sec < 60) return sec + '초';
+    var m = Math.floor(sec / 60), s = sec % 60;
+    return m + '분' + (s ? ' ' + s + '초' : '');
+  }
+
+  function tdCard(k, v, sub) {
+    return '<div class="td-card"><div class="k">' + k + '</div>' +
+      '<div class="v">' + v + '</div><div class="s">' + (sub || '') + '</div></div>';
+  }
+
+  function openDetail(s) {
+    var days = s.days || {};
+    var dates = Object.keys(days).sort();
+    $('td-title').textContent = s.nick + (s.no ? ' · ' + s.no + '번' : '')
+      + ' · ' + (s.points || 0) + 'P · Lv.' + (s.level || 1);
+
+    var h = '';
+    if (!dates.length) {
+      h = '<p class="t-empty" style="display:block">아직 서버에 쌓인 기록이 없습니다.</p>';
+    } else {
+      var totSec = 0, totKeys = 0, best = 0;
+      dates.forEach(function (k) {
+        var d = days[k];
+        totSec += d.sec || 0; totKeys += d.keys || 0;
+        if ((d.cpm || 0) > best) best = d.cpm;
+      });
+
+      h += '<div class="td-cards">' +
+        tdCard('연습한 날', dates.length + '일', dates[0].slice(5).replace('-', '/') + ' 부터') +
+        tdCard('총 연습 시간', fmtMin(totSec), '') +
+        tdCard('모두 친 글자', totKeys.toLocaleString() + '타', '') +
+        tdCard('가장 빠른 타수', best + '타', '분당') +
+        '</div>';
+
+      /* 날짜별 최고 타수 그래프 (최근 21일) */
+      var show = dates.slice(-21);
+      var maxC = 1;
+      show.forEach(function (k) { if ((days[k].cpm || 0) > maxC) maxC = days[k].cpm; });
+      h += '<h4 class="td-h">날짜별 가장 빠른 타수</h4>';
+      h += '<div class="bars' + (show.length > 12 ? ' many' : '') + '">';
+      show.forEach(function (k) {
+        var c = days[k].cpm || 0;
+        var pct = Math.round(c / maxC * 100);
+        h += '<div class="bar' + (k === todayKey() ? ' now' : '') + '">' +
+          '<div class="bv">' + c + '</div>' +
+          '<div class="bcol"><i style="height:' + Math.max(pct, 4) + '%"></i></div>' +
+          '<div class="bd">' + k.slice(5).replace('-', '/') + '</div></div>';
+      });
+      h += '</div>';
+
+      /* 최근 날짜별 표 */
+      h += '<h4 class="td-h">최근 기록</h4>';
+      h += '<table class="t-table"><thead><tr><th>날짜</th><th>연습</th>' +
+        '<th>최고 타수</th><th>정확도</th><th>오타</th></tr></thead><tbody>';
+      dates.slice(-10).reverse().forEach(function (k) {
+        var d = days[k];
+        h += '<tr><td>' + k + '</td>' +
+          '<td>' + Math.round((d.sec || 0) / 60) + '분 · ' + (d.keys || 0).toLocaleString() + '타</td>' +
+          '<td>' + (d.cpm || 0) + '타</td><td>' + (d.acc || 0) + '%</td>' +
+          '<td>' + (d.err || 0) + '번</td></tr>';
+      });
+      h += '</tbody></table>';
+
+      /* 상세(무엇을 했나·단계별·틀린 자리) — 상세가 올라온 가장 최근 날 */
+      var dk = null;
+      for (var i = dates.length - 1; i >= 0; i--) {
+        if (days[dates[i]].modes) { dk = dates[i]; break; }
+      }
+      if (dk) {
+        var d2 = days[dk];
+        h += '<h4 class="td-h">' + dk + ' 자세히</h4>';
+        h += '<div class="td-detail">';
+
+        var mh = '';
+        for (var m in d2.modes) {
+          mh += '<li><b>' + (MODE_LABEL[m] || m) + '</b><span>' + d2.modes[m] + '번</span></li>';
+        }
+        h += '<div class="td-box"><h5>한 것</h5>' +
+          (mh ? '<ul class="td-did">' + mh + '</ul>' : '<p class="dim">기록 없음</p>') + '</div>';
+
+        var lh = '';
+        var lvs = Object.keys(d2.byLevel || {}).sort(function (a, b) { return a - b; });
+        lvs.forEach(function (lv) {
+          var b = d2.byLevel[lv];
+          lh += '<li><b>' + lv + '단계</b><span>' + b.n + '번 · ' + b.cpm + '타 · ' + b.acc + '%</span></li>';
+        });
+        h += '<div class="td-box"><h5>단계별</h5>' +
+          (lh ? '<ul class="td-did">' + lh + '</ul>' : '<p class="dim">기록 없음</p>') + '</div>';
+
+        var xh = '';
+        (d2.miss || []).forEach(function (t) {
+          xh += '<li><b>' + esc(t.jamo) + '</b><span>' + esc(t.finger) + ' · ' + t.count + '번</span></li>';
+        });
+        h += '<div class="td-box"><h5>자주 틀린 자리</h5>' +
+          (xh ? '<ul class="td-did">' + xh + '</ul>' : '<p class="dim">눈에 띄는 것 없음</p>') + '</div>';
+
+        h += '</div>';
+      } else {
+        h += '<p class="t-note">무엇을 연습했는지·자주 틀린 자리 같은 상세는 학생이 새 버전으로 연습한 날부터 보입니다.</p>';
+      }
+    }
+
+    $('td-body').innerHTML = h;
+    $('stu-modal').hidden = false;
   }
 
   /* =========================================================

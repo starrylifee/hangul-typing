@@ -69,6 +69,32 @@ body.teacher { overflow: auto; }
 .t-table .goal-ok { color: var(--ok); font-weight: 900; font-size: 17px; }
 .t-table .goal-no { color: var(--dim2); }
 .t-table .goal-no.why { cursor: help; border-bottom: 1px dotted var(--dim2); }
+.t-table tr.clickable { cursor: pointer; }
+.t-table tr.clickable:hover td { background: rgba(255, 255, 255, .03); }
+
+/* ---------- 학생 상세 모달 ---------- */
+.td-box-wrap { width: min(880px, 96vw); }
+.td-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.td-head h3 { margin: 0; }
+.td-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.td-card {
+  background: var(--panel2, rgba(255,255,255,.03)); border: 1px solid var(--line);
+  border-radius: 12px; padding: 10px 14px;
+}
+.td-card .k { font-size: 12px; color: var(--dim); font-weight: 700; }
+.td-card .v { font-size: 22px; font-weight: 900; margin-top: 2px; }
+.td-card .s { font-size: 11px; color: var(--dim2); }
+.td-h { font-size: 14px; font-weight: 900; color: var(--dim); margin: 8px 0 2px; }
+.td-detail { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.td-box {
+  background: var(--panel2, rgba(255,255,255,.03)); border: 1px solid var(--line);
+  border-radius: 12px; padding: 10px 14px;
+}
+.td-box h5 { font-size: 12px; color: var(--dim); font-weight: 800; margin: 0 0 8px; }
+.td-box .dim { color: var(--dim2); font-size: 13px; }
+.td-did { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.td-did li { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
+.td-did li span { color: var(--dim); }
 .t-table .gr-sent {
   font-size: 11px; font-weight: 700; color: var(--ok);
   border: 1px solid var(--ok); border-radius: 8px; padding: 1px 6px;

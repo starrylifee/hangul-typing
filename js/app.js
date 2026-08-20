@@ -441,6 +441,8 @@ var APP = (function () {
       idx: 0,
       startAt: 0, endAt: 0,
       activeMs: 0,      // 실제 친 시간만 누적 (줄 사이 대기·읽는 시간 제외)
+      wallMs: 0,        // 연습 시간 — 입력 사이 간격이 1분을 넘으면 자리 비움으로 보고 1분까지만 더한다
+      lastEvt: 0,       // 마지막 입력 시각
       lineStart: 0,     // 지금 줄의 첫 키를 친 시각
       doneKeys: 0,      // 완료한 문제의 총 타건 수
       errors: 0,
@@ -543,6 +545,12 @@ var APP = (function () {
     if (!S.startAt && v.length) S.startAt = Date.now();
     // 타수는 줄마다 첫 키를 친 순간부터 잰다 — 다음 줄을 읽는 시간은 안 들어간다
     if (!S.lineStart && v.length) S.lineStart = Date.now();
+    // 연습 시간 누적 — 켜 두고 자리를 비운 시간은 1분까지만 쳐 준다
+    if (v.length) {
+      var nowMs = Date.now();
+      if (S.lastEvt) S.wallMs += Math.min(nowMs - S.lastEvt, 60000);
+      S.lastEvt = nowMs;
+    }
 
     var j = paintTarget(v);
 
@@ -630,9 +638,10 @@ var APP = (function () {
 
   function finish() {
     clearInterval(S.timer);
-    // 연습 시간(리포트의 '오늘 몇 분')은 실제 걸린 시간으로,
-    // 타수는 줄 사이 대기를 뺀 순수 타이핑 시간으로 잰다
-    var elapsed = S.startAt ? Date.now() - S.startAt : 1;
+    // 연습 시간(리포트의 '오늘 몇 분')은 실제 걸린 시간으로 재되,
+    // 자리를 비운 간격은 1분까지만 인정한다(wallMs).
+    // 타수는 줄 사이 대기를 뺀 순수 타이핑 시간으로 잰다.
+    var elapsed = S.wallMs || (S.startAt ? Date.now() - S.startAt : 1);
     var cpm = HG.calcCPM(S.doneKeys, S.activeMs || elapsed);
     var acc = S.doneKeys + S.errors > 0
       ? Math.round(S.doneKeys / (S.doneKeys + S.errors) * 100) : 100;
