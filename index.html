@@ -28,7 +28,7 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="stylesheet" href="css/style.css?v=10">
+<link rel="stylesheet" href="css/style.css?v=13">
 <!-- 학생이 만든 게임 — 게임마다 파일을 따로 둔다 (js/g-*.js 와 짝) -->
 <link rel="stylesheet" href="css/g-claw.css?v=2">
 <link rel="stylesheet" href="css/g-bomb.css?v=2">
@@ -348,6 +348,8 @@
     <div class="vg-wrap">
       <div class="vg-scene" id="vg-scene"></div>
       <div class="vg-foot">
+        <!-- 오늘이 특별한 날이면 무슨 날인지 (holiday.js) -->
+        <span class="vg-hday" id="vg-hday" hidden></span>
         <span id="vg-next"></span>
         <div class="vg-bar"><i id="vg-bar"></i></div>
       </div>
@@ -540,7 +542,9 @@
 <script src="js/village-art-4.js?v=2"></script>
 <script src="js/village-art-5.js?v=2"></script>
 <script src="js/village-bg.js?v=1"></script>
-<script src="js/village.js?v=11"></script>
+<script src="js/flag-kr.js?v=2"></script>
+<script src="js/holiday.js?v=4"></script>
+<script src="js/village.js?v=13"></script>
 <script src="js/quest.js?v=2"></script>
 <script src="js/rank.js?v=1"></script>
 <!-- jsPDF·pdf.js·한글 폰트는 리포트에서 필요할 때만 불러온다 (js/report-io.js) -->

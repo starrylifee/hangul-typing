@@ -1399,6 +1399,56 @@ ul.notyet li {
 /* 시즌 종료가 일주일 안쪽 */
 .foot-note.vg-soon { color: var(--gold); font-weight: 800; }
 
+/* ---------- 특별한 날 하늘 (holiday.js) ---------- */
+.vg-holiday {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+}
+/* 늘어나도 되는 것 — 별·눈·꽃잎 */
+.vg-holiday > svg { width: 100%; height: 100%; display: block; }
+/* 비율을 지켜야 하는 것 — 해·달·풍선·호박·태극기 */
+.vg-holiday .vg-pin, .vg-holiday .vg-flag { position: absolute; }
+.vg-holiday .vg-pin svg { width: 100%; height: auto; display: block; }
+.vg-holiday .vg-flag svg {
+  width: 100%; height: auto; display: block;
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, .22));
+}
+.vg-holiday .vg-flagpole {
+  position: absolute; width: 0.5%; min-width: 3px;
+  background: linear-gradient(#a8825f, #8f6b4e);
+  border-radius: 2px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .2);
+}
+.vg-holiday .vg-flagpole::before {
+  content: ''; position: absolute; left: 50%; top: -7px;
+  width: 11px; height: 11px; margin-left: -5.5px;
+  border-radius: 50%; background: #ffd166;
+}
+
+/* 땅에 놓이는 장식(호박 등)은 마을 앞으로 나와야 언덕에 안 가린다 */
+.vg-holiday-front { z-index: 5; }
+
+/* 밤 배경인 날은 마을 전체를 가라앉힌다 (언덕·길까지) */
+.vg-scene.vg-night .vg-item { filter: brightness(.7) saturate(.8); }
+.vg-scene.vg-night .vg-holiday, .vg-scene.vg-night .vg-holiday .vg-item { filter: none; }
+.vg-scene.vg-night .vg-cap { background: rgba(8, 12, 22, .88); }
+
+/* 그날 땅빛 — 하늘만 바꾸면 보라 하늘 밑에 초록 풀밭이 남아 따로 논다.
+   언덕과 길에만 걸고 마을 그림(집·동물)에는 걸지 않는다. */
+.vg-scene[style*="--hd-ground"] .vg-item.vg-sky { filter: var(--hd-ground); }
+.vg-scene.vg-night[style*="--hd-ground"] .vg-item.vg-sky {
+  filter: var(--hd-ground) brightness(.9);
+}
+.vg-scene[style*="--hd-ground"] .vg-holiday .vg-item,
+.vg-scene[style*="--hd-ground"] .vg-holiday { filter: none; }
+
+.vg-hday {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 5px 13px; border-radius: 999px; margin-left: 6px;
+  background: rgba(255, 204, 92, .16); border: 1px solid rgba(255, 204, 92, .42);
+  color: var(--gold); font-size: 13px; font-weight: 800;
+}
+.vg-hday .n { color: #ffe9a8; }
+
 /* ---------- 시즌마다 마을 빛깔이 바뀐다 ----------
    같은 53개를 다시 짓더라도 빛깔이 다르면 "지난 시즌과 다르다"는 감각이 생긴다.
    채점에서 잡은 배경 대비를 해치지 않게 아주 옅게만 건다. */
@@ -1921,3 +1971,6 @@ ul.notyet li {
   .student-grid { grid-template-columns: 1fr; }
   .flipwrap { grid-template-columns: repeat(8, 1fr); }
 }
+
+/* 오늘이 무슨 날인지 (마을 아래 안내줄) */
+.vg-hday .d { color: var(--dim); font-weight: 600; font-size: 12.5px; }

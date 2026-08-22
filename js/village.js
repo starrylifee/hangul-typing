@@ -343,8 +343,21 @@ var VILLAGE = (function () {
     });
     justKey = null;
     scene.innerHTML = html;
+    // 특별한 날이면 하늘을 갈아끼운다 (지난 시즌을 볼 때는 그대로 둔다)
+    if (window.HOLIDAY && d.live) todayHoliday = HOLIDAY.apply(scene, fakeDay);
+    else todayHoliday = null;
     bindTips(scene);
   }
+
+  var todayHoliday = null;
+  /* 특별한 날 배경을 미리 볼 때 쓴다 — 주소에 ?day=10-09 를 붙이면 그날인 셈 친다.
+     교사가 "크리스마스엔 어떻게 되나요" 하고 물으면 보여 줄 수 있다. */
+  var fakeDay = (function () {
+    var m = /[?&]day=(\d{2})-(\d{2})/.exec(location.search);
+    if (!m) return null;
+    var y = new Date().getFullYear();
+    return new Date(y, +m[1] - 1, +m[2]);
+  })();
 
   function item(key, s, title, cls, rec) {
     var pos = s.t != null ? 'top:' + s.t + '%;' : 'bottom:' + s.b + '%;';
@@ -442,6 +455,19 @@ var VILLAGE = (function () {
     }
     $('vg-next').textContent = msg;
     $('vg-bar').style.width = Math.round(Math.max(0, Math.min(1, ratio)) * 100) + '%';
+
+    /* 오늘이 특별한 날이면 무슨 날인지 한 줄 알려 준다.
+       하늘만 바꿔 놓으면 아이는 왜 달라졌는지 모른다. */
+    var hb = $('vg-hday');
+    if (!hb) return;
+    if (todayHoliday) {
+      hb.hidden = false;
+      hb.innerHTML = '<span>' + todayHoliday.icon + '</span>'
+        + '<span class="n">' + esc(todayHoliday.name) + '</span>'
+        + '<span class="d">' + esc(todayHoliday.note) + '</span>';
+    } else {
+      hb.hidden = true;
+    }
   }
 
   /* =========================================================

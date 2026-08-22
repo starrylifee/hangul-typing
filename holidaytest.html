@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>특별한 날 배경 모아보기</title>
+<link rel="stylesheet" href="css/style.css?v=13">
+<style>
+  body { margin:0; background:#0a0e15; color:#e8eef7;
+         font-family:system-ui,'Malgun Gothic',sans-serif; padding:20px 24px 40px; }
+  h1 { font-size:19px; margin:0 0 4px; }
+  .sub { font-size:13px; color:#8496b3; margin:0 0 18px; }
+  .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  .cell { }
+  .ttl { font-size:14px; font-weight:800; margin:0 0 5px; display:flex; gap:7px; align-items:center; }
+  .ttl em { font-style:normal; font-size:11.5px; color:#5c6b85; font-weight:600; }
+  .note { font-size:11.5px; color:#8496b3; margin:5px 0 0; line-height:1.45; }
+  .stage { position:relative; height:210px; border-radius:12px; overflow:hidden;
+           border:1px solid #1e2636; }
+  .stage .vg-item { position:absolute; }
+  .stage .vg-item svg { position:relative; z-index:1; width:100%; height:auto; display:block; }
+</style>
+</head>
+<body>
+<h1>특별한 날 배경 — 열세 개</h1>
+<p class="sub">그날 마을에 들어오면 하늘이 이렇게 바뀝니다. 마을 그림(1장 우리 동네)은 그대로 얹혀 있습니다.</p>
+<div class="grid" id="g"></div>
+
+<script src="js/village-art.js?v=2"></script>
+<script src="js/village-art-2.js?v=2"></script>
+<script src="js/village-art-3.js?v=2"></script>
+<script src="js/village-art-4.js?v=2"></script>
+<script src="js/village-art-5.js?v=2"></script>
+<script src="js/village-bg.js?v=1"></script>
+<script src="js/flag-kr.js?v=2"></script>
+<script src="js/holiday.js?v=3"></script>
+<script>
+/* 1장 마을을 그대로 얹어 실제와 같게 본다 */
+var ITEMS = [
+  {k:'house1', l:6, b:26, w:12}, {k:'tree1', l:15, b:24, w:8.5},
+  {k:'flower', l:62, b:8, w:8},  {k:'rabbit', l:36, b:6, w:6.5},
+  {k:'house2', l:37, b:26, w:13},{k:'tree2', l:49.5, b:24.5, w:8},
+  {k:'shop', l:58, b:26, w:11},  {k:'cat', l:18, b:5, w:6.5},
+  {k:'fountain', l:44, b:3, w:12},{k:'dog', l:55, b:5, w:6.5},
+  {k:'house3', l:72, b:25, w:13.5},{k:'school', l:86, b:25, w:12}
+];
+function village() {
+  var bg = VILLAGE_BG.town, h = '';
+  h += '<div class="vg-item vg-sky" style="left:0;bottom:0;width:100%;height:56%">' + bg.hill + '</div>';
+  h += '<div class="vg-item vg-sky" style="left:0;bottom:0;width:100%">' + bg.path + '</div>';
+  ITEMS.forEach(function (m) {
+    h += '<div class="vg-item" style="left:' + m.l + '%;bottom:' + m.b + '%;width:' + m.w + '%">'
+       + (VILLAGE_ART[m.k] || '') + '</div>';
+  });
+  return h;
+}
+
+var g = document.getElementById('g');
+HOLIDAY.DAYS.forEach(function (h) {
+  var when = h.md ? h.md.join(', ')
+           : h.range ? h.range[0] + ' ~ ' + h.range[1]
+           : '음력 (' + h.lunar + ')';
+  var cell = document.createElement('div');
+  cell.className = 'cell';
+  cell.innerHTML = '<p class="ttl"><span>' + h.icon + '</span>' + h.name
+    + '<em>' + when + '</em></p>'
+    + '<div class="stage vg-scene' + (h.night ? ' vg-night' : '') + '"'
+    + ' style="background:' + h.sky + '"></div>'
+    + '<p class="note">' + h.note + '</p>';
+  g.appendChild(cell);
+  var st = cell.querySelector('.stage');
+  st.innerHTML = village();
+  if (h.ground) st.style.setProperty('--hd-ground', h.ground);
+  st.insertBefore(HOLIDAY.layerFor(h), st.firstChild);
+  var fr = HOLIDAY.frontFor(h);
+  if (fr) st.appendChild(fr);
+});
+</script>
+</body>
+</html>

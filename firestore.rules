@@ -32,10 +32,18 @@ service cloud.firestore {
           && get(/databases/$(database)/documents/classes/$(code)).data.teacherUid == request.auth.uid;
       }
 
+      /* 반 만들기는 교사(Google 로그인)만.
+         학생도 익명으로 로그인해 있으므로, 그냥 열어 두면 아무나 반을
+         잔뜩 만들어 무료 할당량을 갉아먹을 수 있다. */
+      function isRealAccount() {
+        return request.auth != null
+          && request.auth.token.firebase.sign_in_provider != 'anonymous';
+      }
+
       allow get: if true;
       allow list: if request.auth != null
         && resource.data.teacherUid == request.auth.uid;
-      allow create: if request.auth != null
+      allow create: if isRealAccount()
         && request.resource.data.teacherUid == request.auth.uid;
       allow update, delete: if request.auth != null
         && resource.data.teacherUid == request.auth.uid;
