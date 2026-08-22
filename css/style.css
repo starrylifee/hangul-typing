@@ -1396,6 +1396,9 @@ ul.notyet li {
   background: rgba(12, 18, 30, .96); border: 1px solid rgba(62, 224, 192, .35);
   box-shadow: 0 10px 30px rgba(0, 0, 0, .45);
 }
+/* 시즌 종료가 일주일 안쪽 */
+.foot-note.vg-soon { color: var(--gold); font-weight: 800; }
+
 .vg-tip .h { font-size: 14px; font-weight: 900; color: var(--accent); }
 .vg-tip .d { font-size: 12.5px; color: #c8d4e6; line-height: 1.45; }
 

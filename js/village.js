@@ -153,8 +153,19 @@ var VILLAGE = (function () {
     var c = sess();
     if (!c) return null;
     var now = seasonOf();
-    if (!c.season || c.season.key !== now.key) {
-      if (c.season && (c.season.sp || 0) > 0) {
+
+    /* 시즌제가 없던 시절부터 하던 학생 — 마을이 평생 누적 포인트로 자랐다.
+       그대로 0으로 되돌리면 다 지어 놓은 마을을 빼앗는 셈이라,
+       지금까지 모은 포인트를 이번 시즌 시작값으로 그대로 넘겨받는다.
+       다음 시즌부터는 정상적으로 0에서 시작한다. */
+    if (!c.season) {
+      c.season = {
+        key: now.key, label: now.label,
+        sp: c.points || 0, vg: {}, carried: (c.points || 0) > 0
+      };
+      APP.save();
+    } else if (c.season.key !== now.key) {
+      if ((c.season.sp || 0) > 0) {
         if (!c.past) c.past = {};
         c.past[c.season.key] = {
           sp: c.season.sp || 0, vg: c.season.vg || {},
@@ -277,11 +288,17 @@ var VILLAGE = (function () {
     var el = $('vg-stat');
     if (!el) return;
     if (!d.live) {
+      el.className = 'foot-note';
       el.textContent = '🗓 ' + d.label + ' 다시 보기 · ' + d.sp + 'P (그때 모은 점수)';
       return;
     }
+    /* 시즌이 끝나면 마을이 새로 시작한다. 아무 예고 없이 사라지면
+       아이가 자기 마을을 빼앗겼다고 느끼므로 일주일 전부터 눈에 띄게 알린다. */
+    var left = daysLeft();
+    el.className = 'foot-note' + (left <= 7 ? ' vg-soon' : '');
     el.textContent = c.nick + ' · ' + d.label + ' ' + d.sp + 'P'
-      + ' · 시즌 끝까지 ' + daysLeft() + '일'
+      + ' · 시즌 끝까지 ' + left + '일'
+      + (left <= 7 ? ' — 그다음엔 새 마을을 짓게 돼요 (지금 마을은 다시 볼 수 있어요)' : '')
       + '   (평생 ' + (c.points || 0) + 'P · Lv.' + (c.level || 1) + ')';
   }
 
