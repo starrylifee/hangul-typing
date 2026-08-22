@@ -187,6 +187,42 @@ var GAMES = (function () {
     return false;
   }
 
+  /** 로그인 안 한 학생의 하루 게임 시간이 남았는지 확인 */
+  function guestOk() {
+    if (!window.GUEST || GUEST.canPlay()) return true;
+    APP.show('home');
+    guestOverModal();
+    return false;
+  }
+
+  /** 게임 선택 화면 위쪽 안내띠 — 로그인한 학생에겐 보이지 않는다 */
+  function paintGuestBar() {
+    document.querySelectorAll('[data-guestbar]').forEach(function (el) {
+      if (!window.GUEST || !GUEST.isGuest()) { el.hidden = true; return; }
+      var r = GUEST.remainToday();
+      el.hidden = false;
+      el.classList.toggle('empty', r <= 0);
+      el.innerHTML = '<span class="gi">⏱</span>'
+        + '<span class="gt">' + (r > 0
+          ? '로그인하지 않으면 게임은 <b>한 판 ' + GUEST.mmss(GUEST.PER_ROUND) + '</b>, '
+            + '하루 ' + GUEST.mmss(GUEST.DAILY) + '까지예요. 오늘 남은 시간 <b>' + GUEST.mmss(r) + '</b>'
+          : '오늘 게임 체험 시간을 다 썼어요. 타자 연습은 계속할 수 있어요!') + '</span>'
+        + '<button class="btn primary sm" data-guestlogin>🔑 로그인</button>';
+      el.querySelector('[data-guestlogin]').onclick = function () {
+        var lm = $('login-modal');
+        if (lm) lm.hidden = false;
+      };
+    });
+  }
+
+  /** "오늘 체험 시간을 다 썼어요" 안내 */
+  function guestOverModal() {
+    APP.toast('⏱ 오늘 게임 체험 시간(' + GUEST.mmss(GUEST.DAILY) + ')을 다 썼어요. '
+      + '우리 반으로 로그인하면 계속할 수 있어요!');
+    var lm = $('login-modal');
+    if (lm) setTimeout(function () { lm.hidden = false; }, 400);
+  }
+
   function openSelect() {
     if (!gateOk()) return;
     var lvBox = $('game-levels');
@@ -219,6 +255,7 @@ var GAMES = (function () {
     var tip = $('diff-tip');
     if (tip) tip.textContent = TIP[sel.diff] || '';
 
+    paintGuestBar();
     APP.show('gamesel');
   }
 
@@ -256,6 +293,10 @@ var GAMES = (function () {
     input.disabled = false;
 
     APP.show('game');
+    // 로그인 안 한 학생은 한 판 1분 — 스톱워치를 띄우고 시간이 다 되면 끝낸다
+    if (window.GUEST) {
+      GUEST.begin(function () { gameOver('⏱ 체험 시간이 끝났어요', false); });
+    }
     // 주소에 게임을 적어 둔다 — 새로고침하면 이 게임이 다시 뜬다
     if (APP.route) APP.route('game/' + gameId);
     setKb(kbOn());          // 자판 안내를 켜 뒀으면 이 게임에도 그려 준다
@@ -321,6 +362,7 @@ var GAMES = (function () {
   }
 
   function stop() {
+    if (window.GUEST) GUEST.end();
     if (!G) return;
     if (G.raf) cancelAnimationFrame(G.raf);
     if (G._introKey) document.removeEventListener('keydown', G._introKey, true);
@@ -1643,6 +1685,7 @@ var GAMES = (function () {
   function openStudent() {
     if (!gateOk()) return;
     renderStudent();
+    paintGuestBar();
     APP.show('studentsel');
   }
 
@@ -2154,6 +2197,7 @@ var GAMES = (function () {
     G.over = true;
     G.running = false;
     if (G.raf) cancelAnimationFrame(G.raf);
+    if (window.GUEST) GUEST.end();
     $('gamein').disabled = true;
 
     /* 최고 기록 키.
@@ -2192,6 +2236,7 @@ var GAMES = (function () {
       '<div class="rcard"><div class="k">최고 연속</div><div class="v">' + G.bestCombo + '</div><div class="sub">연속 성공</div></div>' +
       '</div>' +
       (isNew ? '<div class="newrec">🏆 <span>최고 점수를 세웠어요!</span></div>' : '') +
+      guestNote() +
       '<div class="btnrow">' +
       '<button class="btn primary" id="go-again">다시 하기</button>' +
       '<button class="btn" id="go-sel">게임 고르기</button>' +
@@ -2200,11 +2245,40 @@ var GAMES = (function () {
     $('stage').appendChild(ov);
 
     var id = G.id, wasStudent = !!G.student;
+    var gLogin = $('go-login');
+    if (gLogin) {
+      gLogin.onclick = function () {
+        stop();
+        APP.show('home');
+        var lm = $('login-modal');
+        if (lm) lm.hidden = false;
+      };
+    }
+    if (window.GUEST && !GUEST.canPlay()) {
+      var ag = $('go-again');
+      ag.disabled = true;
+      ag.className = 'btn ghost';
+      ag.textContent = '오늘 체험 끝';
+    }
     $('go-again').onclick = function () { start(id); };
     // 학생 게임은 학생 게임 선택 화면으로 돌아간다
     $('go-sel').onclick = function () { stop(); if (wasStudent) openStudent(); else openSelect(); };
     $('go-home').onclick = function () { stop(); APP.show('home'); };
-    $('go-again').focus();
+    var focusBtn = $('go-again').disabled ? ($('go-login') || $('go-home')) : $('go-again');
+    focusBtn.focus();
+  }
+
+  /** 로그인 안 한 학생에게 끝 화면에서 남은 체험 시간을 알려 준다 */
+  function guestNote() {
+    if (!window.GUEST || !GUEST.isGuest()) return '';
+    var r = GUEST.remainToday();
+    return '<div class="guestnote">'
+      + '<span class="gt">' + (r > 0
+        ? '⏱ 오늘 남은 체험 시간 <b>' + GUEST.mmss(r) + '</b>'
+        : '⏱ 오늘 체험 시간을 다 썼어요') + '</span>'
+      + '<span class="gs">우리 반으로 로그인하면 시간 제한 없이 하고, 마을도 자라나요.</span>'
+      + '<button class="btn primary sm" id="go-login">🔑 로그인하고 계속하기</button>'
+      + '</div>';
   }
 
   /* =========================================================
@@ -2212,6 +2286,10 @@ var GAMES = (function () {
      ========================================================= */
   function start(id) {
     if (!gateOk()) return;
+    if (!guestOk()) return;
+    if (window.GUEST && GUEST.isGuest()) {
+      APP.toast('⏱ 체험 ' + GUEST.mmss(GUEST.roundSec()) + ' — 로그인하면 제한 없이 할 수 있어요');
+    }
     if (id === 'defense') startDefense();
     else if (id === 'race') startRace();
     else if (id === 'mole') startMole();
@@ -2382,6 +2460,6 @@ var GAMES = (function () {
     start: start, stop: stop, renderStudent: renderStudent,
     /** 주소(#game/○○)에 적힌 것이 진짜 있는 게임인지 확인한다 */
     has: function (id) { return !!(GAME_NAME[id] && (EXT[id] || BUILTIN[id])); },
-    register: register, api: api
+    register: register, api: api, paintGuestBar: paintGuestBar
   };
 })();

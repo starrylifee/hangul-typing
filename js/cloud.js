@@ -285,6 +285,7 @@ var CLOUD = (function () {
       badge.textContent = '';
     }
     if (window.VILLAGE) VILLAGE.updateButton();
+    if (window.GAMES && GAMES.paintGuestBar) GAMES.paintGuestBar();
     var pl = $('perk-line');
     if (pl) pl.textContent = perkLine();
   }

@@ -156,6 +156,7 @@
         <p>여름캠프 학생들이 종이에 그린 기획서를 그대로 게임으로 만들었습니다. 단계 제한 없이 모든 낱말이
           나옵니다. 카드의 "기획서" 버튼을 누르면 손으로 그린 원본을 볼 수 있어요.</p>
       </div>
+      <div class="guestbar" data-guestbar hidden></div>
       <div class="student-grid">
         <div class="sgame-card" data-sgame="flip" role="button" tabindex="0">
           <div class="ico">🟦</div>
@@ -206,6 +207,7 @@
         <h2>게임을 고르세요</h2>
         <p>세 게임 모두 고른 단계의 자판으로만 낱말이 나옵니다. 단계와 난이도가 높을수록 빨라집니다.</p>
       </div>
+      <div class="guestbar" data-guestbar hidden></div>
       <div class="opt-row">
         <span class="lb">단계</span>
         <span id="game-levels"></span>
@@ -353,6 +355,8 @@
         <span class="tag v" id="game-lv">2단계</span>
         <span class="title" id="game-title">낱말 방어전</span>
         <div class="spacer"></div>
+        <!-- 로그인 안 한 학생의 남은 체험 시간 (guest.js) -->
+        <span class="gtimer" id="g-guest" hidden>⏱ 1:00</span>
         <button class="btn ghost sm" id="btn-game-kb" title="게임 중에도 자판을 보여 줍니다">⌨️ 자판</button>
         <div class="stats">
           <div class="stat"><div class="k">점수</div><div class="v cpm" id="g-score">0</div></div>
@@ -447,7 +451,8 @@
 <script src="js/data.js?v=3"></script>
 <script src="js/keyboard.js?v=3"></script>
 <script src="js/app.js?v=8"></script>
-<script src="js/games.js?v=9"></script>
+<script src="js/guest.js?v=1"></script>
+<script src="js/games.js?v=10"></script>
 <!-- 학생이 만든 게임 (게임 하나에 파일 하나). games.js 뒤에 와야 한다 -->
 <script src="js/g-claw.js?v=3"></script>
 <script src="js/g-bomb.js?v=2"></script>
