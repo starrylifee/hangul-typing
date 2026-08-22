@@ -215,6 +215,11 @@ var CLOUD = (function () {
       .then(function () { return true; })
       .catch(function (e) {
         if (e && e.code === 'permission-denied') throw new Error('핀 번호가 틀렸습니다.');
+        /* 핀 문서가 없다 — 새로 만들어졌거나, 누가 몸통만 빈 껍데기로 선점해 둔 경우.
+           이때는 지금 로그인한 사람이 핀을 정하며 주인이 된다 (처음 정한 핀이 임자). */
+        if (e && e.code === 'not-found') {
+          return pinRef(c).set({ pinHash: hash, ownerUid: uid || null }).then(function () { return true; });
+        }
         throw e;
       });
   }

@@ -68,7 +68,14 @@ service cloud.firestore {
         // 별명·포인트·레벨·마을 — 반 순위와 교사 화면이 읽는다
         allow read: if true;
 
-        allow create: if exists(/databases/$(database)/documents/classes/$(code));
+        /* 학생 문서 만들기.
+           로그인(익명이라도)한 사람만, 그리고 몸통에 핀 해시를 넣지 못하게 한다.
+           안 그러면 학급코드만 아는 사람이 남의 별명을 가짜 핀으로 미리 만들어
+           그 아이를 자기 별명에서 잠가 버릴 수 있다. 새 구조에서 핀은 하위
+           문서(auth/pin)에만 있고 몸통에는 없다. */
+        allow create: if request.auth != null
+          && !('pinHash' in request.resource.data)
+          && exists(/databases/$(database)/documents/classes/$(code));
 
         // 주인만 고칠 수 있다. 옛 구조 학생은 다음 로그인 때 옮겨질 때까지만 허용.
         allow update: if isOwner() || isTeacher() || isLegacy();
