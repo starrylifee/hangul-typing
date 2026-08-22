@@ -242,6 +242,8 @@ var CLOUD = (function () {
           : (entry.title || MODE_LABEL[entry.mode] || '타자 연습')
       });
     }
+    // 시즌 여정 — 과제 진행도를 센다 (마을 포인트가 붙은 뒤에)
+    if (window.QUEST) QUEST.onActivity(kind, entry);
     if (c.level > beforeLv) {
       var lvNow = c.level;
       setTimeout(function () {
