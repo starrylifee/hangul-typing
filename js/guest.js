@@ -17,11 +17,24 @@ var GUEST = (function () {
     return !(window.APP && APP.rec && APP.rec.cloud);
   }
 
+  /* 쓴 시간은 학습 기록(APP.rec)과 따로 둔다.
+     같이 두면 홈의 "기록 지우기" 한 번, 학생 이름 바꾸기 한 번으로
+     제한이 초기화돼서 하루 5분이 아무 의미가 없어진다.
+     이 제한은 학생이 아니라 "이 기기" 단위다. */
+  var STORE = 'hangul_guest_v1';
+  var cache = null;
+
   /** 오늘 쓴 시간 주머니. 날짜가 바뀌면 새로 채워진다. */
   function bag() {
     var t = APP.todayKey();
-    if (!APP.rec.guest || APP.rec.guest.date !== t) APP.rec.guest = { date: t, used: 0 };
-    return APP.rec.guest;
+    if (!cache) {
+      try { cache = JSON.parse(localStorage.getItem(STORE) || 'null'); } catch (e) { cache = null; }
+    }
+    if (!cache || cache.date !== t) cache = { date: t, used: 0 };
+    return cache;
+  }
+  function store() {
+    try { localStorage.setItem(STORE, JSON.stringify(bag())); } catch (e) { }
   }
 
   function remainToday() {
@@ -74,7 +87,7 @@ var GUEST = (function () {
     var b = bag();
     b.used = (b.used || 0) + 1;
     paint();
-    if (left % 5 === 0 || left <= 0) APP.save();
+    if (left % 5 === 0 || left <= 0) store();
     if (left <= 0) {
       stopTimer();
       if (onEnd) onEnd();
@@ -105,7 +118,7 @@ var GUEST = (function () {
   /** 게임이 끝나거나 나갈 때 — 시계를 멈추고 쓴 시간을 저장한다 */
   function end() {
     stopTimer();
-    if (window.APP && APP.rec) APP.save();
+    store();
     hide();
   }
 
