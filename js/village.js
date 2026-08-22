@@ -73,26 +73,26 @@ var VILLAGE = (function () {
       id: 'sea', no: 2, name: '바닷가', icon: '🏖️', from: 800, to: 1800,
       items: [
         { p: 880, key: 'shell', name: '조개', l: 24, b: 5, w: 6 },
-        { p: 960, key: 'palm', name: '야자수', l: 7, b: 22, w: 12 },
+        { p: 960, key: 'palm', name: '야자수', l: 7, b: 18, w: 12 },
         { p: 1050, key: 'parasol', name: '파라솔', l: 34, b: 16, w: 12 },
-        { p: 1150, key: 'gull', f: 1, name: '갈매기', l: 66, b: 42, w: 7 },
+        { p: 1150, key: 'gull', f: 1, name: '갈매기', l: 66, b: 60, w: 7 },
         { p: 1260, key: 'sandcastle', name: '모래성', l: 52, b: 6, w: 11 },
         { p: 1380, key: 'crab', name: '게', l: 15, b: 4, w: 7 },
-        { p: 1500, key: 'boat', f: 1, name: '나룻배', l: 68, b: 20, w: 14 },
-        { p: 1620, key: 'dolphin', f: 1, name: '돌고래', l: 44, b: 30, w: 12 },
-        { p: 1720, key: 'surfshop', name: '해변 가게', l: 22, b: 24, w: 13 },
-        { p: 1800, key: 'lighthouse', name: '등대', l: 85, b: 26, w: 12 }
+        { p: 1500, key: 'boat', f: 1, name: '나룻배', l: 68, b: 32, w: 14 },
+        { p: 1620, key: 'dolphin', f: 1, name: '돌고래', l: 44, b: 36, w: 12 },
+        { p: 1720, key: 'surfshop', name: '해변 가게', l: 22, b: 18, w: 13 },
+        { p: 1800, key: 'lighthouse', name: '등대', l: 85, b: 20, w: 12 }
       ]
     },
     {
       id: 'forest', no: 3, name: '숲속', icon: '🌲', from: 1800, to: 3000,
       items: [
         { p: 1900, key: 'mushroom', name: '버섯집', l: 10, b: 10, w: 11 },
-        { p: 2000, key: 'squirrel', name: '다람쥐', l: 27, b: 6, w: 6 },
+        { p: 2000, key: 'squirrel', name: '다람쥐', l: 8, b: 3, w: 6 },
         { p: 2110, key: 'stream', name: '시냇물', l: 38, b: 2, w: 26 },
         { p: 2230, key: 'fox', name: '여우', l: 68, b: 6, w: 8 },
-        { p: 2360, key: 'owl', f: 1, name: '부엉이', l: 55, b: 34, w: 7 },
-        { p: 2500, key: 'bridge', name: '나무다리', l: 36, b: 12, w: 22 },
+        { p: 2360, key: 'owl', f: 1, name: '부엉이', l: 50, b: 38, w: 7 },
+        { p: 2500, key: 'bridge', name: '나무다리', l: 36, b: 5, w: 22 },
         { p: 2650, key: 'deer', name: '사슴', l: 79, b: 8, w: 11 },
         { p: 2790, key: 'campfire', name: '모닥불', l: 22, b: 4, w: 9 },
         { p: 2900, key: 'treehouse', name: '나무 위 집', l: 62, b: 24, w: 17 },
@@ -106,22 +106,22 @@ var VILLAGE = (function () {
         { p: 3260, key: 'kite', f: 1, name: '연', l: 12, b: 52, w: 9 },
         { p: 3400, key: 'balloon', f: 1, name: '열기구', l: 68, b: 44, w: 13 },
         { p: 3550, key: 'cloudhouse', f: 1, name: '구름집', l: 20, b: 20, w: 16 },
-        { p: 3710, key: 'rainbow', f: 1, name: '무지개', l: 40, b: 24, w: 26 },
-        { p: 3880, key: 'windmill', f: 1, name: '바람개비 풍차', l: 60, b: 16, w: 13 },
+        { p: 3710, key: 'rainbow', f: 1, name: '무지개', l: 34, b: 24, w: 26 },
+        { p: 3880, key: 'windmill', f: 1, name: '바람개비 풍차', l: 64, b: 16, w: 13 },
         { p: 4060, key: 'moon', f: 1, name: '초승달', l: 85, b: 58, w: 10 },
         { p: 4230, key: 'airship', f: 1, name: '비행선', l: 4, b: 34, w: 20 },
         { p: 4370, key: 'planet', f: 1, name: '작은 행성', l: 50, b: 52, w: 11 },
-        { p: 4500, key: 'skycastle', f: 1, name: '하늘 성', l: 76, b: 6, w: 20 }
+        { p: 4500, key: 'skycastle', f: 1, name: '하늘 성', l: 78, b: 6, w: 20 }
       ]
     },
     {
       id: 'winter', no: 5, name: '겨울마을', icon: '⛄', from: 4500, to: 6300,
       items: [
-        { p: 4650, key: 'snowman', name: '눈사람', l: 30, b: 5, w: 9 },
+        { p: 4650, key: 'snowman', name: '눈사람', l: 34, b: 5, w: 9 },
         { p: 4810, key: 'snowtree', name: '눈 덮인 나무', l: 13, b: 22, w: 11 },
         { p: 4980, key: 'penguin', name: '펭귄', l: 46, b: 4, w: 7 },
         { p: 5160, key: 'igloo', name: '이글루', l: 60, b: 22, w: 15 },
-        { p: 5350, key: 'sled', name: '썰매', l: 20, b: 4, w: 12 },
+        { p: 5350, key: 'sled', name: '썰매', l: 17, b: 4, w: 12 },
         { p: 5550, key: 'reindeer', name: '순록', l: 76, b: 5, w: 11 },
         { p: 5760, key: 'bonfire', name: '화톳불', l: 55, b: 5, w: 9 },
         { p: 5980, key: 'polarbear', name: '북극곰', l: 5, b: 4, w: 12 },
