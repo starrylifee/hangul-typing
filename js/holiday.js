@@ -14,16 +14,24 @@
 var HOLIDAY = (function () {
   'use strict';
 
-  /* ---------- 음력 기념일 ----------
-     ⚠ 아래 날짜는 한국천문연구원(KASI) 음양력 자료로 한 번 확인해야 한다.
-     틀렸으면 이 표만 고치면 된다. 표에 없는 해는 그냥 지나간다. */
+  /* ---------- 음력 기념일 (2026~2032) ----------
+     한국 음력 기준 값이다. 두 가지를 조심해야 해서 표로 박아 두었다.
+
+     하나. 윤달. 2028년에는 윤5월이 있어 음력 5월 5일이 두 번(5/28·6/27) 온다.
+     단오는 평달 5월 5일이므로 5/28 이다.
+
+     둘. 시간대. 브라우저 내장 음력(Intl chinese)은 중국(UTC+8) 기준이라
+     합삭 시각이 자정에 걸리면 한국(KST) 기준과 하루가 갈린다. 실제로
+     2028·2030 정월대보름이 하루 어긋났다. 그래서 한국 기준 변환표를 따랐다.
+
+     2033년 이후를 쓰려면 여기에 줄을 더하면 된다. 없는 해는 그냥 지나간다. */
   var LUNAR = {
     daeboreum: {   // 정월대보름 (음력 1월 15일)
-      2026: '03-03', 2027: '02-20', 2028: '02-09',
-      2029: '02-27', 2030: '02-16', 2031: '02-06', 2032: '02-25'
+      2026: '03-03', 2027: '02-21', 2028: '02-10',
+      2029: '02-27', 2030: '02-17', 2031: '02-06', 2032: '02-25'
     },
-    dano: {        // 단오 (음력 5월 5일)
-      2026: '06-19', 2027: '06-09', 2028: '06-27',
+    dano: {        // 단오 (음력 5월 5일 — 2028 은 평달 기준)
+      2026: '06-19', 2027: '06-09', 2028: '05-28',
       2029: '06-16', 2030: '06-05', 2031: '06-24', 2032: '06-12'
     },
     chilseok: {    // 칠석 (음력 7월 7일)
@@ -158,6 +166,21 @@ var HOLIDAY = (function () {
     return s;
   }
 
+  /** 새해 첫날 — 지평선에서 퍼지는 햇살. 늘어나도 되니 배경 판에 그린다 */
+  function sunrays() {
+    var s = '';
+    for (var i = 0; i < 11; i++) {
+      var a = -90 + (i - 5) * 15;
+      s += '<path d="M50 44 L' + (50 + 70 * Math.cos(a * Math.PI / 180)).toFixed(1)
+        + ' ' + (44 + 70 * Math.sin(a * Math.PI / 180)).toFixed(1) + '"'
+        + ' stroke="#fff0c8" stroke-width="' + (i % 2 ? 1.6 : 2.8) + '"'
+        + ' opacity="' + (i % 2 ? 0.14 : 0.2) + '" stroke-linecap="round"/>';
+    }
+    // 지평선에 깔린 빛무리
+    s += '<ellipse cx="50" cy="44" rx="46" ry="9" fill="#ffd9a0" opacity="0.3"/>';
+    return s;
+  }
+
   /** 핼러윈 — 하늘을 가로지르는 귀여운 박쥐 (얼굴 없이 실루엣만, 무섭지 않게) */
   function bats() {
     function bat(x, y, s) {
@@ -226,8 +249,11 @@ var HOLIDAY = (function () {
     {
       id: 'newyear', defaultSky: 'clouds', name: '새해 첫날', icon: '🌅', md: ['01-01'],
       note: '새해 복 많이 받으세요! 올해도 한 자 한 자 또박또박.',
-      sky: 'linear-gradient(#ffb37a 0%, #ffd9a0 26%, #ffeccd 44%, #a8e6a3 44%, #8fd98a 84%, #7fc97a 100%)',
-      pins: [pin(41, 18, 18, sun('#ff8f5c', '#ffcf8a'))]
+      // 해돋이 — 해가 지평선에서 막 올라오고 하늘이 붉게 탄다
+      sky: 'linear-gradient(#5b4a8a 0%, #d4708a 16%, #ff9a6b 30%, #ffc98a 40%, #ffe3b0 44%, #c8b98a 44%, #a8b57e 100%)',
+      ground: 'hue-rotate(-18deg) saturate(.7) brightness(.92)',
+      back: sky(sunrays()),
+      pins: [pin(38, 26, 24, sun('#ff7a4d', '#ffb877'))]
     },
     {
       id: 'daeboreum', defaultSky: 'none', name: '정월대보름', icon: '🌕', lunar: 'daeboreum', night: true,
@@ -247,8 +273,10 @@ var HOLIDAY = (function () {
       id: 'sikmok', defaultSky: 'clouds', name: '식목일', icon: '🌱', md: ['04-05'],
       note: '나무를 심는 날. 마을에도 새싹이 돋았어요.',
       sky: 'linear-gradient(#bfe8b8 0%, #dff5d8 30%, #f0fbee 44%, #a8e6a3 44%, #8fd98a 84%, #7fc97a 100%)',
-      pins: [pin(80, 8, 12, sun('#ffd166', '#ffe9a8')),
-      pin(28, 64, 6, sprout()), pin(66, 68, 5, sprout())]
+      pins: [pin(80, 8, 12, sun('#ffd166', '#ffe9a8'))],
+      // 새싹은 땅에 심긴다 — 뒤에 두면 언덕에 가려 아예 안 보인다
+      front: [put(10, 2, 6, sprout()), put(30, 1, 5, sprout()),
+      put(63, 2, 5.5, sprout()), put(80, 1, 4.5, sprout())]
     },
     {
       id: 'cherry', defaultSky: 'clouds', name: '벚꽃', icon: '🌸', range: ['04-01', '04-07'],
