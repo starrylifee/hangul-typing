@@ -355,16 +355,25 @@
     return h;
   }
 
+  /* 핀은 아무도 못 읽는 하위 문서(auth/pin)에 있다.
+     초기화는 해시를 빈 값으로 두는 것 — 그러면 다음에 넣은 핀이 새 핀이 된다.
+     아직 예전 구조에 머무는 학생은 본문에도 핀이 남아 있어 둘 다 비운다. */
   function resetPin(nick) {
     if (!confirm(nick + ' 학생의 핀 번호를 초기화할까요?\n다음 로그인 때 새 핀을 정하게 됩니다.')) return;
-    db.collection('classes').doc(curClass.code).collection('students').doc(nick)
-      .update({ pinHash: '' })
+    var ref = db.collection('classes').doc(curClass.code).collection('students').doc(nick);
+    ref.collection('auth').doc('pin').set({ pinHash: '', ownerUid: null }, { merge: true })
+      .then(function () {
+        return ref.update({ pinHash: '' }).catch(function () { /* 새 구조면 본문에 없다 */ });
+      })
       .then(function () { toast('핀을 초기화했습니다'); loadStudents(); })
       .catch(function (e) { toast('실패: ' + e.message); });
   }
 
   function removeStudent(nick) {
     if (!confirm(nick + ' 학생을 반에서 삭제할까요?\n서버의 기록이 지워집니다. (학생 컴퓨터의 기록은 남습니다)')) return;
+    // 핀 하위 문서는 따로 지워야 한다 — Firestore 는 하위 문서를 함께 지우지 않는다
+    db.collection('classes').doc(curClass.code).collection('students').doc(nick)
+      .collection('auth').doc('pin').delete().catch(function () { });
     db.collection('classes').doc(curClass.code).collection('students').doc(nick)
       .delete()
       .then(function () { toast('삭제했습니다'); loadStudents(); })

@@ -2,8 +2,30 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // 반 문서: 코드를 아는 사람만 낱개로 읽을 수 있다(반 이름 표시용).
-    // 목록 조회는 교사가 자기 반을 찾을 때만(teacherUid 조건 쿼리) 허용.
+    /* =========================================================
+       왜 이렇게 바꿨나
+
+       예전 규칙은 학생 문서를 누구나 읽을 수 있었고(별명·포인트를 보여 주려고),
+       그 문서 안에 핀 해시가 같이 들어 있었다. 두 가지가 뚫렸다.
+
+         1) 핀 해시를 읽어 가면 네 자리 숫자라 1만 번만에 오프라인에서 풀린다.
+         2) 더 나쁜 건, 수정 조건이 "핀 해시만 그대로면 허용" 이었다는 점이다.
+            해시를 읽을 수 있으니 그대로 되돌려 보내면 되고, 결국
+            핀을 몰라도 남의 기록을 통째로 덮어쓸 수 있었다.
+
+       그래서
+         · 핀 해시를 아무도 못 읽는 하위 문서(auth/pin)로 옮겼다.
+           규칙은 클라이언트가 못 읽는 것도 읽을 수 있으므로,
+           로그인은 "읽어서 비교" 가 아니라 "써 보고 통과하는지" 로 한다.
+           핀이 틀리면 쓰기가 거부된다 → 한 번 시도에 네트워크 왕복 한 번.
+         · 기록을 덮어쓰는 것은 익명 로그인 uid 로 막았다.
+           핀이 맞은 사람만 그 문서의 주인(ownerUid)이 될 수 있고,
+           주인이 아니면 수정이 거부된다.
+
+       학생 문서 본문은 그대로 공개다 — 반 순위와 교사 화면이 읽어야 하고,
+       거기엔 별명·포인트·레벨만 있다 (실명은 저장하지 않는다).
+       ========================================================= */
+
     match /classes/{code} {
       function isTeacher() {
         return request.auth != null
@@ -18,17 +40,64 @@ service cloud.firestore {
       allow update, delete: if request.auth != null
         && resource.data.teacherUid == request.auth.uid;
 
-      // 학생 문서: 별명·핀해시·누적 기록. 실명은 저장하지 않는다.
-      // 핀 검증은 클라이언트에서 하고, 규칙은 핀해시 변경만 막는다(핀 초기화는 교사만).
       match /students/{nick} {
+        function pinDoc() {
+          return /databases/$(database)/documents/classes/$(code)/students/$(nick)/auth/pin;
+        }
+        function hasPinDoc() { return exists(pinDoc()); }
+        /** 지금 로그인한 익명 사용자가 이 학생 문서의 주인인가 */
+        function isOwner() {
+          return request.auth != null
+            && hasPinDoc()
+            && get(pinDoc()).data.get('ownerUid', '') == request.auth.uid;
+        }
+        /** 아직 옛 구조에 머무는 학생 — 핀 문서가 만들어지기 전까지만 열어 둔다 */
+        function isLegacy() {
+          return !hasPinDoc()
+            && request.resource.data.get('pinHash', '') == resource.data.get('pinHash', '');
+        }
+
+        // 별명·포인트·레벨·마을 — 반 순위와 교사 화면이 읽는다
         allow read: if true;
-        allow create: if exists(/databases/$(database)/documents/classes/$(code))
-          && request.resource.data.pinHash is string;
-        // 핀이 비어 있으면(교사가 초기화) 다음 로그인 때 새 핀을 정할 수 있다
-        allow update: if request.resource.data.pinHash == resource.data.pinHash
-          || resource.data.pinHash == ''
-          || isTeacher();
+
+        allow create: if exists(/databases/$(database)/documents/classes/$(code));
+
+        // 주인만 고칠 수 있다. 옛 구조 학생은 다음 로그인 때 옮겨질 때까지만 허용.
+        allow update: if isOwner() || isTeacher() || isLegacy();
+
         allow delete: if isTeacher();
+
+        /* ---------- 핀 (아무도 못 읽는다) ---------- */
+        match /auth/pin {
+          // 규칙만 읽는다. 클라이언트는 절대 못 읽는다.
+          allow read: if false;
+
+          /* 처음 만들 때 (가입 또는 옛 구조에서 옮겨올 때). 교사의 핀 초기화도 여기로 온다.
+
+             옛 구조 학생을 옮길 때는 본문에 남아 있는 핀과 같아야 한다.
+             안 그러면 아직 안 옮긴 학생의 핀 문서를 공격자가 자기 해시로
+             먼저 만들어 계정을 가로챌 수 있다. */
+          allow create: if isTeacher()
+            || (request.auth != null
+              && request.resource.data.pinHash is string
+              && request.resource.data.pinHash.size() == 64
+              && (
+                !('pinHash' in get(/databases/$(database)/documents/classes/$(code)/students/$(nick)).data)
+                || get(/databases/$(database)/documents/classes/$(code)/students/$(nick)).data.pinHash == ''
+                || get(/databases/$(database)/documents/classes/$(code)/students/$(nick)).data.pinHash == request.resource.data.pinHash
+              ));
+
+          /* 로그인 = 여기에 쓰기를 시도하는 것.
+             보낸 해시가 저장된 해시와 같아야 통과한다 → 핀이 맞다는 증거.
+             통과하면 그 자리에서 주인(ownerUid)이 된다.
+             교사가 핀을 초기화하면(pinHash '') 다음에 넣은 핀이 새 핀이 된다. */
+          allow update: if isTeacher()
+            || (request.auth != null
+              && (request.resource.data.pinHash == resource.data.pinHash
+                || resource.data.pinHash == ''));
+
+          allow delete: if isTeacher();
+        }
       }
     }
   }

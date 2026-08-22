@@ -23,6 +23,7 @@ var CLOUD = (function () {
   var db = null, loading = null;
   var SDK = [
     'https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js',
+    'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js',
     'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js'
   ];
   function loadScript(src) {
@@ -42,7 +43,8 @@ var CLOUD = (function () {
     }, Promise.resolve()).then(function () {
       firebase.initializeApp(FB_CONFIG);
       db = firebase.firestore();
-      return db;
+      // 기록을 고치려면 익명 로그인이 되어 있어야 한다 (문서 주인 확인용)
+      return signInAnon().then(function () { return db; });
     });
     return loading;
   }
@@ -86,6 +88,28 @@ var CLOUD = (function () {
   }
   function stuRef(c) {
     return db.collection('classes').doc(c.code).collection('students').doc(c.nick);
+  }
+  /** 핀이 들어 있는 하위 문서 — 규칙만 읽을 수 있고 클라이언트는 못 읽는다 */
+  function pinRef(c) {
+    return stuRef(c).collection('auth').doc('pin');
+  }
+
+  /* ---------- 익명 로그인 ----------
+     기록을 고칠 수 있는 사람을 "핀이 맞은 그 기기" 로 좁히기 위한 것이다.
+     콘솔에서 익명 로그인을 아직 켜지 않았다면 조용히 실패하고,
+     그때는 예전 방식(핀 해시 맞춰 보기)으로 되돌아간다. */
+  var anonUid = null;
+  function signInAnon() {
+    if (anonUid) return Promise.resolve(anonUid);
+    if (!window.firebase || !firebase.auth) return Promise.resolve(null);
+    var u = firebase.auth().currentUser;
+    if (u) { anonUid = u.uid; return Promise.resolve(anonUid); }
+    return firebase.auth().signInAnonymously()
+      .then(function (r) { anonUid = r.user.uid; return anonUid; })
+      .catch(function (e) {
+        console.warn('익명 로그인을 쓸 수 없습니다 (예전 방식으로 진행):', e && e.code);
+        return null;
+      });
   }
 
   /* ---------- 게임 열림 규칙 — 교사가 대시보드에서 정한다 ----------
@@ -157,30 +181,68 @@ var CLOUD = (function () {
   /* =========================================================
      가입 / 로그인
      ========================================================= */
+  /* 핀 확인은 "읽어서 비교" 가 아니라 "써 보고 통과하는지" 로 한다.
+     핀 문서는 아무도 못 읽으므로, 해시를 훔쳐 오프라인에서 1만 번 돌리는 길이 막힌다.
+     통과하면 그 자리에서 이 기기가 문서의 주인(ownerUid)이 된다. */
+  function verifyPin(c, hash, uid) {
+    return pinRef(c).update({ pinHash: hash, ownerUid: uid || null })
+      .then(function () { return true; })
+      .catch(function (e) {
+        if (e && e.code === 'permission-denied') throw new Error('핀 번호가 틀렸습니다.');
+        throw e;
+      });
+  }
+
   function join(code, nick, pin, no) {
     var className = '';
+    var c = { code: code, nick: nick };
+    var uid = null;
     return needFirebase().then(function () {
+      return signInAnon();
+    }).then(function (u) {
+      uid = u;
       return db.collection('classes').doc(code).get();
     }).then(function (doc) {
       if (!doc.exists) throw new Error('학급코드를 찾을 수 없습니다. 다시 확인해 주세요.');
       className = doc.data().name || '';
-      return Promise.all([stuRef({ code: code, nick: nick }).get(), pinHash(code, nick, pin)]);
+      return Promise.all([stuRef(c).get(), pinHash(code, nick, pin)]);
     }).then(function (r) {
       var doc = r[0], hash = r[1];
-      if (doc.exists) {
-        var d = doc.data();
-        if (d.pinHash === '') {
-          // 선생님이 핀을 초기화해 줬다 → 지금 넣은 핀이 새 핀이 된다
-          return doc.ref.update({ pinHash: hash }).then(function () { return d; });
-        }
-        if (d.pinHash !== hash) throw new Error('핀 번호가 틀렸습니다.');
-        return d;
+
+      /* ---------- 처음 오는 학생 ---------- */
+      if (!doc.exists) {
+        var fresh = {
+          no: no || null, points: 0, level: 1, days: {},
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        return doc.ref.set(fresh)
+          .then(function () { return pinRef(c).set({ pinHash: hash, ownerUid: uid || null }); })
+          .then(function () { return fresh; });
       }
-      var fresh = {
-        pinHash: hash, no: no || null, points: 0, level: 1, days: {},
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      };
-      return doc.ref.set(fresh).then(function () { return fresh; });
+
+      var d = doc.data();
+
+      /* ---------- 예전 구조에서 넘어오는 학생 ----------
+         핀 해시가 아직 본문에 들어 있다. 이번 로그인에서 하위 문서로 옮기고
+         본문에서는 지운다. 학생·교사가 따로 할 일은 없다. */
+      if (typeof d.pinHash === 'string') {
+        if (d.pinHash !== '' && d.pinHash !== hash) throw new Error('핀 번호가 틀렸습니다.');
+        return pinRef(c).set({ pinHash: hash, ownerUid: uid || null })
+          .then(function () {
+            return doc.ref.update({
+              pinHash: firebase.firestore.FieldValue.delete()
+            });
+          })
+          .then(function () { return d; })
+          .catch(function (e) {
+            // 옮기다 실패해도 로그인은 되게 둔다 (다음에 다시 시도된다)
+            console.warn('핀 옮기기 실패, 다음에 다시 시도합니다:', e && e.code);
+            return d;
+          });
+      }
+
+      /* ---------- 이미 새 구조인 학생 ---------- */
+      return verifyPin(c, hash, uid).then(function () { return d; });
     }).then(function (d) {
       APP.rec.cloud = {
         code: code, nick: nick, no: no || d.no || null, className: className,
@@ -260,6 +322,7 @@ var CLOUD = (function () {
      서버로 올리기 — 오늘 요약 + 포인트. 몰아서 4초에 한 번.
      ========================================================= */
   var syncTm = null;
+  var warnedOwner = false;      // 주인이 아니라는 안내는 한 번만
   function scheduleSync() {
     clearTimeout(syncTm);
     syncTm = setTimeout(sync, 4000);
@@ -295,6 +358,13 @@ var CLOUD = (function () {
       return stuRef(c).set(payload, { merge: true });
     }).catch(function (e) {
       console.warn('반 기록 올리기 실패(다음에 다시 시도):', e && e.message);
+      /* 이 기기가 더 이상 이 학생 문서의 주인이 아니다.
+         (다른 기기에서 로그인했거나 브라우저 데이터가 지워졌다)
+         조용히 실패하면 아이는 기록이 쌓이는 줄 알고 계속 연습한다. */
+      if (e && e.code === 'permission-denied' && !warnedOwner) {
+        warnedOwner = true;
+        APP.toast('🔑 기록을 올리지 못했어요. 우리 반으로 다시 로그인해 주세요.');
+      }
     });
   }
 
