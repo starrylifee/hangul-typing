@@ -1398,6 +1398,29 @@ ul.notyet li {
 }
 .vg-tip .h { font-size: 14px; font-weight: 900; color: var(--accent); }
 .vg-tip .d { font-size: 12.5px; color: #c8d4e6; line-height: 1.45; }
+
+/* ---------- 리포트·대시보드의 장별 진행 ---------- */
+.vg-rep-chs { display: flex; flex-direction: column; gap: 7px; margin: 10px 0 12px; }
+.vg-rep-ch {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 13.5px; color: var(--text);
+}
+.vg-rep-ch.lock { opacity: .45; }
+.vg-rep-ch .i { width: 20px; text-align: center; }
+.vg-rep-ch .n { width: 118px; font-weight: 700; }
+.vg-rep-ch .bar {
+  flex: 1; height: 9px; border-radius: 5px; background: var(--bg2); overflow: hidden;
+}
+.vg-rep-ch .bar i {
+  display: block; height: 100%;
+  background: linear-gradient(90deg, var(--accent-d), var(--accent)); border-radius: 5px;
+}
+.vg-rep-ch.done .bar i { background: linear-gradient(90deg, #d9a521, var(--gold)); }
+.vg-rep-ch .c {
+  width: 46px; text-align: right; font-variant-numeric: tabular-nums;
+  font-weight: 800; color: var(--dim);
+}
+.vg-rep-ch .m { width: 18px; }
 .vg-item { position: absolute; }
 .vg-item svg { position: relative; z-index: 1; width: 100%; height: auto; display: block; }
 /* 접지 그림자 — 하늘·언덕·길(vg-sky)은 제외 */

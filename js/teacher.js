@@ -257,6 +257,7 @@
       tr.appendChild(td(d.acc ? d.acc + '%' : '-', 'num'));
       tr.appendChild(td(String(s.points || 0), 'num'));
       tr.appendChild(td('Lv.' + (s.level || 1), 'num'));
+      tr.appendChild(td(villageCell(s), 'num'));
       var sent = s.grSent === todayKey();
       tr.appendChild(td(ok === null ? '<span class="goal-no">목표 없음</span>'
         : ok ? '<span class="goal-ok">✓</span>' + (sent ? ' <span class="gr-sent">보냄</span>' : '')
@@ -289,6 +290,61 @@
 
   function esc(s) {
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  /* =========================================================
+     내 마을 — 학생이 이번 시즌에 얼마나 모았는지
+     마을은 3개월마다 새로 시작한다. 시즌 포인트만 리셋되고
+     평생 누적 포인트·레벨은 그대로 남는다.
+     ========================================================= */
+  function villageCell(s) {
+    if (!window.VILLAGE) return '-';
+    var sp = (s.season && s.season.sp) || 0;
+    if (!sp) return '<span class="dim">-</span>';
+    var v = VILLAGE.summary(sp);
+    return '<span title="' + esc(v.chapter + '장 ' + v.chapterName + ' · 시즌 ' + sp + 'P') + '">'
+      + v.chapter + '장 ' + v.got + '/' + v.total + '</span>';
+  }
+
+  /** 학생 상세 안의 마을 칸 */
+  function villageDetail(s) {
+    if (!window.VILLAGE) return '';
+    var se = s.season || null;
+    var sp = (se && se.sp) || 0;
+    var v = VILLAGE.summary(sp);
+
+    var h = '<h4 class="td-h">내 마을 · ' + esc((se && se.label) || VILLAGE.seasonOf().label)
+      + ' <span class="dim">(3개월마다 마을만 새로 시작합니다. 누적 포인트·레벨은 남습니다)</span></h4>';
+    h += '<div class="td-cards">' +
+      tdCard('시즌 포인트', sp + 'P', '평생 ' + (s.points || 0) + 'P') +
+      tdCard('모은 것', v.got + ' / ' + v.total + '개', v.chapter + '장 ' + v.chapterName) +
+      tdCard('다음 목표', v.done ? '모두 완성' : v.nextName, v.done ? '🏆' : v.nextIn + 'P 남음') +
+      tdCard('시즌 끝까지', VILLAGE.daysLeft() + '일', '') +
+      '</div>';
+
+    h += '<div class="vg-rep-chs">';
+    VILLAGE.CHAPTERS.forEach(function (ch) {
+      var got = ch.items.filter(function (m) { return sp >= m.p; }).length;
+      var open = sp >= ch.from;
+      h += '<div class="vg-rep-ch' + (got === ch.items.length ? ' done' : open ? '' : ' lock') + '">' +
+        '<span class="i">' + (open ? ch.icon : '🔒') + '</span>' +
+        '<span class="n">' + ch.no + '장 ' + esc(ch.name) + '</span>' +
+        '<span class="bar"><i style="width:' + Math.round(got / ch.items.length * 100) + '%"></i></span>' +
+        '<span class="c">' + got + '/' + ch.items.length + '</span>' +
+        (got === ch.items.length ? '<span class="m">🏅</span>' : '') +
+        '</div>';
+    });
+    h += '</div>';
+
+    // 지난 시즌
+    var pk = s.past ? Object.keys(s.past).sort().reverse() : [];
+    if (pk.length) {
+      h += '<p class="t-note">지난 시즌 — ' + pk.map(function (k) {
+        var o = s.past[k], pv = VILLAGE.summary(o.sp || 0);
+        return esc(o.label || k) + ' ' + (o.sp || 0) + 'P (' + pv.got + '/' + pv.total + '개)';
+      }).join('   ·   ') + '</p>';
+    }
+    return h;
   }
 
   function resetPin(nick) {
@@ -332,9 +388,9 @@
     $('td-title').textContent = s.nick + (s.no ? ' · ' + s.no + '번' : '')
       + ' · ' + (s.points || 0) + 'P · Lv.' + (s.level || 1);
 
-    var h = '';
+    var h = villageDetail(s);
     if (!dates.length) {
-      h = '<p class="t-empty" style="display:block">아직 서버에 쌓인 기록이 없습니다.</p>';
+      h += '<p class="t-empty" style="display:block">아직 서버에 쌓인 연습 기록이 없습니다.</p>';
     } else {
       var totSec = 0, totKeys = 0, best = 0;
       dates.forEach(function (k) {

@@ -339,6 +339,9 @@ var REPORT = (function () {
         (hist.length > 21 ? ' 최근 21일만 그렸습니다.' : '') + '</p></section>';
     }
 
+    /* --- 내 마을 (반에 로그인한 학생만) --- */
+    h += villageSection();
+
     /* --- AI 한마디 --- */
     h += '<section class="rep-box ai"><h3>선생님 한마디</h3>' +
       '<div id="ai-comment" class="ai-body">' +
@@ -357,6 +360,77 @@ var REPORT = (function () {
 
     if (!aiComment) fetchComment(sum, jd, top);
     return { sum: sum, judge: jd, top: top, hist: hist };
+  }
+
+  /* =========================================================
+     내 마을 — 이번 시즌에 무엇을 얼마나 모았는지
+     반에 로그인한 학생만 보인다 (마을이 반 기능이라서).
+     ========================================================= */
+  function villageSection() {
+    var c = APP.rec.cloud;
+    if (!c || !window.VILLAGE) return '';
+    var s = c.season || { sp: 0, vg: {}, label: '' };
+    var sum = VILLAGE.summary(s.sp || 0);
+
+    var h = '<section class="rep-box"><h3>내 마을 · ' + esc(s.label || '이번 시즌') + '</h3>';
+    h += '<div class="rep-cards sm">' +
+      card('시즌 포인트', (s.sp || 0) + 'P', '평생 ' + (c.points || 0) + 'P · Lv.' + (c.level || 1), true) +
+      card('모은 것', sum.got + ' / ' + sum.total + '개', sum.chapter + '장 ' + sum.chapterName, true) +
+      card('시즌 끝까지', VILLAGE.daysLeft() + '일', '남으면 마을이 새로 시작해요', true) +
+      card('다음 목표', sum.done ? '모두 완성' : sum.nextName,
+        sum.done ? '🏆 대단해요!' : (sum.nextIn + 'P 남음'), true) +
+      '</div>';
+
+    /* 장별 진행 */
+    h += '<div class="vg-rep-chs">';
+    VILLAGE.CHAPTERS.forEach(function (ch) {
+      var got = ch.items.filter(function (m) { return (s.sp || 0) >= m.p; }).length;
+      var open = (s.sp || 0) >= ch.from;
+      h += '<div class="vg-rep-ch' + (got === ch.items.length ? ' done' : open ? '' : ' lock') + '">' +
+        '<span class="i">' + (open ? ch.icon : '🔒') + '</span>' +
+        '<span class="n">' + ch.no + '장 ' + esc(ch.name) + '</span>' +
+        '<span class="bar"><i style="width:' + Math.round(got / ch.items.length * 100) + '%"></i></span>' +
+        '<span class="c">' + got + '/' + ch.items.length + '</span>' +
+        (got === ch.items.length ? '<span class="m">🏅</span>' : '') +
+        '</div>';
+    });
+    h += '</div>';
+
+    /* 최근에 받은 것 — "이 아이콘이 왜 생겼지" 에 대한 답 */
+    var got = [];
+    VILLAGE.CHAPTERS.forEach(function (ch) {
+      ch.items.forEach(function (m) {
+        var r = s.vg && s.vg[m.key];
+        if (r && r.at) got.push({ name: m.name, ch: ch.no, r: r });
+      });
+    });
+    got.sort(function (a, b) { return b.r.at - a.r.at; });
+    if (got.length) {
+      h += '<table class="rep-table"><thead><tr><th>최근에 생긴 것</th><th class="c">장</th>' +
+        '<th class="c">받은 날</th><th class="c">그때 레벨</th><th>무엇을 하다가</th></tr></thead><tbody>';
+      got.slice(0, 6).forEach(function (x) {
+        var d = new Date(x.r.at);
+        h += '<tr><td><b>' + esc(x.name) + '</b></td>' +
+          '<td class="c">' + x.ch + '장</td>' +
+          '<td class="c">' + (d.getMonth() + 1) + '/' + d.getDate() + '</td>' +
+          '<td class="c">Lv.' + (x.r.lv || 1) + '</td>' +
+          '<td>' + esc(x.r.by || '—') + '</td></tr>';
+      });
+      h += '</tbody></table>';
+    } else {
+      h += '<p class="empty">아직 마을에 아무것도 없어요. 연습하면 포인트가 쌓여요!</p>';
+    }
+
+    /* 지난 시즌 */
+    var pk = c.past ? Object.keys(c.past).sort().reverse() : [];
+    if (pk.length) {
+      h += '<p class="hintnote">지난 시즌 — ' + pk.map(function (k) {
+        var o = c.past[k], ps = VILLAGE.summary(o.sp || 0);
+        return esc(o.label || k) + ' ' + (o.sp || 0) + 'P (' + ps.got + '/' + ps.total + '개)';
+      }).join('   ·   ') + '</p>';
+    }
+    h += '</section>';
+    return h;
   }
 
   function card(k, v, sub, ok) {
