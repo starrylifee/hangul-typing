@@ -28,7 +28,7 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="stylesheet" href="css/style.css?v=6">
+<link rel="stylesheet" href="css/style.css?v=7">
 <!-- 학생이 만든 게임 — 게임마다 파일을 따로 둔다 (js/g-*.js 와 짝) -->
 <link rel="stylesheet" href="css/g-claw.css?v=2">
 <link rel="stylesheet" href="css/g-bomb.css?v=2">
@@ -339,6 +339,7 @@
       <div class="spacer"></div>
       <!-- 이름표를 켜면 아이콘마다 이름이 붙고, 꺼도 마우스를 올리면 언제 받았는지 나온다 -->
       <button class="btn ghost sm" id="btn-vg-cap" title="아이콘에 이름표를 붙입니다">🏷️ 이름표</button>
+      <button class="btn ghost sm" id="btn-vg-help" title="마을이 어떻게 자라는지 알려 줍니다">❓ 도움말</button>
       <select class="vg-season" id="vg-season" hidden></select>
       <span class="foot-note" id="vg-stat"></span>
     </header>
@@ -396,6 +397,42 @@
     <div class="modal-btns">
       <button class="btn ghost" id="name-later">나중에 할게요</button>
       <button class="btn primary" id="name-ok">시작하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 내 마을 도움말 — 처음 들어온 학생에게 한 번 저절로 뜬다 -->
+<div class="modal" id="vg-help" hidden>
+  <div class="modal-box vg-help-box">
+    <h3>🏘️ 내 마을이 뭐예요?</h3>
+    <p class="modal-sub">타자 연습을 하면 <b>타자 포인트</b>가 쌓여요.
+      포인트가 모이면 마을에 새 것이 하나씩 생겨요!</p>
+
+    <div class="vg-help-sec">
+      <h4>포인트 받는 법</h4>
+      <ul class="vg-help-pt">
+        <li><span class="i">✏️</span><span class="t">연습 한 번</span><span class="p">+10P</span>
+          <span class="s">정확도 95%를 넘으면 +5P 더!</span></li>
+        <li><span class="i">🎮</span><span class="t">게임 한 번</span><span class="p">+5P</span>
+          <span class="s"></span></li>
+        <li><span class="i">🌅</span><span class="t">그날 처음 하면</span><span class="p">+10P</span>
+          <span class="s">하루에 딱 한 번</span></li>
+      </ul>
+      <p class="vg-help-note">하루에 받을 수 있는 포인트는 <b>100P까지</b>예요.
+        한꺼번에 몰아서 하는 것보다 <b>날마다 조금씩</b> 하는 게 마을이 훨씬 빨리 자라요.</p>
+    </div>
+
+    <div class="vg-help-sec">
+      <h4>마을은 다섯 장</h4>
+      <div class="vg-help-chs" id="vg-help-chs"></div>
+    </div>
+
+    <p class="vg-help-note season">🗓️ 마을은 <b>세 달마다</b> 새로 시작해요.
+      지난 마을도 위쪽에서 골라 언제든 다시 볼 수 있고,
+      그동안 모은 <b>포인트와 레벨은 없어지지 않아요.</b></p>
+
+    <div class="modal-btns">
+      <button class="btn primary" id="vg-help-ok">알겠어요!</button>
     </div>
   </div>
 </div>
@@ -475,7 +512,7 @@
 <script src="js/village-art-4.js?v=2"></script>
 <script src="js/village-art-5.js?v=1"></script>
 <script src="js/village-bg.js?v=1"></script>
-<script src="js/village.js?v=8"></script>
+<script src="js/village.js?v=9"></script>
 <!-- jsPDF·pdf.js·한글 폰트는 리포트에서 필요할 때만 불러온다 (js/report-io.js) -->
 <!-- Firebase SDK 는 "우리 반" 기능을 쓸 때만 내려받는다 (js/cloud.js) -->
 </body>

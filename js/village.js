@@ -219,6 +219,8 @@ var VILLAGE = (function () {
     view.chapter = null;
     render();
     APP.show('village');
+    // 처음 온 학생에게는 무엇을 하는 곳인지 한 번 알려 준다
+    if (!APP.rec.vgHelpSeen) setTimeout(openHelp, 500);
   }
 
   function render() {
@@ -247,15 +249,18 @@ var VILLAGE = (function () {
     CHAPTERS.forEach(function (ch) {
       var on = chapterUnlocked(ch, p);
       var done = p >= ch.to;
+      /* 아직 안 열린 장은 이름을 감춘다 — 무엇이 나올지 모르는 편이 더 궁금하다 */
       var b = document.createElement('button');
       b.className = 'vg-tab' + (ch.no === view.chapter ? ' sel' : '') + (on ? '' : ' lock');
       b.innerHTML = '<span class="i">' + (on ? ch.icon : '🔒') + '</span>'
         + '<span class="n">' + ch.no + '장</span>'
-        + '<span class="t">' + ch.name + '</span>'
+        + '<span class="t">' + (on ? ch.name : '???') + '</span>'
         + (done ? '<span class="b">🏅</span>' : '');
+      b.title = on ? ch.name : (ch.from + 'P를 모으면 열려요 (지금 ' + p + 'P)');
       b.onclick = function () {
         if (!on) {
-          APP.toast('🔒 ' + (ch.no - 1) + '장을 다 채우면 ' + ch.no + '장 「' + josa(ch.name, '」이', '」가') + ' 열려요.');
+          APP.toast('🔒 ' + ch.no + '장은 ' + ch.from + 'P를 모으면 열려요. '
+            + (ch.from - p) + 'P 남았어요 — 무엇이 나올지는 그때 알 수 있어요!');
           return;
         }
         view.chapter = ch.no;
@@ -483,6 +488,42 @@ var VILLAGE = (function () {
     };
   }
 
+  /* =========================================================
+     도움말 — 마을이 무엇이고 포인트가 어떻게 붙는지
+     처음 들어온 학생에게 한 번 저절로 뜬다.
+     안 열린 장은 이름을 감춰 둔다 (무엇이 나올지 궁금하게).
+     ========================================================= */
+  function renderHelpChapters() {
+    var box = $('vg-help-chs');
+    if (!box) return;
+    var p = points();
+    box.innerHTML = CHAPTERS.map(function (ch) {
+      var on = chapterUnlocked(ch, p);
+      var done = p >= ch.to;
+      var when = ch.from === 0 ? '처음부터'
+        : on ? '열렸어요' : ch.from + 'P를 모으면';
+      return '<div class="vg-help-ch' + (on ? '' : ' lock') + (done ? ' done' : '') + '">'
+        + '<span class="i">' + (on ? ch.icon : '❓') + '</span>'
+        + '<span class="n">' + ch.no + '장</span>'
+        + '<span class="t">' + (on ? esc(ch.name) : '???') + '</span>'
+        + '<span class="w">' + when + '</span>'
+        + (done ? '<span class="m">🏅 완성</span>' : '')
+        + '</div>';
+    }).join('');
+  }
+
+  function openHelp() {
+    renderHelpChapters();
+    var m = $('vg-help');
+    if (m) m.hidden = false;
+  }
+  function closeHelp() {
+    var m = $('vg-help');
+    if (m) m.hidden = true;
+    APP.rec.vgHelpSeen = true;
+    APP.save();
+  }
+
   function init() {
     var b = $('btn-village');
     if (b) b.onclick = open;
@@ -497,6 +538,10 @@ var VILLAGE = (function () {
         render();
       };
     }
+    var hb = $('btn-vg-help');
+    if (hb) hb.onclick = openHelp;
+    var ok = $('vg-help-ok');
+    if (ok) ok.onclick = closeHelp;
     document.addEventListener('scroll', hideTip, true);
   }
 

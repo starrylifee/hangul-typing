@@ -1399,6 +1399,45 @@ ul.notyet li {
 /* 시즌 종료가 일주일 안쪽 */
 .foot-note.vg-soon { color: var(--gold); font-weight: 800; }
 
+/* ---------- 내 마을 도움말 ---------- */
+.vg-help-box { max-width: 620px; }
+.vg-help-sec { margin: 14px 0 0; }
+.vg-help-sec h4 {
+  font-size: 14px; font-weight: 900; color: var(--accent);
+  margin: 0 0 8px; letter-spacing: -.01em;
+}
+.vg-help-pt { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.vg-help-pt li {
+  display: grid; grid-template-columns: 26px 96px 54px 1fr; align-items: center;
+  gap: 8px; font-size: 14px;
+}
+.vg-help-pt .i { font-size: 17px; }
+.vg-help-pt .t { font-weight: 700; }
+.vg-help-pt .p { font-weight: 900; color: var(--gold); font-variant-numeric: tabular-nums; }
+.vg-help-pt .s { font-size: 12.5px; color: var(--dim2); }
+.vg-help-note {
+  margin: 10px 0 0; font-size: 13px; color: var(--dim); line-height: 1.6;
+}
+.vg-help-note b { color: var(--text); }
+.vg-help-note.season {
+  margin-top: 14px; padding: 10px 14px; border-radius: 10px;
+  background: rgba(157, 139, 247, .1); border: 1px solid rgba(157, 139, 247, .28);
+}
+.vg-help-chs { display: flex; flex-direction: column; gap: 6px; }
+.vg-help-ch {
+  display: grid; grid-template-columns: 26px 42px 1fr auto auto;
+  align-items: center; gap: 8px; font-size: 14px;
+  padding: 6px 10px; border-radius: 9px; background: var(--bg2);
+}
+.vg-help-ch.lock { opacity: .6; }
+.vg-help-ch.done { background: rgba(255, 204, 92, .1); }
+.vg-help-ch .i { font-size: 17px; }
+.vg-help-ch .n { font-weight: 900; color: var(--dim); }
+.vg-help-ch .t { font-weight: 800; }
+.vg-help-ch.lock .t { color: var(--dim2); letter-spacing: .12em; }
+.vg-help-ch .w { font-size: 12.5px; color: var(--dim2); }
+.vg-help-ch .m { font-size: 12.5px; font-weight: 800; color: var(--gold); }
+
 .vg-tip .h { font-size: 14px; font-weight: 900; color: var(--accent); }
 .vg-tip .d { font-size: 12.5px; color: #c8d4e6; line-height: 1.45; }
 
