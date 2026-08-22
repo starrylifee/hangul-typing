@@ -369,7 +369,9 @@ var REPORT = (function () {
   function villageSection() {
     var c = APP.rec.cloud;
     if (!c || !window.VILLAGE) return '';
-    var s = c.season || { sp: 0, vg: {}, label: '' };
+    // VILLAGE.season() 을 거쳐야 한다. 시즌제 이전부터 하던 학생은
+    // 여기서 누적 포인트를 시즌 시작값으로 물려받는다.
+    var s = VILLAGE.season() || { sp: 0, vg: {}, label: '' };
     var sum = VILLAGE.summary(s.sp || 0);
 
     var h = '<section class="rep-box"><h3>내 마을 · ' + esc(s.label || '이번 시즌') + '</h3>';

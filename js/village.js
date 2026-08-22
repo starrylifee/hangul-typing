@@ -505,6 +505,9 @@ var VILLAGE = (function () {
   return {
     open: open, render: render, onPoints: onPoints, addPoints: addPoints,
     updateButton: updateButton, summary: summary,
+    /** 지금 시즌 주머니 — 리포트가 쓴다. 없으면 여기서 만들어 준다
+        (시즌제 이전 학생이 마을을 한 번도 안 열었어도 제 값이 나오게) */
+    season: season,
     seasonOf: seasonOf, seasonEnd: seasonEnd, daysLeft: daysLeft,
     CHAPTERS: CHAPTERS, TOTAL: ALL.length, LAST_P: LAST_P
   };

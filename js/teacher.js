@@ -297,9 +297,17 @@
      마을은 3개월마다 새로 시작한다. 시즌 포인트만 리셋되고
      평생 누적 포인트·레벨은 그대로 남는다.
      ========================================================= */
+  /** 그 학생의 이번 시즌 포인트.
+      아직 새 버전으로 접속하지 않은 학생은 서버에 season 이 없다.
+      그때는 평생 누적을 쓴다 — 접속하는 순간 그 값을 시즌 시작값으로
+      물려받게 돼 있어서(village.js), 교사가 미리 봐도 같은 값이 나온다. */
+  function seasonPoints(s) {
+    return (s.season && s.season.sp) || s.points || 0;
+  }
+
   function villageCell(s) {
     if (!window.VILLAGE) return '-';
-    var sp = (s.season && s.season.sp) || 0;
+    var sp = seasonPoints(s);
     if (!sp) return '<span class="dim">-</span>';
     var v = VILLAGE.summary(sp);
     return '<span title="' + esc(v.chapter + '장 ' + v.chapterName + ' · 시즌 ' + sp + 'P') + '">'
@@ -310,7 +318,7 @@
   function villageDetail(s) {
     if (!window.VILLAGE) return '';
     var se = s.season || null;
-    var sp = (se && se.sp) || 0;
+    var sp = seasonPoints(s);
     var v = VILLAGE.summary(sp);
 
     var h = '<h4 class="td-h">내 마을 · ' + esc((se && se.label) || VILLAGE.seasonOf().label)

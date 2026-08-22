@@ -221,14 +221,21 @@ var CLOUD = (function () {
 
     var before = c.points || 0;
     var beforeLv = 1 + Math.floor(before / PT.perLevel);
+
+    /* 마을은 시즌 포인트로 자란다 (3개월마다 마을만 새로 시작).
+       평생 누적 c.points 와 레벨·게임 특전은 리셋되지 않는다.
+
+       반드시 c.points 를 올리기 전에 부른다. 시즌제로 처음 넘어오는
+       학생은 마을이 c.points 를 시작값으로 물려받는데, 순서가 뒤바뀌면
+       이번에 받은 p 가 시작값에도 들어가 두 번 더해진다. */
+    var spBefore = window.VILLAGE ? VILLAGE.addPoints(p) : 0;
+
     c.pt.earned += p;
     c.points = before + p;
     c.level = 1 + Math.floor(c.points / PT.perLevel);
     APP.save();
-    /* 마을은 시즌 포인트로 자란다 (3개월마다 마을만 새로 시작).
-       평생 누적 c.points 와 레벨·게임 특전은 리셋되지 않는다. */
+
     if (window.VILLAGE) {
-      var spBefore = VILLAGE.addPoints(p);
       VILLAGE.onPoints(spBefore, spBefore + p, {
         by: kind === 'game'
           ? (entry.name || '타자 게임')

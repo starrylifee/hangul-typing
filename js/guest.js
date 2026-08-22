@@ -73,8 +73,11 @@ var GUEST = (function () {
     if (b) { b.hidden = true; b.classList.remove('hot'); }
   }
 
-  /** 게임이 실제로 돌아가는 중일 때만 시간이 줄어든다 (인트로·카운트다운 중엔 안 줄어듦) */
+  /** 게임이 실제로 돌아가는 중일 때만 시간이 줄어든다 (인트로·카운트다운 중엔 안 줄어듦).
+      다른 탭으로 넘어가면 게임 자체가 멈추므로(requestAnimationFrame) 시계도 멈춘다.
+      안 그러면 잠깐 딴 데 보고 온 아이가 하지도 않은 시간을 뺏긴다. */
   function playing() {
+    if (document.hidden) return false;
     if (!window.GAMES || !GAMES.api || !GAMES.api.state) return false;
     var g = GAMES.api.state();
     return !!(g && g.running && !g.over);
