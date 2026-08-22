@@ -1344,7 +1344,60 @@ ul.notyet li {
   border-radius: 18px; border: 1px solid var(--line);
   background:
     linear-gradient(#bfe3ff 0%, #dff1ff 44%, #a8e6a3 44%, #8fd98a 84%, #7fc97a 100%);
+  transition: background .5s;
 }
+/* 장마다 하늘빛이 달라진다 — 44% 아래는 village-bg.js 의 언덕이 덮는다 */
+.vg-scene.bg-sea { background: linear-gradient(#8fd8f5 0%, #d6f2ff 44%, #63c6e8 44%, #f5e2bd 100%); }
+.vg-scene.bg-forest { background: linear-gradient(#a9dcf0 0%, #dff4ff 44%, #4e8f5a 44%, #8fd98a 100%); }
+.vg-scene.bg-sky { background: linear-gradient(#6fb3f5 0%, #a9d6ff 30%, #dbeaff 60%, #c2d8fb 100%); }
+.vg-scene.bg-winter { background: linear-gradient(#8aa8cc 0%, #cfe0f2 44%, #b9c8de 44%, #f8fbff 100%); }
+
+/* ---------- 장(챕터) 탭 ---------- */
+.vg-tabs { display: flex; gap: 6px; margin-left: 4px; }
+.vg-tab {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 999px; cursor: pointer;
+  background: var(--bg2); border: 1px solid var(--line);
+  color: var(--dim); font-size: 13px; font-weight: 700;
+  font-family: inherit; transition: .15s;
+}
+.vg-tab:hover { border-color: var(--accent); color: var(--text); }
+.vg-tab .i { font-size: 15px; }
+.vg-tab .n { font-weight: 900; }
+.vg-tab .t { font-size: 12.5px; }
+.vg-tab.sel {
+  background: rgba(62, 224, 192, .14);
+  border-color: rgba(62, 224, 192, .45); color: var(--accent);
+}
+.vg-tab.lock { opacity: .45; }
+.vg-tab.lock .t { display: none; }
+.vg-tab .b { font-size: 13px; }
+.vg-season {
+  padding: 6px 10px; border-radius: 9px; font-family: inherit; font-size: 13px;
+  background: var(--bg2); border: 1px solid var(--line); color: var(--dim);
+}
+
+/* ---------- 아이콘 이름표 ---------- */
+.vg-cap {
+  position: absolute; left: 50%; bottom: -6px; transform: translateX(-50%);
+  z-index: 3; white-space: nowrap; pointer-events: none;
+  padding: 2px 8px; border-radius: 999px;
+  background: rgba(16, 24, 39, .78); color: #fff;
+  font-size: 11.5px; font-weight: 700; letter-spacing: -.01em;
+}
+.vg-item[data-tip] { cursor: help; }
+.vg-item[data-tip]:hover svg { filter: drop-shadow(0 0 6px rgba(255, 255, 255, .95)); }
+
+/* ---------- 이 아이콘이 왜 생겼는지 ---------- */
+.vg-tip {
+  position: fixed; z-index: 200; pointer-events: none;
+  display: flex; flex-direction: column; gap: 3px;
+  max-width: 280px; padding: 10px 14px; border-radius: 12px;
+  background: rgba(12, 18, 30, .96); border: 1px solid rgba(62, 224, 192, .35);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .45);
+}
+.vg-tip .h { font-size: 14px; font-weight: 900; color: var(--accent); }
+.vg-tip .d { font-size: 12.5px; color: #c8d4e6; line-height: 1.45; }
 .vg-item { position: absolute; }
 .vg-item svg { position: relative; z-index: 1; width: 100%; height: auto; display: block; }
 /* 접지 그림자 — 하늘·언덕·길(vg-sky)은 제외 */

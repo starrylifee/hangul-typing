@@ -14,6 +14,11 @@ var CLOUD = (function () {
      그날 첫 활동 +10P, 하루 최대 100P, 150P 마다 1레벨 */
   var PT = { practice: 10, game: 5, accBonus: 5, firstBonus: 10, dailyMax: 100, perLevel: 150 };
 
+  /* 마을 툴팁에 "무엇을 해서 받았는지" 적을 때 쓴다 */
+  var MODE_LABEL = {
+    place: '자리 연습', word: '낱말 연습', short: '짧은 글 연습', long: '긴 글 연습'
+  };
+
   /* ---------- Firebase 지연 로딩 ---------- */
   var db = null, loading = null;
   var SDK = [
@@ -179,7 +184,9 @@ var CLOUD = (function () {
     }).then(function (d) {
       APP.rec.cloud = {
         code: code, nick: nick, no: no || d.no || null, className: className,
-        points: d.points || 0, level: d.level || 1, pt: null
+        points: d.points || 0, level: d.level || 1, pt: null,
+        // 마을(시즌)은 서버에도 두어서 다른 크롬북에서 로그인해도 이어진다
+        season: d.season || null, past: d.past || null
       };
       if (!APP.rec.name) APP.rec.name = nick;
       APP.save();
@@ -218,7 +225,16 @@ var CLOUD = (function () {
     c.points = before + p;
     c.level = 1 + Math.floor(c.points / PT.perLevel);
     APP.save();
-    if (window.VILLAGE) VILLAGE.onPoints(before, c.points);
+    /* 마을은 시즌 포인트로 자란다 (3개월마다 마을만 새로 시작).
+       평생 누적 c.points 와 레벨·게임 특전은 리셋되지 않는다. */
+    if (window.VILLAGE) {
+      var spBefore = VILLAGE.addPoints(p);
+      VILLAGE.onPoints(spBefore, spBefore + p, {
+        by: kind === 'game'
+          ? (entry.name || '타자 게임')
+          : (entry.title || MODE_LABEL[entry.mode] || '타자 연습')
+      });
+    }
     if (c.level > beforeLv) {
       var lvNow = c.level;
       setTimeout(function () {
@@ -251,6 +267,9 @@ var CLOUD = (function () {
         level: c.level || 1,
         days: {}
       };
+      // 마을(시즌) — 교사 대시보드에서도 보고, 다른 기기에서 이어 하려면 필요하다
+      if (c.season) payload.season = c.season;
+      if (c.past) payload.past = c.past;
       // 교사 대시보드에서 학생 리포트 수준으로 볼 수 있게 상세도 함께 올린다
       var byLevel = {};
       for (var lv in s.byLevel) {
