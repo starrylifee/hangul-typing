@@ -1428,7 +1428,7 @@ ul.notyet li {
 .vg-holiday-front { z-index: 5; }
 
 /* 밤 배경인 날은 마을 전체를 가라앉힌다 (언덕·길까지) */
-.vg-scene.vg-night .vg-item { filter: brightness(.7) saturate(.8); }
+.vg-scene.vg-night .vg-item { filter: brightness(.82) saturate(.92); }
 .vg-scene.vg-night .vg-holiday, .vg-scene.vg-night .vg-holiday .vg-item { filter: none; }
 .vg-scene.vg-night .vg-cap { background: rgba(8, 12, 22, .88); }
 

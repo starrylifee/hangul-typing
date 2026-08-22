@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>특별한 날 배경 모아보기</title>
-<link rel="stylesheet" href="css/style.css?v=13">
+<link rel="stylesheet" href="css/style.css?v=14">
 <style>
   body { margin:0; background:#0a0e15; color:#e8eef7;
          font-family:system-ui,'Malgun Gothic',sans-serif; padding:20px 24px 40px; }
@@ -32,7 +32,7 @@
 <script src="js/village-art-5.js?v=2"></script>
 <script src="js/village-bg.js?v=1"></script>
 <script src="js/flag-kr.js?v=2"></script>
-<script src="js/holiday.js?v=3"></script>
+<script src="js/holiday.js?v=7"></script>
 <script>
 /* 1장 마을을 그대로 얹어 실제와 같게 본다 */
 var ITEMS = [
@@ -43,8 +43,16 @@ var ITEMS = [
   {k:'fountain', l:44, b:3, w:12},{k:'dog', l:55, b:5, w:6.5},
   {k:'house3', l:72, b:25, w:13.5},{k:'school', l:86, b:25, w:12}
 ];
-function village() {
+var SKY = [{key:'sun',l:88,t:6,w:7},{key:'cloud',l:6,t:8,w:11},{key:'cloud',l:30,t:4,w:8}];
+/* 실제 앱과 같은 규칙 — 그날이 정한 대로 마을 기본 해·구름을 뺀다 */
+function village(keep) {
   var bg = VILLAGE_BG.town, h = '';
+  SKY.forEach(function (s) {
+    if (keep === 'none') return;
+    if (keep === 'clouds' && s.key === 'sun') return;
+    h += '<div class="vg-item vg-sky" style="left:' + s.l + '%;top:' + s.t + '%;width:' + s.w + '%">'
+       + (VILLAGE_ART[s.key] || '') + '</div>';
+  });
   h += '<div class="vg-item vg-sky" style="left:0;bottom:0;width:100%;height:56%">' + bg.hill + '</div>';
   h += '<div class="vg-item vg-sky" style="left:0;bottom:0;width:100%">' + bg.path + '</div>';
   ITEMS.forEach(function (m) {
@@ -68,7 +76,7 @@ HOLIDAY.DAYS.forEach(function (h) {
     + '<p class="note">' + h.note + '</p>';
   g.appendChild(cell);
   var st = cell.querySelector('.stage');
-  st.innerHTML = village();
+  st.innerHTML = village(h.defaultSky || 'all');
   if (h.ground) st.style.setProperty('--hd-ground', h.ground);
   st.insertBefore(HOLIDAY.layerFor(h), st.firstChild);
   var fr = HOLIDAY.frontFor(h);

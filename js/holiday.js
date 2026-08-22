@@ -85,7 +85,17 @@ var HOLIDAY = (function () {
       + ' fill="none" stroke-linecap="round"/>';
   }
 
-  /* ---------- 화면을 통째로 채우는 것 (늘어나도 됨) ---------- */
+  /* ---------- 화면을 통째로 채우는 것 ----------
+     이 판은 preserveAspectRatio="none" 이라 가로로 늘어난다.
+     그래서 동그란 것은 미리 가로를 눌러 그려야 화면에서 동그래진다.
+     마을 장면은 대략 가로:세로 1.8 이라 rx 를 ry 의 0.55 배로 잡았다.
+     (은하수·성에처럼 원래 가로로 긴 것은 늘어나도 상관없다) */
+  var SQUASH = 0.55;
+  function dot(x, y, r, fill, op) {
+    return '<ellipse cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1)
+      + '" rx="' + (r * SQUASH).toFixed(2) + '" ry="' + r.toFixed(2)
+      + '" fill="' + fill + '" opacity="' + op.toFixed(2) + '"/>';
+  }
   function rnd(seed) {
     var v = seed;
     return function () { v = (v * 9301 + 49297) % 233280; return v / 233280; };
@@ -93,9 +103,7 @@ var HOLIDAY = (function () {
   function stars(n, seed, maxY) {
     var r = rnd(seed), s = '';
     for (var i = 0; i < n; i++) {
-      var x = r() * 100, y = r() * (maxY || 55), sz = 0.25 + r() * 0.45, op = 0.5 + r() * 0.5;
-      s += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + sz.toFixed(2)
-        + '" fill="#fff" opacity="' + op.toFixed(2) + '"/>';
+      s += dot(r() * 100, r() * (maxY || 55), 0.3 + r() * 0.5, '#fff', 0.5 + r() * 0.5);
     }
     return s;
   }
@@ -108,18 +116,18 @@ var HOLIDAY = (function () {
   function snowflakes() {
     var r = rnd(99), s = '';
     for (var i = 0; i < 46; i++) {
-      var x = r() * 100, y = r() * 44, sz = 0.4 + r() * 0.7, op = 0.5 + r() * 0.45;
-      s += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + sz.toFixed(2)
-        + '" fill="#fff" opacity="' + op.toFixed(2) + '"/>';
+      s += dot(r() * 100, r() * 44, 0.45 + r() * 0.75, '#fff', 0.55 + r() * 0.4);
     }
     return s;
   }
+  /* 꽃잎은 원래 납작하니 가로 눌림을 조금만 준다 */
   function petals() {
     var r = rnd(41), s = '';
     for (var i = 0; i < 34; i++) {
-      var x = r() * 100, y = r() * 42, sz = 0.7 + r() * 0.8, op = 0.45 + r() * 0.4;
-      s += '<ellipse cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" rx="' + sz.toFixed(2)
-        + '" ry="' + (sz * 0.62).toFixed(2) + '" fill="#ffb7ce" opacity="' + op.toFixed(2) + '"/>';
+      var x = r() * 100, y = r() * 42, sz = 0.8 + r() * 0.9;
+      s += '<ellipse cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1)
+        + '" rx="' + (sz * 0.5).toFixed(2) + '" ry="' + (sz * 0.72).toFixed(2)
+        + '" fill="#ffb7ce" opacity="' + (0.5 + r() * 0.4).toFixed(2) + '"/>';
     }
     return s;
   }
@@ -128,9 +136,7 @@ var HOLIDAY = (function () {
     var r = rnd(63), s = '';
     // 하늘에 흩날리는 얼음 알갱이
     for (var i = 0; i < 40; i++) {
-      var x = r() * 100, y = r() * 43, sz = 0.5 + r() * 0.75;
-      s += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + sz.toFixed(2)
-        + '" fill="#ffffff" opacity="' + (0.55 + r() * 0.4).toFixed(2) + '"/>';
+      s += dot(r() * 100, r() * 43, 0.55 + r() * 0.8, '#ffffff', 0.55 + r() * 0.4);
     }
     // 여섯 갈래 서리 결정 몇 개 — 입동임을 알아보게
     [[16, 12, 4.5], [44, 8, 3.4], [63, 16, 3.8], [88, 11, 3.1], [30, 24, 2.8]]
@@ -143,8 +149,9 @@ var HOLIDAY = (function () {
             + '<line x1="0" y1="-' + (f[2] * .55) + '" x2="-' + (f[2] * .3) + '" y2="-' + (f[2] * .82)
             + '" transform="rotate(' + (a * 60) + ')"/>';
         }
-        s += '<g transform="translate(' + f[0] + ' ' + f[1] + ')" stroke="#ffffff"'
-          + ' stroke-width="0.42" stroke-linecap="round" opacity="0.9">' + g + '</g>';
+        s += '<g transform="translate(' + f[0] + ' ' + f[1] + ') scale(' + SQUASH + ' 1)"'
+          + ' stroke="#ffffff" stroke-width="0.7" stroke-linecap="round" opacity="0.9">'
+          + g + '</g>';
       });
     // 하늘 아래쪽에 낀 성에
     s += '<path d="M0 40 Q25 36 50 39 Q75 42 100 38 L100 44 L0 44 Z" fill="#ffffff" opacity="0.4"/>';
@@ -154,8 +161,8 @@ var HOLIDAY = (function () {
   /** 핼러윈 — 하늘을 가로지르는 귀여운 박쥐 (얼굴 없이 실루엣만, 무섭지 않게) */
   function bats() {
     function bat(x, y, s) {
-      return '<g transform="translate(' + x + ' ' + y + ') scale(' + s + ')" fill="#2a1836"'
-        + ' opacity="0.75">'
+      return '<g transform="translate(' + x + ' ' + y + ') scale(' + (s * SQUASH) + ' ' + s + ')"'
+        + ' fill="#2a1836" opacity="0.75">'
         + '<ellipse cx="0" cy="0" rx="1.1" ry="1.3"/>'
         + '<path d="M-1 -0.2 Q-3 -1.6 -4.6 -0.3 Q-3.4 -0.1 -3 0.9 Q-2 -0.1 -1 0.6 Z"/>'
         + '<path d="M1 -0.2 Q3 -1.6 4.6 -0.3 Q3.4 -0.1 3 0.9 Q2 -0.1 1 0.6 Z"/>'
@@ -170,8 +177,8 @@ var HOLIDAY = (function () {
   var JAMO = [
     ['ㄱ', 7, 11, 7], ['ㄴ', 19, 5, 6], ['ㄷ', 30, 14, 6.5], ['ㅁ', 41, 4, 7],
     ['ㅂ', 52, 13, 6], ['ㅅ', 63, 5, 7], ['ㅇ', 74, 13, 6.5], ['ㅈ', 85, 4, 6],
-    ['ㅎ', 93, 14, 7], ['ㅏ', 13, 23, 5.5], ['ㅓ', 25, 27, 5], ['ㅗ', 45, 24, 5.5],
-    ['ㅜ', 67, 26, 5], ['ㅣ', 88, 24, 5]
+    ['ㅎ', 90, 15, 7], ['ㅏ', 13, 23, 5.5], ['ㅓ', 25, 27, 5], ['ㅗ', 45, 24, 5.5],
+    ['ㅜ', 67, 26, 5], ['ㅣ', 85, 25, 5]
   ];
   function jamoPins() {
     return JAMO.map(function (j, i) {
@@ -217,13 +224,13 @@ var HOLIDAY = (function () {
      ========================================================= */
   var DAYS = [
     {
-      id: 'newyear', name: '새해 첫날', icon: '🌅', md: ['01-01'],
+      id: 'newyear', defaultSky: 'clouds', name: '새해 첫날', icon: '🌅', md: ['01-01'],
       note: '새해 복 많이 받으세요! 올해도 한 자 한 자 또박또박.',
       sky: 'linear-gradient(#ffb37a 0%, #ffd9a0 26%, #ffeccd 44%, #a8e6a3 44%, #8fd98a 84%, #7fc97a 100%)',
       pins: [pin(41, 18, 18, sun('#ff8f5c', '#ffcf8a'))]
     },
     {
-      id: 'daeboreum', name: '정월대보름', icon: '🌕', lunar: 'daeboreum', night: true,
+      id: 'daeboreum', defaultSky: 'none', name: '정월대보름', icon: '🌕', lunar: 'daeboreum', night: true,
       note: '한 해 중 가장 크고 밝은 보름달이 뜨는 날이에요.',
       sky: 'linear-gradient(#1b2450 0%, #2f3f75 30%, #4a5c95 44%, #3f6b4a 44%, #365f42 100%)',
       ground: 'hue-rotate(14deg) saturate(.5) brightness(.6)',
@@ -237,14 +244,14 @@ var HOLIDAY = (function () {
       flag: { x: 76, y: 5, w: 19 }
     },
     {
-      id: 'sikmok', name: '식목일', icon: '🌱', md: ['04-05'],
+      id: 'sikmok', defaultSky: 'clouds', name: '식목일', icon: '🌱', md: ['04-05'],
       note: '나무를 심는 날. 마을에도 새싹이 돋았어요.',
       sky: 'linear-gradient(#bfe8b8 0%, #dff5d8 30%, #f0fbee 44%, #a8e6a3 44%, #8fd98a 84%, #7fc97a 100%)',
       pins: [pin(80, 8, 12, sun('#ffd166', '#ffe9a8')),
       pin(28, 64, 6, sprout()), pin(66, 68, 5, sprout())]
     },
     {
-      id: 'cherry', name: '벚꽃', icon: '🌸', range: ['04-01', '04-07'],
+      id: 'cherry', defaultSky: 'clouds', name: '벚꽃', icon: '🌸', range: ['04-01', '04-07'],
       note: '벚꽃이 활짝 폈어요. 여의도도 지금이 한창이래요.',
       sky: 'linear-gradient(#ffd9e6 0%, #ffe9f1 28%, #fff5f8 44%, #a8e6a3 44%, #8fd98a 84%, #7fc97a 100%)',
       back: sky(petals()),
@@ -261,20 +268,20 @@ var HOLIDAY = (function () {
       ]
     },
     {
-      id: 'hyunchung', name: '현충일', icon: '🇰🇷', md: ['06-06'],
+      id: 'hyunchung', defaultSky: 'clouds', name: '현충일', icon: '🇰🇷', md: ['06-06'],
       note: '나라를 지키다 돌아가신 분들을 기리는 날이에요. 오전 10시에 1분간 묵념해요.',
       sky: 'linear-gradient(#8fa3b8 0%, #b4c3d2 30%, #d3dde6 44%, #93b58f 44%, #82a67e 100%)',
       flag: { x: 76, y: 5, w: 18, half: true }
     },
     {
-      id: 'dano', name: '단오', icon: '🌿', lunar: 'dano',
+      id: 'dano', defaultSky: 'clouds', name: '단오', icon: '🌿', lunar: 'dano',
       note: '창포물에 머리 감고 그네를 뛰던 날이에요.',
       sky: 'linear-gradient(#a8dff0 0%, #cdeefa 30%, #e8f8fd 44%, #a8e6a3 44%, #8fd98a 84%, #7fc97a 100%)',
       pins: [pin(82, 8, 12, sun('#ffd166', '#ffe9a8'))],
       front: [put(7, 2, 7, iris()), put(31, 1, 6, iris()), put(70, 2, 6.5, iris())]
     },
     {
-      id: 'chilseok', name: '칠석', icon: '🌌', lunar: 'chilseok', night: true,
+      id: 'chilseok', defaultSky: 'none', name: '칠석', icon: '🌌', lunar: 'chilseok', night: true,
       note: '견우와 직녀가 오작교에서 만나는 밤이에요.',
       sky: 'linear-gradient(#141c3d 0%, #2a2f63 26%, #43407e 44%, #37543f 44%, #2f4a38 100%)',
       ground: 'hue-rotate(20deg) saturate(.45) brightness(.55)',
@@ -288,7 +295,7 @@ var HOLIDAY = (function () {
       flag: { x: 76, y: 5, w: 19 }
     },
     {
-      id: 'chuseok', name: '추석', icon: '🌕', lunar: 'chuseok', night: true,
+      id: 'chuseok', defaultSky: 'none', name: '추석', icon: '🌕', lunar: 'chuseok', night: true,
       note: '한가위 보름달이 떴어요. 더도 말고 덜도 말고 오늘만 같아라.',
       sky: 'linear-gradient(#20294f 0%, #3a4270 28%, #5b5f92 44%, #6f7a3f 44%, #5e6836 100%)',
       ground: 'hue-rotate(-22deg) saturate(.62) brightness(.66)',
@@ -296,13 +303,13 @@ var HOLIDAY = (function () {
       pins: [pin(41, 7, 19, moon())]
     },
     {
-      id: 'hangeul', name: '한글날', icon: '📜', md: ['10-09'],
+      id: 'hangeul', defaultSky: 'clouds', name: '한글날', icon: '📜', md: ['10-09'],
       note: '여러분이 지금 치고 있는 이 글자를 만든 날이에요. 1446년, 훈민정음.',
       sky: 'linear-gradient(#a9d8f0 0%, #d3ecf8 30%, #f0f8fd 44%, #a8e6a3 44%, #8fd98a 84%, #7fc97a 100%)',
       pins: jamoPins()
     },
     {
-      id: 'halloween', name: '핼러윈', icon: '🎃', md: ['10-31'], night: true,
+      id: 'halloween', defaultSky: 'none', name: '핼러윈', icon: '🎃', md: ['10-31'], night: true,
       note: '오늘은 호박 등을 켜는 날이에요. 무섭지 않아요, 귀엽죠?',
       sky: 'linear-gradient(#2b1740 0%, #4a2a5f 22%, #7b4a7a 38%, #b06a5e 44%, #5a4a3a 44%, #46392c 100%)',
       // 언덕도 저녁빛 갈보라로 — 보라 하늘 밑에 초록 풀밭이면 따로 논다
@@ -312,7 +319,7 @@ var HOLIDAY = (function () {
       front: [put(8, 3, 7, pumpkin()), put(29, 2, 5.5, pumpkin()), put(64, 3, 6, pumpkin())]
     },
     {
-      id: 'ipdong', name: '입동', icon: '❄️', md: ['11-07'],
+      id: 'ipdong', defaultSky: 'clouds', name: '입동', icon: '❄️', md: ['11-07'],
       note: '겨울이 들어서는 날. 아침에 서리가 내리기 시작해요.',
       sky: 'linear-gradient(#b6cde2 0%, #d2e2ef 28%, #eaf3fa 44%, #cfdcd2 44%, #e2ebe4 100%)',
       // 서리가 내려 풀빛이 빠지고 희끗해진다
@@ -321,7 +328,7 @@ var HOLIDAY = (function () {
       pins: [pin(77, 9, 13, sun('#ffe0a8', '#fff2d8'))]
     },
     {
-      id: 'xmas', name: '크리스마스', icon: '🎄', range: ['12-24', '12-25'], night: true,
+      id: 'xmas', defaultSky: 'none', name: '크리스마스', icon: '🎄', range: ['12-24', '12-25'], night: true,
       note: '메리 크리스마스! 마을에 눈이 내려요.',
       sky: 'linear-gradient(#16224a 0%, #27386b 28%, #3f5590 44%, #e8f1fa 44%, #f8fbff 100%)',
       ground: 'saturate(.16) brightness(1.28)',

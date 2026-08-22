@@ -331,7 +331,19 @@ var VILLAGE = (function () {
 
     var bg = (window.VILLAGE_BG && VILLAGE_BG[ch.id]) || {};
     var html = '';
-    (bg.sky || []).forEach(function (s) { html += item(s.key, s, null, 'vg-sky'); });
+
+    /* 특별한 날이면 마을 기본 하늘 장식을 어떻게 할지 그날이 정한다.
+       안 그러면 크리스마스 밤에 웃는 해가 달 옆에 그대로 떠 있게 된다.
+         'none'   해도 구름도 뺀다 (밤)
+         'clouds' 구름만 남긴다 (그날이 제 해를 갖고 있을 때)
+         그 밖    마을 것 그대로 */
+    var hol = (window.HOLIDAY && d.live) ? HOLIDAY.of(fakeDay) : null;
+    var keepSky = hol ? (hol.defaultSky || 'all') : 'all';
+    (bg.sky || []).forEach(function (s) {
+      if (keepSky === 'none') return;
+      if (keepSky === 'clouds' && s.key === 'sun') return;
+      html += item(s.key, s, null, 'vg-sky');
+    });
     if (bg.hill) html += '<div class="vg-item vg-sky" style="left:0;bottom:0;width:100%;height:56%">' + bg.hill + '</div>';
     if (bg.path) html += '<div class="vg-item vg-sky" style="left:0;bottom:0;width:100%">' + bg.path + '</div>';
 
