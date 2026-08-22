@@ -98,18 +98,44 @@ var CLOUD = (function () {
      기록을 고칠 수 있는 사람을 "핀이 맞은 그 기기" 로 좁히기 위한 것이다.
      콘솔에서 익명 로그인을 아직 켜지 않았다면 조용히 실패하고,
      그때는 예전 방식(핀 해시 맞춰 보기)으로 되돌아간다. */
-  var anonUid = null;
+  var anonUid = null, anonWait = null;
+
+  /* Firebase 는 저장해 둔 로그인 상태를 비동기로 되살린다.
+     초기화 직후 currentUser 를 그냥 읽으면 아직 null 이라, 그때마다
+     새 익명 계정을 만들어 버린다. 그러면 학생이 새로고침할 때마다
+     문서 주인 자격을 잃는다. 반드시 onAuthStateChanged 로 기다린다. */
   function signInAnon() {
     if (anonUid) return Promise.resolve(anonUid);
+    if (anonWait) return anonWait;
     if (!window.firebase || !firebase.auth) return Promise.resolve(null);
-    var u = firebase.auth().currentUser;
-    if (u) { anonUid = u.uid; return Promise.resolve(anonUid); }
-    return firebase.auth().signInAnonymously()
-      .then(function (r) { anonUid = r.user.uid; return anonUid; })
-      .catch(function (e) {
-        console.warn('익명 로그인을 쓸 수 없습니다 (예전 방식으로 진행):', e && e.code);
-        return null;
+
+    anonWait = new Promise(function (resolve) {
+      var done = false;
+      var unsub = firebase.auth().onAuthStateChanged(function (u) {
+        if (done) return;
+        done = true;
+        unsub();
+        if (u) { anonUid = u.uid; resolve(anonUid); return; }
+        firebase.auth().signInAnonymously()
+          .then(function (r) { anonUid = r.user.uid; resolve(anonUid); })
+          .catch(function (e) {
+            console.warn('익명 로그인을 쓸 수 없습니다 (예전 방식으로 진행):', e && e.code);
+            resolve(null);
+          });
       });
+    }).then(function (uid) {
+      anonWait = null;
+      // 이후 로그인 상태가 바뀌면 캐시도 따라 바꾼다 (묵은 uid 로 주인을 잘못 적지 않게)
+      firebase.auth().onAuthStateChanged(function (u) { anonUid = u ? u.uid : null; });
+      return uid;
+    });
+    return anonWait;
+  }
+
+  /** 지금 이 기기의 익명 uid — 늘 실제 로그인 상태에서 읽는다 */
+  function myUid() {
+    var u = window.firebase && firebase.auth && firebase.auth().currentUser;
+    return u ? u.uid : anonUid;
   }
 
   /* ---------- 게임 열림 규칙 — 교사가 대시보드에서 정한다 ----------
@@ -200,7 +226,7 @@ var CLOUD = (function () {
     return needFirebase().then(function () {
       return signInAnon();
     }).then(function (u) {
-      uid = u;
+      uid = u || myUid();          // 복원이 늦어도 실제 값을 쓴다
       return db.collection('classes').doc(code).get();
     }).then(function (doc) {
       if (!doc.exists) throw new Error('학급코드를 찾을 수 없습니다. 다시 확인해 주세요.');
@@ -216,7 +242,7 @@ var CLOUD = (function () {
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
         return doc.ref.set(fresh)
-          .then(function () { return pinRef(c).set({ pinHash: hash, ownerUid: uid || null }); })
+          .then(function () { return pinRef(c).set({ pinHash: hash, ownerUid: myUid() || null }); })
           .then(function () { return fresh; });
       }
 
@@ -227,7 +253,7 @@ var CLOUD = (function () {
          본문에서는 지운다. 학생·교사가 따로 할 일은 없다. */
       if (typeof d.pinHash === 'string') {
         if (d.pinHash !== '' && d.pinHash !== hash) throw new Error('핀 번호가 틀렸습니다.');
-        return pinRef(c).set({ pinHash: hash, ownerUid: uid || null })
+        return pinRef(c).set({ pinHash: hash, ownerUid: myUid() || null })
           .then(function () {
             return doc.ref.update({
               pinHash: firebase.firestore.FieldValue.delete()
@@ -242,7 +268,7 @@ var CLOUD = (function () {
       }
 
       /* ---------- 이미 새 구조인 학생 ---------- */
-      return verifyPin(c, hash, uid).then(function () { return d; });
+      return verifyPin(c, hash, myUid()).then(function () { return d; });
     }).then(function (d) {
       APP.rec.cloud = {
         code: code, nick: nick, no: no || d.no || null, className: className,
