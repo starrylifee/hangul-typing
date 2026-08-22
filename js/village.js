@@ -25,11 +25,17 @@ var VILLAGE = (function () {
   function kstNow() {
     return new Date(Date.now() + (new Date().getTimezoneOffset() + 540) * 60000);
   }
+  /* 시즌제를 시작한 날. 이날부터 9월 1일 사이(여름 시즌 끄트머리)에 들어온
+     학생을 여름 시즌으로 묶으면, 마을을 받자마자 9월 1일에 초기화된다.
+     그래서 이 구간은 가을 시즌으로 당겨 붙인다 — 첫 시즌만 조금 길다. */
+  var FIRST_SEASON_UNTIL = new Date(2026, 8, 1);   // 2026-09-01
+
   /** 그 날짜가 속한 시즌 — { key, label, year, idx } */
   function seasonOf(d) {
     d = d || kstNow();
     var m = d.getMonth() + 1, y = d.getFullYear(), idx;
-    if (m >= 3 && m <= 5) idx = 0;
+    if (d < FIRST_SEASON_UNTIL) { idx = 2; y = 2026; }   // 첫 시즌 — 2026 가을
+    else if (m >= 3 && m <= 5) idx = 0;
     else if (m >= 6 && m <= 8) idx = 1;
     else if (m >= 9 && m <= 11) idx = 2;
     else { idx = 3; if (m <= 2) y -= 1; }     // 1~2월은 지난해 12월에 시작한 겨울
