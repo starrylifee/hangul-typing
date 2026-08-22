@@ -52,6 +52,11 @@ var VILLAGE = (function () {
     var ms = seasonEnd() - kstNow();
     return Math.max(0, Math.ceil(ms / 86400000));
   }
+  /** '2026-가을' 같은 시즌 키에서 계절 번호를 꺼낸다 (지난 시즌 다시 볼 때) */
+  function seasonIdxOfKey(key) {
+    var i = SEASON_NAME.indexOf(String(key).split('-')[1]);
+    return i < 0 ? 0 : i;
+  }
 
   /* =========================================================
      장(챕터) — 5장. p 는 그 시즌에 모은 포인트 기준.
@@ -317,7 +322,12 @@ var VILLAGE = (function () {
   function renderScene(ch, p, d) {
     var scene = $('vg-scene');
     if (!scene) return;
-    scene.className = 'vg-scene bg-' + ch.id;
+    /* 장에 따라 배경이, 시즌에 따라 빛깔이 바뀐다.
+       같은 마을을 다시 지어도 시즌이 다르면 다르게 보이라고 넣었다. */
+    var se = ['spring', 'summer', 'autumn', 'winter'][
+      (view.past ? seasonIdxOfKey(view.past) : seasonOf().idx)
+    ];
+    scene.className = 'vg-scene bg-' + ch.id + ' se-' + se;
 
     var bg = (window.VILLAGE_BG && VILLAGE_BG[ch.id]) || {};
     var html = '';

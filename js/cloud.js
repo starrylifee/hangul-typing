@@ -382,6 +382,8 @@ var CLOUD = (function () {
 
   return {
     onActivity: onActivity, renderBadge: renderBadge, sync: sync, join: join,
-    perks: perks, gameGate: gameGate
+    perks: perks, gameGate: gameGate,
+    /** Firestore 를 빌려 쓴다 (반 순위 등). SDK 를 아직 안 받았으면 그때 받는다. */
+    db: function () { return needFirebase(); }
   };
 })();
