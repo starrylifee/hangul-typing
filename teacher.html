@@ -55,7 +55,7 @@
       <!-- 탭 -->
       <div class="t-tabs">
         <button class="t-tab on" data-tab="students">학생 현황</button>
-        <button class="t-tab" data-tab="goal">오늘의 목표</button>
+        <button class="t-tab" data-tab="goal">활동 목표</button>
         <button class="t-tab" data-tab="game">게임 설정</button>
         <button class="t-tab" data-tab="grownd">그라운드 연동</button>
       </div>
@@ -63,6 +63,8 @@
       <!-- 학생 현황 -->
       <div class="t-pane on" id="pane-students">
         <div class="t-toolbar">
+          <input type="date" id="stu-date" title="이 날짜의 기록을 봅니다">
+          <button class="btn ghost sm" id="btn-today">오늘</button>
           <span id="stu-count" class="t-note"></span>
           <span class="t-note">· 학생 줄을 누르면 쌓인 기록이 자세히 보입니다</span>
           <div class="spacer"></div>
@@ -72,7 +74,7 @@
           <table class="t-table" id="stu-table">
             <thead>
               <tr>
-                <th>별명</th><th>출석번호</th><th>오늘 연습</th><th>오늘 최고 타수</th>
+                <th>별명</th><th>출석번호</th><th>연습</th><th>최고 타수</th>
                 <th>정확도</th><th>포인트</th><th>레벨</th><th>마을</th><th>목표</th><th></th>
               </tr>
             </thead>
@@ -85,8 +87,9 @@
       <!-- 오늘의 목표 -->
       <div class="t-pane" id="pane-goal">
         <div class="t-card">
-          <h3>오늘의 활동 목표</h3>
-          <p class="t-note">목표를 이룬 학생은 학생 현황에 ✓ 표시가 되고, 그라운드 점수를 보낼 수 있습니다.</p>
+          <h3>활동 목표</h3>
+          <p class="t-note">한 번 저장하면 바꿀 때까지 매일 같은 목표가 적용됩니다.<br>
+            목표를 이룬 학생은 학생 현황에 ✓ 표시가 되고, 그라운드 점수를 보낼 수 있습니다.</p>
           <div class="t-form">
             <label>목표 문구 <input type="text" id="goal-text" maxlength="60"
               placeholder="예: 오늘 10분 이상, 정확도 90% 넘기기"></label>
@@ -97,7 +100,7 @@
             </div>
             <label>달성 시 그라운드 점수 <input type="number" id="goal-points" min="1" max="100" value="10"></label>
             <div class="t-btnrow">
-              <button class="btn primary" id="btn-save-goal">오늘 목표로 저장</button>
+              <button class="btn primary" id="btn-save-goal">목표 저장</button>
               <span class="t-note" id="goal-saved"></span>
             </div>
           </div>
@@ -142,7 +145,7 @@
       <div class="t-pane" id="pane-grownd">
         <div class="t-card">
           <h3>그라운드(Grownd) 포인트 보내기</h3>
-          <p class="t-note">오늘의 목표를 이룬 학생에게, 그라운드 학급의 출석번호로 점수를 보냅니다.<br>
+          <p class="t-note">목표를 이룬 학생에게, 그라운드 학급의 출석번호로 점수를 보냅니다.<br>
             API 키는 이 컴퓨터에만 저장되고 학생 화면이나 서버 어디에도 남지 않습니다.</p>
           <div class="t-form">
             <label>그라운드 API 키 <input type="password" id="gr-key" placeholder="sk_live_..."></label>
@@ -154,9 +157,10 @@
             <hr class="t-hr">
             <p class="t-note">학생의 출석번호는 학생이 처음 로그인할 때 입력한 번호를 씁니다.
               출석번호가 없는 학생에게는 보내지 않습니다.<br>
-              하루에 여러 번 눌러도 괜찮습니다 — 오늘 이미 받은 학생은 빼고, 새로 달성한 학생에게만 보냅니다.</p>
+              여러 번 눌러도 괜찮습니다 — 그 날짜로 이미 받은 학생은 빼고, 새로 달성한 학생에게만 보냅니다.<br>
+              <b>학생 현황에서 고른 날짜</b>의 기록으로 보냅니다. 지난 금요일처럼 빠뜨린 날도 날짜를 바꿔 보낼 수 있습니다.</p>
             <div class="t-btnrow">
-              <button class="btn primary" id="btn-send-grownd">오늘 목표 달성 학생에게 점수 보내기</button>
+              <button class="btn primary" id="btn-send-grownd">목표 달성 학생에게 점수 보내기</button>
             </div>
             <p class="t-note" id="gr-result"></p>
           </div>

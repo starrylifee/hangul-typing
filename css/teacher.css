@@ -53,6 +53,12 @@ body.teacher { overflow: auto; }
 
 /* 학생 표 */
 .t-toolbar { display: flex; align-items: center; gap: 10px; }
+.t-toolbar input[type="date"] {
+  background: var(--bg2); border: 1px solid var(--line); border-radius: 10px;
+  padding: 6px 10px; color: var(--text); font-size: 15px; outline: none;
+  color-scheme: dark;
+}
+.t-toolbar input[type="date"]:focus { border-color: var(--accent-d); }
 .t-tablewrap {
   flex: 1; min-height: 0; overflow: auto;
   background: var(--panel); border: 1px solid var(--line); border-radius: 14px;

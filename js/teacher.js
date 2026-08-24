@@ -15,6 +15,7 @@
   var classes = [];          // 내 반 목록 [{code, name, goal}]
   var curClass = null;       // 지금 보는 반
   var students = [];         // 지금 보는 반의 학생들
+  var selDate = null;        // 학생 현황에서 보는 날짜 (기본 오늘)
 
   function toast(msg) {
     var t = $('toast');
@@ -91,7 +92,19 @@
       });
     };
 
-    /* 학생 */
+    /* 학생 — 날짜를 고르면 그 날 기록으로 표·목표 판정이 바뀐다 */
+    selDate = todayKey();
+    $('stu-date').value = todayKey();
+    $('stu-date').max = todayKey();
+    $('stu-date').onchange = function () {
+      selDate = this.value || todayKey();
+      renderStudents();
+    };
+    $('btn-today').onclick = function () {
+      selDate = todayKey();
+      $('stu-date').value = selDate;
+      renderStudents();
+    };
     $('btn-refresh').onclick = loadStudents;
     $('td-close').onclick = function () { $('stu-modal').hidden = true; };
     $('stu-modal').onclick = function (e) {
@@ -206,10 +219,12 @@
       .catch(function (e) { toast('학생 목록을 읽지 못했습니다: ' + e.message); });
   }
 
+  /** 학생이 selDate 날짜에 목표를 이뤘는가.
+      목표는 날짜에 묶이지 않는다 — 한 번 저장하면 바꿀 때까지 매일 같은 기준. */
   function metGoal(stu) {
     var g = curClass && curClass.goal;
-    if (!g || g.date !== todayKey()) return null;      // 오늘 목표가 없다
-    var d = (stu.days || {})[todayKey()];
+    if (!g) return null;                               // 저장된 목표가 없다
+    var d = (stu.days || {})[selDate];
     if (!d) return false;
     if ((d.sec || 0) / 60 < (g.min || 0)) return false;
     if ((d.acc || 0) < (g.acc || 0)) return false;
@@ -220,9 +235,13 @@
   /** 목표를 못 이룬 이유를 사람 말로 — 마우스를 올리면 보인다 */
   function goalMissReason(stu) {
     var g = curClass && curClass.goal;
-    if (!g || g.date !== todayKey()) return '';
-    var d = (stu.days || {})[todayKey()];
-    if (!d) return '오늘 연습 기록이 아직 없습니다';
+    if (!g) return '';
+    var d = (stu.days || {})[selDate];
+    if (!d) {
+      return selDate === todayKey()
+        ? '오늘 연습 기록이 아직 없습니다'
+        : '이 날 연습 기록이 없습니다';
+    }
     var r = [];
     var min = Math.round((d.sec || 0) / 60);
     if (min < (g.min || 0)) r.push('연습 시간 ' + min + '분 (목표 ' + g.min + '분)');
@@ -231,16 +250,24 @@
     return r.join(' · ');
   }
 
+  /** 그 날짜 몫의 그라운드 점수를 이미 보냈는가.
+      날짜별 기록(grSentDays)이 기본이고, 옛 필드(grSent — 마지막으로 보낸
+      날짜 하나만 기억)도 같이 봐서 예전에 보낸 표시가 사라지지 않게 한다. */
+  function sentOn(s, date) {
+    return !!((s.grSentDays && s.grSentDays[date]) || s.grSent === date);
+  }
+
   function renderStudents() {
     var tbody = $('stu-rows');
     tbody.innerHTML = '';
     $('stu-empty').style.display = students.length ? 'none' : 'block';
     $('stu-count').textContent = students.length
-      ? '학생 ' + students.length + '명 · ' + todayKey()
+      ? '학생 ' + students.length + '명 · ' + selDate
+        + (selDate === todayKey() ? ' (오늘)' : ' 기록')
       : '';
 
     students.forEach(function (s) {
-      var d = (s.days || {})[todayKey()] || {};
+      var d = (s.days || {})[selDate] || {};
       var ok = metGoal(s);
       var tr = document.createElement('tr');
 
@@ -258,7 +285,7 @@
       tr.appendChild(td(String(s.points || 0), 'num'));
       tr.appendChild(td('Lv.' + (s.level || 1), 'num'));
       tr.appendChild(td(villageCell(s), 'num'));
-      var sent = s.grSent === todayKey();
+      var sent = sentOn(s, selDate);
       tr.appendChild(td(ok === null ? '<span class="goal-no">목표 없음</span>'
         : ok ? '<span class="goal-ok">✓</span>' + (sent ? ' <span class="gr-sent">보냄</span>' : '')
           : '<span class="goal-no why" title="' + esc(goalMissReason(s)) + '">아직</span>'));
@@ -504,9 +531,9 @@
     $('goal-acc').value = (g && g.acc != null) ? g.acc : 90;
     $('goal-cpm').value = (g && g.cpm != null) ? g.cpm : 0;
     $('goal-points').value = (g && g.points != null) ? g.points : 10;
-    $('goal-saved').textContent = (g && g.date)
-      ? (g.date === todayKey() ? '오늘 목표가 걸려 있습니다.' : g.date + ' 목표가 저장돼 있습니다 (오늘 아님).')
-      : '';
+    $('goal-saved').textContent = g
+      ? '목표가 저장돼 있습니다. 바꿀 때까지 매일 적용됩니다.'
+      : '아직 목표가 없습니다.';
   }
 
   function saveGoal() {
@@ -516,14 +543,13 @@
       min: Math.max(0, $('goal-min').value | 0),
       acc: Math.max(0, Math.min(100, $('goal-acc').value | 0)),
       cpm: Math.max(0, $('goal-cpm').value | 0),
-      points: Math.max(1, $('goal-points').value | 0),
-      date: todayKey()
+      points: Math.max(1, $('goal-points').value | 0)
     };
     db.collection('classes').doc(curClass.code).update({ goal: goal })
       .then(function () {
         curClass.goal = goal;
-        $('goal-saved').textContent = '오늘 목표로 저장했습니다.';
-        toast('오늘의 목표를 저장했습니다');
+        $('goal-saved').textContent = '저장했습니다. 바꿀 때까지 매일 적용됩니다.';
+        toast('목표를 저장했습니다');
         renderStudents();
       })
       .catch(function (e) { toast('저장 실패: ' + e.message); });
@@ -594,22 +620,25 @@
   function sendGrowndPoints() {
     if (!curClass) return;
     var g = curClass.goal;
-    if (!g || g.date !== todayKey()) { toast('먼저 오늘의 목표를 저장해 주세요'); return; }
+    if (!g) { toast('먼저 활동 목표를 저장해 주세요'); return; }
     var cfg = {};
     try { cfg = JSON.parse(localStorage.getItem(grKey()) || '{}'); } catch (e) { }
     if (!cfg.apiKey || !cfg.classId) { toast('그라운드 API 키와 학급 ID를 먼저 저장해 주세요'); return; }
 
-    // 오늘 이미 받은 학생은 뺀다 — 나중에 달성한 학생 몫을 보낼 때 중복 지급을 막는다
-    var already = students.filter(function (s) { return metGoal(s) === true && s.grSent === todayKey(); });
-    var targets = students.filter(function (s) { return metGoal(s) === true && s.no && s.grSent !== todayKey(); });
+    // 학생 현황에서 고른 날짜(selDate) 기준으로 보낸다 — 빠뜨린 날도 소급 가능.
+    // 그 날짜로 이미 받은 학생은 뺀다 — 다시 눌러도 중복 지급을 막는다.
+    var date = selDate;
+    var already = students.filter(function (s) { return metGoal(s) === true && sentOn(s, date); });
+    var targets = students.filter(function (s) { return metGoal(s) === true && s.no && !sentOn(s, date); });
     var skipped = students.filter(function (s) { return metGoal(s) === true && !s.no; });
     if (!targets.length) {
       $('gr-result').textContent = already.length
-        ? '새로 보낼 학생이 없습니다. (' + already.length + '명은 오늘 이미 받았습니다)'
-        : '보낼 학생이 없습니다. (목표 달성 + 출석번호 있는 학생만 보냅니다)';
+        ? '새로 보낼 학생이 없습니다. (' + already.length + '명은 ' + date + ' 몫을 이미 받았습니다)'
+        : date + ' 기준으로 보낼 학생이 없습니다. (목표 달성 + 출석번호 있는 학생만 보냅니다)';
       return;
     }
-    if (!confirm(targets.length + '명에게 그라운드 ' + g.points + '점씩 보낼까요?\n'
+    if (!confirm(date + ' 기록 기준으로 ' + targets.length + '명에게 그라운드 '
+      + g.points + '점씩 보낼까요?\n'
       + targets.map(function (s) { return s.nick + '(' + s.no + '번)'; }).join(', '))) return;
 
     var btn = $('btn-send-grownd');
@@ -626,16 +655,24 @@
           body: JSON.stringify({
             apiKey: cfg.apiKey, classId: cfg.classId,
             studentCode: s.no, points: g.points,
-            description: '타자 연습 목표 달성' + (g.text ? ' — ' + g.text : '')
+            description: '타자 연습 목표 달성'
+              + (date !== todayKey() ? ' (' + date + ')' : '')
+              + (g.text ? ' — ' + g.text : '')
           })
         }).then(function (r) {
           if (r.ok) {
             okCnt++;
-            // 오늘 받았다고 서버에 표시해 두면 다시 눌러도 두 번 안 간다
-            s.grSent = todayKey();
+            // 그 날짜 몫을 받았다고 서버에 표시해 두면 다시 눌러도 두 번 안 간다.
+            // 날짜 키에 - 가 들어 있어 update() 필드 경로로는 못 쓰고,
+            // set + merge 로 grSentDays 맵에 한 칸만 보탠다.
+            if (!s.grSentDays) s.grSentDays = {};
+            s.grSentDays[date] = true;
+            s.grSent = date;
+            var mark = { grSent: date, grSentDays: {} };
+            mark.grSentDays[date] = true;
             return db.collection('classes').doc(curClass.code)
               .collection('students').doc(s.nick)
-              .update({ grSent: todayKey() })
+              .set(mark, { merge: true })
               .catch(function () { });
           }
           failList.push(s.nick + '(' + r.status + ')');
@@ -645,8 +682,8 @@
     chain.then(function () {
       btn.disabled = false;
       renderStudents();
-      var msg = okCnt + '명에게 보냈습니다.';
-      if (already.length) msg += ' (오늘 이미 받은 ' + already.length + '명 제외)';
+      var msg = okCnt + '명에게 보냈습니다. (' + date + ' 기록 기준)';
+      if (already.length) msg += ' (이미 받은 ' + already.length + '명 제외)';
       if (failList.length) msg += ' 실패: ' + failList.join(', ');
       if (skipped.length) msg += ' (출석번호 없어 건너뜀: '
         + skipped.map(function (s) { return s.nick; }).join(', ') + ')';
