@@ -771,9 +771,15 @@
 
     // 학생 현황에서 고른 날짜(selDate) 기준으로 보낸다 — 빠뜨린 날도 소급 가능.
     // 그 날짜로 이미 받은 학생은 뺀다 — 다시 눌러도 중복 지급을 막는다.
+    // 자동 지급이 방금 보냈거나 보내는 중인 학생도 뺀다 — 수동·자동이 겹치지 않게.
+    // (자동이 실패한 학생은 남긴다 — 수동 버튼이 재시도 통로다)
+    function autoBusy(s) {
+      var a = autoDone[s.nick + '|' + selDate];
+      return a === 'run' || a === 'sent';
+    }
     var date = selDate;
-    var already = students.filter(function (s) { return metGoal(s) === true && sentOn(s, date); });
-    var targets = students.filter(function (s) { return metGoal(s) === true && s.no && !sentOn(s, date); });
+    var already = students.filter(function (s) { return metGoal(s) === true && (sentOn(s, date) || autoBusy(s)); });
+    var targets = students.filter(function (s) { return metGoal(s) === true && s.no && !sentOn(s, date) && !autoBusy(s); });
     var skipped = students.filter(function (s) { return metGoal(s) === true && !s.no; });
     if (!targets.length) {
       $('gr-result').textContent = already.length
@@ -792,12 +798,16 @@
     var okCnt = 0, failList = [];
     var chain = Promise.resolve();
     targets.forEach(function (s) {
+      // 보내는 동안 자동 지급이 같은 학생을 또 보내지 않게 먼저 표시해 둔다
+      autoDone[s.nick + '|' + date] = 'run';
       chain = chain.then(function () {
         return sendOne(s, date, cfg, g).then(function (r) {
           if (r.ok) {
             okCnt++;
+            autoDone[s.nick + '|' + date] = 'sent';
             return markSent(s, date);
           }
+          autoDone[s.nick + '|' + date] = 'fail';
           failList.push(s.nick + (r.status ? '(' + r.status + ')' : ''));
         });
       });
