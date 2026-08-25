@@ -55,7 +55,7 @@
 
     auth.onAuthStateChanged(function (user) {
       me = user;
-      if (!user) { show(true); return; }
+      if (!user) { stopAutoWatch(); show(true); return; }
       $('me-email').textContent = user.email || '';
       show(false);
       loadClasses();
@@ -123,6 +123,7 @@
     /* 그라운드 */
     $('btn-save-grownd').onclick = saveGrowndCfg;
     $('btn-send-grownd').onclick = sendGrowndPoints;
+    $('gr-mode-manual').onchange = $('gr-mode-auto').onchange = saveGrMode;
   }
 
   /* =========================================================
@@ -219,18 +220,20 @@
       .catch(function (e) { toast('학생 목록을 읽지 못했습니다: ' + e.message); });
   }
 
-  /** 학생이 selDate 날짜에 목표를 이뤘는가.
+  /** 학생이 그 날짜에 목표를 이뤘는가.
       목표는 날짜에 묶이지 않는다 — 한 번 저장하면 바꿀 때까지 매일 같은 기준. */
-  function metGoal(stu) {
+  function metGoalOn(stu, date) {
     var g = curClass && curClass.goal;
     if (!g) return null;                               // 저장된 목표가 없다
-    var d = (stu.days || {})[selDate];
+    var d = (stu.days || {})[date];
     if (!d) return false;
     if ((d.sec || 0) / 60 < (g.min || 0)) return false;
     if ((d.acc || 0) < (g.acc || 0)) return false;
     if ((d.cpm || 0) < (g.cpm || 0)) return false;
     return true;
   }
+
+  function metGoal(stu) { return metGoalOn(stu, selDate); }
 
   /** 목표를 못 이룬 이유를 사람 말로 — 마우스를 올리면 보인다 */
   function goalMissReason(stu) {
@@ -600,29 +603,170 @@
      ========================================================= */
   function grKey() { return 'grownd_' + (curClass ? curClass.code : ''); }
 
+  function grCfg() {
+    try { return JSON.parse(localStorage.getItem(grKey()) || '{}'); } catch (e) { return {}; }
+  }
+
   function loadGrowndCfg() {
-    var cfg = {};
-    try { cfg = JSON.parse(localStorage.getItem(grKey()) || '{}'); } catch (e) { }
+    var cfg = grCfg();
     $('gr-key').value = cfg.apiKey || '';
     $('gr-class').value = cfg.classId || '';
     $('gr-saved').textContent = cfg.apiKey ? '저장돼 있습니다.' : '';
     $('gr-result').textContent = '';
+    ($(cfg.mode === 'auto' ? 'gr-mode-auto' : 'gr-mode-manual')).checked = true;
+    applyGrMode();
   }
 
   function saveGrowndCfg() {
     if (!curClass) return;
-    var cfg = { apiKey: $('gr-key').value.trim(), classId: $('gr-class').value.trim() };
+    var cfg = grCfg();
+    cfg.apiKey = $('gr-key').value.trim();
+    cfg.classId = $('gr-class').value.trim();
     try { localStorage.setItem(grKey(), JSON.stringify(cfg)); } catch (e) { }
     $('gr-saved').textContent = '저장했습니다. (이 컴퓨터에만)';
     toast('그라운드 설정을 저장했습니다');
+    autoDone = {};   // 키를 고쳤을 수 있으니 실패 기록을 지우고 다시 시도
+    applyGrMode();
+  }
+
+  function saveGrMode() {
+    if (!curClass) return;
+    var cfg = grCfg();
+    cfg.mode = $('gr-mode-auto').checked ? 'auto' : 'manual';
+    try { localStorage.setItem(grKey(), JSON.stringify(cfg)); } catch (e) { }
+    toast(cfg.mode === 'auto' ? '자동 지급으로 바꿨습니다' : '수동 지급으로 바꿨습니다');
+    applyGrMode();
+  }
+
+  /* ---------------------------------------------------------
+     한 명에게 보내기 + 보냈다는 표시 — 수동·자동이 같이 쓴다
+     --------------------------------------------------------- */
+  function sendOne(s, date, cfg, g) {
+    return fetch('/api/grownd', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        apiKey: cfg.apiKey, classId: cfg.classId,
+        studentCode: s.no, points: g.points,
+        description: '타자 연습 목표 달성'
+          + (date !== todayKey() ? ' (' + date + ')' : '')
+          + (g.text ? ' — ' + g.text : '')
+      })
+    }).then(function (r) { return { ok: r.ok, status: r.status }; })
+      .catch(function () { return { ok: false, status: 0 }; });
+  }
+
+  function markSent(s, date) {
+    // 그 날짜 몫을 받았다고 서버에 표시해 두면 다시 눌러도 두 번 안 간다.
+    // 날짜 키에 - 가 들어 있어 update() 필드 경로로는 못 쓰고,
+    // set + merge 로 grSentDays 맵에 한 칸만 보탠다.
+    if (!s.grSentDays) s.grSentDays = {};
+    s.grSentDays[date] = true;
+    s.grSent = date;
+    var mark = { grSent: date, grSentDays: {} };
+    mark.grSentDays[date] = true;
+    return db.collection('classes').doc(curClass.code)
+      .collection('students').doc(s.nick)
+      .set(mark, { merge: true })
+      .catch(function () { });
+  }
+
+  /* ---------------------------------------------------------
+     자동 지급 — 대시보드가 열려 있는 동안 학생 기록을 실시간으로
+     지켜보다가, 오늘 목표를 이룬 학생에게 그 자리에서 보낸다.
+     API 키가 이 컴퓨터에만 있어서 학생 화면에서는 보낼 수 없다.
+     --------------------------------------------------------- */
+  var autoUnsub = null;        // 실시간 구독 해제 함수
+  var autoDone = {};           // '별명|날짜' → 'sent' | 'fail' — 이 세션에서 처리한 것
+  var autoRunning = false, autoAgain = false;
+
+  function applyGrMode() {
+    stopAutoWatch();
+    var cfg = grCfg();
+    var note = $('gr-auto-note');
+    if (cfg.mode !== 'auto') { note.textContent = ''; return; }
+    if (!cfg.apiKey || !cfg.classId) {
+      note.textContent = '자동 지급을 쓰려면 먼저 위의 API 키와 학급 ID를 저장해 주세요.';
+      return;
+    }
+    note.textContent = '자동 지급이 켜졌습니다. 이 대시보드 화면이 열려 있는 동안, '
+      + '오늘 목표를 이룬 학생에게 바로 보냅니다. 지난 날짜는 아래 수동 버튼으로 보내 주세요.';
+    startAutoWatch();
+  }
+
+  function startAutoWatch() {
+    if (!curClass || autoUnsub) return;
+    autoUnsub = db.collection('classes').doc(curClass.code).collection('students')
+      .onSnapshot(function (snap) {
+        students = [];
+        snap.forEach(function (doc) {
+          var d = doc.data();
+          d.nick = doc.id;
+          students.push(d);
+        });
+        students.sort(function (a, b) {
+          return (a.no || 999) - (b.no || 999) || (a.nick < b.nick ? -1 : 1);
+        });
+        renderStudents();
+        autoSendNew();
+      }, function (e) {
+        $('gr-auto-note').textContent = '자동 지급 연결이 끊겼습니다: ' + e.message
+          + ' — 새로고침하면 다시 이어집니다.';
+      });
+  }
+
+  function stopAutoWatch() {
+    if (autoUnsub) { autoUnsub(); autoUnsub = null; }
+    autoRunning = false; autoAgain = false;
+  }
+
+  function autoSendNew() {
+    if (autoRunning) { autoAgain = true; return; }
+    var g = curClass && curClass.goal;
+    var cfg = grCfg();
+    if (!g || cfg.mode !== 'auto' || !cfg.apiKey || !cfg.classId) return;
+
+    var date = todayKey();   // 자동은 오늘 기록만 — 지난 날짜는 수동으로
+    var targets = students.filter(function (s) {
+      return metGoalOn(s, date) === true && s.no
+        && !sentOn(s, date) && !autoDone[s.nick + '|' + date];
+    });
+    if (!targets.length) return;
+
+    autoRunning = true;
+    var failed = [];
+    var chain = Promise.resolve();
+    targets.forEach(function (s) {
+      autoDone[s.nick + '|' + date] = 'run';
+      chain = chain.then(function () {
+        return sendOne(s, date, cfg, g).then(function (r) {
+          if (r.ok) {
+            autoDone[s.nick + '|' + date] = 'sent';
+            toast('자동 지급: ' + s.nick + ' +' + g.points + '점');
+            return markSent(s, date);
+          }
+          // 실패한 학생은 이 세션에서 다시 시도하지 않는다 — 수동 버튼으로 재시도
+          autoDone[s.nick + '|' + date] = 'fail';
+          failed.push(s.nick + (r.status ? '(' + r.status + ')' : ''));
+        });
+      });
+    });
+    chain.then(function () {
+      autoRunning = false;
+      renderStudents();
+      if (failed.length) {
+        $('gr-auto-note').textContent = '자동 지급 실패: ' + failed.join(', ')
+          + ' — API 키·학급 ID를 확인하고 아래 수동 버튼으로 다시 보내 주세요.';
+      }
+      if (autoAgain) { autoAgain = false; autoSendNew(); }
+    });
   }
 
   function sendGrowndPoints() {
     if (!curClass) return;
     var g = curClass.goal;
     if (!g) { toast('먼저 활동 목표를 저장해 주세요'); return; }
-    var cfg = {};
-    try { cfg = JSON.parse(localStorage.getItem(grKey()) || '{}'); } catch (e) { }
+    var cfg = grCfg();
     if (!cfg.apiKey || !cfg.classId) { toast('그라운드 API 키와 학급 ID를 먼저 저장해 주세요'); return; }
 
     // 학생 현황에서 고른 날짜(selDate) 기준으로 보낸다 — 빠뜨린 날도 소급 가능.
@@ -649,34 +793,13 @@
     var chain = Promise.resolve();
     targets.forEach(function (s) {
       chain = chain.then(function () {
-        return fetch('/api/grownd', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            apiKey: cfg.apiKey, classId: cfg.classId,
-            studentCode: s.no, points: g.points,
-            description: '타자 연습 목표 달성'
-              + (date !== todayKey() ? ' (' + date + ')' : '')
-              + (g.text ? ' — ' + g.text : '')
-          })
-        }).then(function (r) {
+        return sendOne(s, date, cfg, g).then(function (r) {
           if (r.ok) {
             okCnt++;
-            // 그 날짜 몫을 받았다고 서버에 표시해 두면 다시 눌러도 두 번 안 간다.
-            // 날짜 키에 - 가 들어 있어 update() 필드 경로로는 못 쓰고,
-            // set + merge 로 grSentDays 맵에 한 칸만 보탠다.
-            if (!s.grSentDays) s.grSentDays = {};
-            s.grSentDays[date] = true;
-            s.grSent = date;
-            var mark = { grSent: date, grSentDays: {} };
-            mark.grSentDays[date] = true;
-            return db.collection('classes').doc(curClass.code)
-              .collection('students').doc(s.nick)
-              .set(mark, { merge: true })
-              .catch(function () { });
+            return markSent(s, date);
           }
-          failList.push(s.nick + '(' + r.status + ')');
-        }).catch(function () { failList.push(s.nick); });
+          failList.push(s.nick + (r.status ? '(' + r.status + ')' : ''));
+        });
       });
     });
     chain.then(function () {
