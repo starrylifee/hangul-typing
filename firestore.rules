@@ -64,6 +64,19 @@ service cloud.firestore {
           return !hasPinDoc()
             && request.resource.data.get('pinHash', '') == resource.data.get('pinHash', '');
         }
+        /* 되감기 금지 (2026-08-28 사고 후).
+           옛 기록이 잠들어 있던 크롬북이 접속하면, 서버의 최신 포인트·마을을
+           옛 값으로 통째로 덮어쓴다 (실제로 일어났다). 학생 기기에서 포인트가
+           줄어들 일은 없으므로, 줄어드는 쓰기는 낡은 기기라는 뜻 — 거부한다.
+           시즌 포인트(sp)도 같지만, 시즌이 바뀌면 0에서 새로 시작하므로
+           시즌 키가 달라질 때만 줄어드는 것을 허용한다. 교사는 예외(수동 보정용). */
+        function noRollback() {
+          return request.resource.data.get('points', 0) >= resource.data.get('points', 0)
+            && (request.resource.data.get('season', {}).get('key', '')
+                  != resource.data.get('season', {}).get('key', '')
+              || request.resource.data.get('season', {}).get('sp', 0)
+                  >= resource.data.get('season', {}).get('sp', 0));
+        }
 
         // 별명·포인트·레벨·마을 — 반 순위와 교사 화면이 읽는다
         allow read: if true;
@@ -78,7 +91,8 @@ service cloud.firestore {
           && exists(/databases/$(database)/documents/classes/$(code));
 
         // 주인만 고칠 수 있다. 옛 구조 학생은 다음 로그인 때 옮겨질 때까지만 허용.
-        allow update: if isOwner() || isTeacher() || isLegacy();
+        // 어느 쪽이든 포인트를 되감는 쓰기는 낡은 기기이므로 거부한다.
+        allow update: if isTeacher() || ((isOwner() || isLegacy()) && noRollback());
 
         allow delete: if isTeacher();
 
