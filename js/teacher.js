@@ -106,6 +106,11 @@
       renderStudents();
     };
     $('btn-refresh').onclick = loadStudents;
+
+    /* 반 백업 */
+    $('btn-backup').onclick = backupClass;
+    $('backup-now').onclick = backupClass;
+    $('backup-later').onclick = function () { $('backup-modal').hidden = true; };
     $('td-close').onclick = function () { $('stu-modal').hidden = true; };
     $('stu-modal').onclick = function (e) {
       if (e.target === this) this.hidden = true;
@@ -197,6 +202,55 @@
     fillGameForm(curClass.game);
     loadGrowndCfg();
     loadStudents();
+    checkBackupDue();
+  }
+
+  /* =========================================================
+     반 백업 — 일주일에 한 번 모달로 챙긴다
+     Firestore 무료 플랜은 자동 백업이 없다. 학생 문서가 지워지면
+     되살릴 길이 없어서(2026-08-28 실제 사고), 반 전체를 JSON 으로
+     교사 컴퓨터에 내려받아 둔다. 핀은 아무도 못 읽는 문서라 백업에
+     안 들어간다 — 복구할 일이 생기면 핀은 초기화하면 된다.
+     ========================================================= */
+  var BK_KEY = 'hangul_typing_backup_';   // + 학급코드 = 마지막 백업 시각
+
+  function backupClass() {
+    if (!curClass) return;
+    db.collection('classes').doc(curClass.code).collection('students').get()
+      .then(function (snap) {
+        var stus = {};
+        snap.forEach(function (doc) { stus[doc.id] = doc.data(); });
+        var out = {
+          savedAt: new Date().toISOString(),
+          classCode: curClass.code, className: curClass.name || '',
+          goal: curClass.goal || null, game: curClass.game || null,
+          students: stus
+        };
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([JSON.stringify(out, null, 1)], { type: 'application/json' }));
+        a.download = '타자연습_백업_' + curClass.code + '_' + todayKey() + '.json';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        try { localStorage.setItem(BK_KEY + curClass.code, String(Date.now())); } catch (e) { }
+        $('backup-modal').hidden = true;
+        toast('반 전체 기록을 내려받았습니다 (' + Object.keys(stus).length + '명)');
+      })
+      .catch(function (e) { toast('백업하지 못했습니다: ' + e.message); });
+  }
+
+  /** 반을 열 때 — 백업한 지 이레가 넘었으면 모달을 띄운다 */
+  function checkBackupDue() {
+    if (!curClass) return;
+    var last = 0;
+    try { last = parseInt(localStorage.getItem(BK_KEY + curClass.code), 10) || 0; } catch (e) { }
+    var days = (Date.now() - last) / 86400000;
+    if (last && days < 7) return;
+    $('backup-note').textContent =
+      (last ? Math.floor(days) + '일 동안 백업이 없었어요.' : '이 컴퓨터에서 아직 한 번도 백업하지 않았어요.')
+      + ' 학생 기록은 서버에만 있어서, 실수로 지우면 되살릴 수 없어요.'
+      + ' 지금 백업하면 반 전체 기록이 JSON 파일 하나로 컴퓨터에 저장됩니다.';
+    $('backup-modal').hidden = false;
   }
 
   /* =========================================================

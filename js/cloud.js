@@ -296,7 +296,9 @@ var CLOUD = (function () {
          로그인해 기록이 섞이는 일을 여기서 막는다. */
       if (APP.rec.name !== nick) APP.switchStudent(nick);
       APP.rec.cloud = {
-        code: code, nick: nick, no: no || d.no || null, className: className,
+        /* 번호는 서버 것을 우선한다 — 재로그인 때 번호를 잘못 적어도
+           그라운드 전송이 엉뚱한 번호로 가지 않게 */
+        code: code, nick: nick, no: d.no || no || null, className: className,
         points: d.points || 0, level: d.level || 1, pt: null,
         // 마을(시즌)은 서버에도 두어서 다른 크롬북에서 로그인해도 이어진다
         season: d.season || null, past: d.past || null
@@ -488,6 +490,9 @@ var CLOUD = (function () {
     if (!/^\d{6}$/.test(code)) { msg.textContent = '학급코드는 숫자 6자리입니다.'; return; }
     if (!nick) { msg.textContent = '별명을 적어 주세요. (진짜 이름 말고!)'; return; }
     if (!/^\d{4}$/.test(pin)) { msg.textContent = '핀 번호는 숫자 4자리입니다.'; return; }
+    /* 출석번호는 필수 — 번호가 있어야 같은 아이가 별명을 바꿔
+       계정을 두 개 만드는 것을 가입 단계에서 잡을 수 있다. */
+    if (!no || no < 1 || no > 99) { msg.textContent = '출석번호를 적어 주세요.'; return; }
 
     var btn = $('cloud-ok');
     btn.disabled = true;
