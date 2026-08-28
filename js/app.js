@@ -87,6 +87,18 @@ var APP = (function () {
       return raw ? JSON.parse(raw) : null;
     } catch (e) { return null; }
   }
+  /** 이 컴퓨터에 보관된 학생 이름들 (지금 쓰는 이름 포함) */
+  function profileNames() {
+    var out = [];
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf(PROFILE_PREFIX) === 0) out.push(k.slice(PROFILE_PREFIX.length));
+      }
+    } catch (e) { }
+    if (rec.name && out.indexOf(rec.name) < 0) out.push(rec.name);
+    return out.sort();
+  }
   /** 학생을 바꾼다. 이 컴퓨터에 보관된 그 학생 기록이 있으면 되살린다. */
   function switchStudent(name) {
     name = (name || '').trim();
@@ -100,6 +112,9 @@ var APP = (function () {
     rec.name = name;
     save();
     renderHome();
+    /* 되살린 프로필은 과거 시점일 수 있다 — 서버가 더 앞서 있으면 따라잡는다.
+       (이름을 바꿔 적어 옛 서랍이 깨어나면 마을·포인트가 되감기던 사고 방지) */
+    if (p && p.cloud && window.CLOUD && CLOUD.refresh) CLOUD.refresh();
     return { same: false, restored: !!p };
   }
   function bestOf(key) { return rec.best[key] || null; }
@@ -773,6 +788,23 @@ var APP = (function () {
   function openNameModal(startup) {
     $('name-modal-title').textContent = startup ? '이름을 알려 주세요' : '누가 연습하나요?';
     $('name-later').textContent = startup ? '나중에 할게요' : '취소';
+    /* 이 컴퓨터에 보관된 이름은 눌러서 고르게 한다.
+       같은 아이가 "서예현"과 "서쪽이"처럼 다르게 적으면 기록 서랍이
+       갈라지는데, 아이는 자기가 전에 뭐라고 적었는지 잘 기억 못 한다. */
+    var box = $('name-profiles');
+    if (box) {
+      var names = profileNames();
+      box.hidden = !names.length;
+      box.innerHTML = '';
+      names.forEach(function (n) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'name-chip' + (n === rec.name ? ' cur' : '');
+        b.textContent = n;
+        b.onclick = function () { $('name-input').value = n; submitName(); };
+        box.appendChild(b);
+      });
+    }
     var inp = $('name-input');
     inp.value = startup ? '' : (rec.name || '');
     $('name-modal').hidden = false;

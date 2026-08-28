@@ -400,6 +400,33 @@ var CLOUD = (function () {
   }
 
   /* =========================================================
+     서버와 대조 — 옛 기록 서랍이 깨어나도 스스로 낫는다.
+     이름을 바꿔 적으면 이 컴퓨터의 옛 프로필이 되살아나는데, 그 안의
+     포인트·마을은 과거 시점 것이다. 서버 규칙이 되감기를 거부하므로
+     서버가 늘 가장 앞선 값 — 서버가 더 앞서 있으면 포인트·레벨·마을을
+     서버 것으로 바꿔 끼운다. 날짜별 연습 기록은 이 컴퓨터에만 있으므로
+     건드리지 않는다. (2026-08-28 되감기 사고 후)
+     ========================================================= */
+  function refresh() {
+    var c = sess();
+    if (!c) return;
+    needFirebase().then(function () {
+      return stuRef(c).get();
+    }).then(function (doc) {
+      if (!doc.exists) return;
+      var d = doc.data();
+      if ((d.points || 0) <= (c.points || 0)) return;
+      c.points = d.points || 0;
+      c.level = d.level || 1;
+      if (d.season) c.season = d.season;
+      if (d.past) c.past = d.past;
+      APP.save();
+      renderBadge();
+      APP.toast('☁️ 서버에 있던 더 앞선 기록을 가져왔어요 (' + c.points + 'P)');
+    }).catch(function () { });
+  }
+
+  /* =========================================================
      홈 화면 표시
      ========================================================= */
   function renderBadge() {
@@ -475,14 +502,15 @@ var CLOUD = (function () {
       });
     });
     renderBadge();
-    // 어제 하다 만 세션이 있으면 오늘 기록을 이어 올린다
-    if (sess()) { scheduleSync(); fetchGameRule(); }
+    // 어제 하다 만 세션이 있으면 서버와 대조한 뒤 오늘 기록을 이어 올린다
+    if (sess()) { refresh(); scheduleSync(); fetchGameRule(); }
   }
 
   document.addEventListener('DOMContentLoaded', init);
 
   return {
     onActivity: onActivity, renderBadge: renderBadge, sync: sync, join: join,
+    refresh: refresh,
     perks: perks, gameGate: gameGate,
     /** Firestore 를 빌려 쓴다 (반 순위 등). SDK 를 아직 안 받았으면 그때 받는다. */
     db: function () { return needFirebase(); }
