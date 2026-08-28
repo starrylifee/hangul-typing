@@ -72,12 +72,12 @@ var QUEST = (function () {
       val: function (d) { return d.combo || 0; }
     },
     streak7: {
-      kind: 'streak', goal: 7, icon: '📅', name: '일주일 개근',
-      desc: '하루도 안 빠지고 7일'
+      kind: 'streak', goal: 5, icon: '📅', name: '한 주 개근',
+      desc: '평일(월~금) 하루도 안 빠지고 5일 — 주말은 쉬어도 이어져요'
     },
     streak14: {
-      kind: 'streak', goal: 14, icon: '🗓️', name: '열나흘 개근',
-      desc: '하루도 안 빠지고 14일'
+      kind: 'streak', goal: 10, icon: '🗓️', name: '두 주 개근',
+      desc: '평일 하루도 안 빠지고 10일 — 주말은 쉬어도 이어져요'
     },
     allmode: {
       kind: 'day', goal: 3, icon: '🌈', name: '다섯 가지 다 하기',
@@ -150,7 +150,18 @@ var QUEST = (function () {
     return out.sort();
   }
 
-  /** 가장 길게 이어서 한 날수 */
+  /** 두 날짜 사이에 빠진 날이 전부 토·일인가 (하루 차이면 사이가 없으니 참) */
+  function onlyWeekendBetween(a, b) {
+    for (var t = a.getTime() + 86400000; t < b.getTime(); t += 86400000) {
+      var w = new Date(t).getDay();
+      if (w !== 0 && w !== 6) return false;
+    }
+    return true;
+  }
+
+  /** 가장 길게 이어서 한 날수.
+      주말(토·일)은 건너뛰어도 이어진 것으로 친다 — 학교 컴퓨터로만 하는
+      아이는 주말 개근이 아예 불가능하기 때문 (금→월 이어짐). */
   function bestStreak() {
     var ds = seasonDays();
     if (!ds.length) return 0;
@@ -158,8 +169,7 @@ var QUEST = (function () {
     for (var i = 1; i < ds.length; i++) {
       var a = new Date(ds[i - 1] + 'T12:00:00');
       var b = new Date(ds[i] + 'T12:00:00');
-      var gap = Math.round((b - a) / 86400000);
-      run = gap === 1 ? run + 1 : 1;
+      run = onlyWeekendBetween(a, b) ? run + 1 : 1;
       if (run > best) best = run;
     }
     return best;
