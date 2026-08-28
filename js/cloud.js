@@ -242,13 +242,29 @@ var CLOUD = (function () {
 
       /* ---------- 처음 오는 학생 ---------- */
       if (!doc.exists) {
-        var fresh = {
-          no: no || null, points: 0, level: 1, days: {},
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        var mk = function () {
+          var fresh = {
+            no: no || null, points: 0, level: 1, days: {},
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          };
+          return doc.ref.set(fresh)
+            .then(function () { return pinRef(c).set({ pinHash: hash, ownerUid: myUid() || null }); })
+            .then(function () { return fresh; });
         };
-        return doc.ref.set(fresh)
-          .then(function () { return pinRef(c).set({ pinHash: hash, ownerUid: myUid() || null }); })
-          .then(function () { return fresh; });
+        if (!no) return mk();
+        /* 같은 출석번호가 이미 다른 별명으로 등록돼 있으면 막는다.
+           아이가 별명을 바꿔 적으면 계정이 둘로 갈라져 포인트·마을이
+           쪼개진다 (2026-08-28 실제 사고). 번호를 다시 써야 하면
+           교사가 대시보드에서 옛 별명을 지운 뒤에 가입하면 된다. */
+        return db.collection('classes').doc(code).collection('students')
+          .where('no', '==', no).limit(1).get()
+          .then(function (qs) {
+            if (!qs.empty) {
+              throw new Error(no + '번은 이미 별명 「' + qs.docs[0].id
+                + '」(으)로 등록돼 있어요. 그 별명으로 로그인해 주세요. 별명이나 핀을 잊었으면 선생님께 말씀드리세요.');
+            }
+            return mk();
+          });
       }
 
       var d = doc.data();
