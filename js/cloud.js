@@ -291,6 +291,10 @@ var CLOUD = (function () {
       /* ---------- 이미 새 구조인 학생 ---------- */
       return verifyPin(c, hash, myUid()).then(function () { return d; });
     }).then(function (d) {
+      /* 별명이 곧 신원이다 — 로그인하면 그 별명의 기록 서랍으로 옮겨 앉는다.
+         첫 화면에서 이름을 안 묻게 되면서, 다른 학생 서랍 위에 그대로
+         로그인해 기록이 섞이는 일을 여기서 막는다. */
+      if (APP.rec.name !== nick) APP.switchStudent(nick);
       APP.rec.cloud = {
         code: code, nick: nick, no: no || d.no || null, className: className,
         points: d.points || 0, level: d.level || 1, pt: null,

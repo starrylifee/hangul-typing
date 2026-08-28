@@ -781,8 +781,11 @@ var APP = (function () {
     });
     applyHash();
 
-    // 이름이 아직 없으면 첫 화면에서 바로 물어본다
-    if (!rec.name) openNameModal(true);
+    /* 첫 화면에서 이름을 묻지 않는다 (2026-08-28 사고 후 옵션으로 바꿈).
+       아이가 매번 손으로 적다 표기가 갈라져 기록이 쪼개졌다. 이제 신원은
+       반 로그인(별명+핀)이 맡고, 로그인하면 별명이 이름 칸에 자동으로
+       들어간다. 이름이 꼭 필요한 순간(PDF 리포트 내려받기)에만 묻는다.
+       위 👤 버튼으로는 언제든 적거나 바꿀 수 있다. */
   }
 
   function openNameModal(startup) {
@@ -837,6 +840,7 @@ var APP = (function () {
   return {
     init: init, show: show, toast: toast, route: route,
     rec: rec, save: save, replaceRec: replaceRec, switchStudent: switchStudent,
+    askName: openNameModal,
     startPractice: startPractice, startLong: startLong,
     MODE_NAME: MODE_NAME,
     isVowel: isVowel, compose: compose,

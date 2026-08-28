@@ -558,6 +558,14 @@
 
     $('btn-pdf').onclick = function () {
       var btn = this;
+      /* PDF는 주인 이름이 있어야 한다 — 이름 없는 PDF가 돌아다니면
+         나중에 누구 기록인지 알 수 없다. 첫 화면에서는 안 묻는 대신
+         꼭 필요한 지금 이 순간에만 묻는다. */
+      if (!(APP.rec.name || '').trim()) {
+        APP.toast('리포트에 실을 이름을 먼저 적어 주세요');
+        APP.askName(true);
+        return;
+      }
       // 어제 것을 안 불러왔으면 기록이 끊긴다. 내려받기 전에 한 번 짚어 준다.
       if (!hasPastRecord() && !btn._warned) {
         btn._warned = true;
