@@ -432,13 +432,16 @@ var VILLAGE = (function () {
       .map(function (t, i) { return '<span class="' + (i ? 'd' : 'h') + '">' + esc(t) + '</span>'; })
       .join('');
     tipEl.hidden = false;
+    /* 크롬북 축소(body zoom) 보정 — getBoundingClientRect 는 축소 후 화면 좌표,
+       style.left 는 축소 전 좌표라서 끝에 나눠서 맞춘다 */
+    var z = parseFloat(getComputedStyle(document.body).zoom) || 1;
     var r = el.getBoundingClientRect();
-    var w = tipEl.offsetWidth, h = tipEl.offsetHeight;
+    var w = tipEl.offsetWidth * z, h = tipEl.offsetHeight * z;
     var x = Math.max(8, Math.min(window.innerWidth - w - 8, r.left + r.width / 2 - w / 2));
     var y = r.top - h - 10;
     if (y < 8) y = r.bottom + 10;
-    tipEl.style.left = Math.round(x) + 'px';
-    tipEl.style.top = Math.round(y) + 'px';
+    tipEl.style.left = Math.round(x / z) + 'px';
+    tipEl.style.top = Math.round(y / z) + 'px';
   }
   function hideTip() { if (tipEl) tipEl.hidden = true; }
 

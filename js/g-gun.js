@@ -520,13 +520,18 @@
   /* =========================================================
      사격 — 마우스로 몬스터를 맞춘다 (규칙 3)
      ========================================================= */
+  /* 크롬북 축소(body zoom) 보정 — 마우스 좌표는 축소 후, style 픽셀은 축소 전 */
+  function zf() {
+    return parseFloat(getComputedStyle(document.body).zoom) || 1;
+  }
+
   function onAim(e) {
     if (!C || C.over) return;
     var f = A.el('gun-field');
     if (!f) return;
-    var r = f.getBoundingClientRect();
-    f.style.setProperty('--ax', (e.clientX - r.left) + 'px');
-    f.style.setProperty('--ay', (e.clientY - r.top) + 'px');
+    var r = f.getBoundingClientRect(), z = zf();
+    f.style.setProperty('--ax', (e.clientX - r.left) / z + 'px');
+    f.style.setProperty('--ay', (e.clientY - r.top) / z + 'px');
   }
 
   function onFire(e) {
@@ -542,8 +547,8 @@
       return;
     }
     var f = A.el('gun-field');
-    var r = f.getBoundingClientRect();
-    var x = e.clientX - r.left, y = e.clientY - r.top;
+    var r = f.getBoundingClientRect(), z = zf();
+    var x = (e.clientX - r.left) / z, y = (e.clientY - r.top) / z;
 
     C.ammo--;
     C.shots++;

@@ -548,8 +548,10 @@
     var a = A.el(fromId), b = A.el(toId);
     if (!a || !b) return;
     var ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
-    a.style.setProperty('--fx', Math.round(rb.left + rb.width / 2 - ra.left - ra.width / 2) + 'px');
-    a.style.setProperty('--fy', Math.round(rb.top + rb.height / 2 - ra.top - ra.height / 2) + 'px');
+    // 크롬북 축소(body zoom) 보정 — 잰 좌표는 축소 후, style 픽셀은 축소 전
+    var z = parseFloat(getComputedStyle(document.body).zoom) || 1;
+    a.style.setProperty('--fx', Math.round((rb.left + rb.width / 2 - ra.left - ra.width / 2) / z) + 'px');
+    a.style.setProperty('--fy', Math.round((rb.top + rb.height / 2 - ra.top - ra.height / 2) / z) + 'px');
   }
 
   /* ---------- 성공 — 규칙 3: 내 카드 수가 늘어난다 ---------- */
