@@ -125,6 +125,18 @@
 
     /* 반 백업 */
     $('btn-backup').onclick = backupClass;
+
+    /* 이상 기록 정리 */
+    $('btn-fixcpm').onclick = scanBadCpm;
+    $('fix-close').onclick = $('fix-cancel').onclick = function () {
+      $('fix-modal').hidden = true;
+      fixJobs = null;
+    };
+    $('fix-ok').onclick = applyFixCpm;
+    $('fix-modal').onclick = function (e) {
+      if (e.target === this) { this.hidden = true; fixJobs = null; }
+    };
+
     $('backup-now').onclick = backupClass;
     $('backup-later').onclick = function () { $('backup-modal').hidden = true; };
     $('td-close').onclick = function () { $('stu-modal').hidden = true; };
@@ -253,6 +265,100 @@
         toast('반 전체 기록을 내려받았습니다 (' + Object.keys(stus).length + '명)');
       })
       .catch(function (e) { toast('백업하지 못했습니다: ' + e.message); });
+  }
+
+  /* =========================================================
+     이상 기록 정리 — 서버에 박힌 몇만 타를 지운다.
+
+     "1" 한 글자를 붙여넣고 연습하면 1타를 1ms 에 끝내 분당 60000타가
+     기록됐다(2026-09-01 에 막았다). 학생 기기는 앱을 열 때 스스로
+     걷어내고, 교사 화면은 읽을 때 걸러 그리지만, 서버 원본은 그대로다.
+     하루가 지나면 학생 기기가 그 날짜를 다시 올리지 않으므로 여기서 지운다.
+
+     0으로 만든다. 서버에는 그날 최고 타수 하나만 있어서 긴 글에서 낸
+     진짜 기록은 되살릴 방법이 없다. 지어낸 값을 넣느니 비워 둔다.
+     ========================================================= */
+  var fixJobs = null;    // 미리보기에서 확인받은 뒤 실행할 목록
+
+  function scanBadCpm() {
+    if (!curClass) return;
+    toast('반 기록을 살펴보는 중…');
+    db.collection('classes').doc(curClass.code).collection('students').get()
+      .then(function (snap) {
+        var jobs = [];
+        snap.forEach(function (doc) {
+          var d = doc.data() || {};
+          var days = d.days || {};
+          var hits = [];
+          for (var date in days) {
+            var day = days[date] || {};
+            if ((day.cpm | 0) > MAX_CPM) hits.push({ date: date, cpm: day.cpm | 0, lv: null });
+            var bl = day.byLevel || {};
+            for (var lv in bl) {
+              if ((bl[lv].cpm | 0) > MAX_CPM) hits.push({ date: date, cpm: bl[lv].cpm | 0, lv: lv });
+            }
+          }
+          if (hits.length) {
+            hits.sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+            jobs.push({ ref: doc.ref, nick: doc.id, no: d.no || null, hits: hits });
+          }
+        });
+        jobs.sort(function (a, b) { return (a.no || 999) - (b.no || 999) || (a.nick < b.nick ? -1 : 1); });
+        showFixModal(jobs);
+      })
+      .catch(function (e) { toast('기록을 읽지 못했습니다: ' + e.message); });
+  }
+
+  function showFixModal(jobs) {
+    fixJobs = jobs;
+    var n = 0;
+    jobs.forEach(function (j) { n += j.hits.length; });
+    var note = $('fix-note'), body = $('fix-body'), ok = $('fix-ok');
+
+    if (!jobs.length) {
+      note.textContent = '지울 것이 없습니다. 이 반에는 ' + MAX_CPM + '타를 넘는 기록이 하나도 없어요.';
+      body.innerHTML = '';
+      ok.style.display = 'none';
+    } else {
+      note.textContent = '사람이 낼 수 없는 타수 ' + n + '건을 찾았습니다 (학생 ' + jobs.length + '명). '
+        + '지우면 그날 최고 타수 칸이 0이 됩니다. 연습 시간·타건 수·정확도·포인트는 그대로 남습니다. '
+        + '되돌릴 수 없으니 먼저 반 백업을 받아 두세요.';
+      var h = '<table class="t-table"><thead><tr><th>번호</th><th>별명</th><th>날짜</th><th>지금</th><th>바꿀 값</th></tr></thead><tbody>';
+      jobs.forEach(function (j) {
+        j.hits.forEach(function (t) {
+          h += '<tr><td>' + (j.no || '-') + '</td><td>' + j.nick + '</td>'
+            + '<td>' + t.date + (t.lv ? ' · ' + t.lv + '단계' : '') + '</td>'
+            + '<td class="num">' + t.cpm + '타</td><td class="num">0타</td></tr>';
+        });
+      });
+      body.innerHTML = h + '</tbody></table>';
+      ok.style.display = '';
+    }
+    $('fix-modal').hidden = false;
+  }
+
+  function applyFixCpm() {
+    if (!fixJobs || !fixJobs.length) { $('fix-modal').hidden = true; return; }
+    var FP = firebase.firestore.FieldPath;
+    var jobs = fixJobs;
+    $('fix-ok').disabled = true;
+    Promise.all(jobs.map(function (j) {
+      var args = [];
+      j.hits.forEach(function (t) {
+        args.push(t.lv ? new FP('days', t.date, 'byLevel', t.lv, 'cpm')
+          : new FP('days', t.date, 'cpm'), 0);
+      });
+      return j.ref.update.apply(j.ref, args).then(function () { return null; })
+        .catch(function (e) { return j.nick + ' (' + e.message + ')'; });
+    })).then(function (fails) {
+      var bad = fails.filter(Boolean);
+      $('fix-ok').disabled = false;
+      $('fix-modal').hidden = true;
+      fixJobs = null;
+      if (bad.length) toast('일부를 지우지 못했습니다: ' + bad.join(', '));
+      else toast('이상 기록을 지웠습니다 (학생 ' + jobs.length + '명)');
+      loadStudents();
+    });
   }
 
   /** 반을 열 때 — 백업한 지 이레가 넘었으면 모달을 띄운다 */
