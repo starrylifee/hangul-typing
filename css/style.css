@@ -472,6 +472,15 @@ input, textarea { font-family: inherit; }
   color: var(--gold); font-weight: 800; font-size: 15px;
   display: flex; align-items: center; gap: 8px;
 }
+/* 기록으로 세지 않은 연습 안내 */
+.res-note {
+  padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.5;
+  background: rgba(255, 204, 92, .12);
+  border: 1px solid rgba(255, 204, 92, .34);
+  color: var(--gold);
+}
+.res-note[hidden] { display: none; }
+
 .btnrow { display: flex; gap: 12px; }
 
 /* =========================================================

@@ -136,7 +136,8 @@
           <span>선생님이 준비한 글을 붙여넣으면 그대로 연습 지문이 됩니다. (이 컴퓨터에만 저장됩니다)</span>
           <button class="btn primary sm" id="btn-paste-go">이 글로 연습</button>
         </div>
-        <textarea id="paste-area" placeholder="여기에 글을 붙여넣으세요. 줄바꿈 그대로 한 줄씩 연습합니다."></textarea>
+        <textarea id="paste-area" placeholder="여기에 글을 붙여넣으세요. 줄바꿈 그대로 한 줄씩 연습합니다. (한글로 된 글, 공백 빼고 50자 이상)"></textarea>
+        <div class="res-note" id="paste-warn" hidden></div>
       </div>
     </div>
   </section>
@@ -300,6 +301,7 @@
     <div class="result-wrap">
       <h2 id="res-title">잘했어요!</h2>
       <div class="newrec" id="res-newrec" style="display:none">🏆 <span>최고 기록을 세웠어요!</span></div>
+      <div class="res-note" id="res-note" hidden></div>
       <div class="result-grid">
         <div class="rcard b"><div class="k">분당 타수</div><div class="v" id="res-cpm">0</div><div class="sub">타/분</div></div>
         <div class="rcard a"><div class="k">정확도</div><div class="v" id="res-acc">0%</div><div class="sub" id="res-err">오타 0개</div></div>

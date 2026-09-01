@@ -15,6 +15,13 @@ var APP = (function () {
   /* =========================================================
      기록
      ========================================================= */
+  /* 사람이 낼 수 있는 한계 — 한글 타자 세계기록이 900타 남짓이다.
+     이보다 큰 값은 실력이 아니라 계산이 튄 것으로 본다.
+     ("1" 한 글자짜리 지문을 붙여넣어 1ms 만에 끝내면 60000타가 나왔다) */
+  var MAX_CPM = 1000;
+  var MIN_KEYS = 30;      // 이보다 적게 친 세션은 기록으로 남기지 않는다
+  var MIN_MS = 3000;      // 3초도 안 걸린 세션도 마찬가지
+
   var rec = load();
 
   function blank() {
@@ -30,7 +37,30 @@ var APP = (function () {
     // 예전 버전 기록에 없던 칸 채우기
     var b = blank();
     for (var k in b) if (r[k] === undefined) r[k] = b[k];
+    scrub(r);
     return r;
+  }
+
+  /** 말이 안 되는 타수 기록을 걷어낸다 (예전 버전에서 새어 들어온 것들) */
+  function scrub(r) {
+    var n = 0;
+    if (r && r.best) {
+      for (var k in r.best) {
+        if ((r.best[k].cpm | 0) > MAX_CPM) { delete r.best[k]; n++; }
+      }
+    }
+    if (r && r.days) {
+      for (var d in r.days) {
+        var list = r.days[d] && r.days[d].practice;
+        if (!list || !list.length) continue;
+        var keep = list.filter(function (e) {
+          return !e || (e.cpm | 0) <= MAX_CPM;
+        });
+        n += list.length - keep.length;
+        r.days[d].practice = keep;
+      }
+    }
+    return n;
   }
 
   /* ---------- 날짜별 학습 기록 ---------- */
@@ -99,6 +129,21 @@ var APP = (function () {
     if (rec.name && out.indexOf(rec.name) < 0) out.push(rec.name);
     return out.sort();
   }
+  /** 이 컴퓨터에 보관된 다른 학생 기록의 이상 타수도 한 번 훑어 지운다 */
+  function scrubProfiles() {
+    var names = profileNames(), n = 0;
+    names.forEach(function (name) {
+      if (name === rec.name) return;      // 지금 쓰는 기록은 load() 에서 이미 훑었다
+      var p = loadProfile(name);
+      if (!p) return;
+      var c = scrub(p);
+      if (!c) return;
+      n += c;
+      try { localStorage.setItem(PROFILE_PREFIX + name, JSON.stringify(p)); } catch (e) { }
+    });
+    return n;
+  }
+
   /** 학생을 바꾼다. 이 컴퓨터에 보관된 그 학생 기록이 있으면 되살린다. */
   function switchStudent(name) {
     name = (name || '').trim();
@@ -438,6 +483,58 @@ var APP = (function () {
     });
   }
 
+  /* =========================================================
+     붙여넣은 지문 검사 — 연습할 만한 "글"인지 본다.
+     "1" 한 글자나 "123123123…" 같은 장난 지문은 연습이 되지도 않고,
+     한두 타에 끝나 타수가 몇만 타로 튀어 기록을 망가뜨린다.
+     통과하면 null, 아니면 아이에게 보여 줄 이유를 돌려준다.
+     ========================================================= */
+  var PASTE_MIN = 50;        // 공백 뺀 최소 글자 수
+  var PASTE_MIN_UNIQ = 15;   // 서로 다른 글자 최소 종류
+
+  function isHangulChar(ch) {
+    var c = ch.charCodeAt(0);
+    return (c >= 0xAC00 && c <= 0xD7A3) || (c >= 0x3131 && c <= 0x318E);
+  }
+
+  /** 앞에서부터 짧은 토막이 되풀이될 뿐인 글인가 ("123123123…") */
+  function isChunkRepeat(s) {
+    var n = s.length;
+    for (var len = 1; len <= 12 && len * 3 <= n; len++) {
+      var unit = s.slice(0, len), ok = true;
+      for (var i = len; i < n; i += len) {
+        if (s.substr(i, len) !== unit.slice(0, Math.min(len, n - i))) { ok = false; break; }
+      }
+      if (ok) return true;
+    }
+    return false;
+  }
+
+  function checkPaste(v) {
+    var body = v.replace(/\s/g, '');
+    if (body.length < PASTE_MIN) {
+      return '글이 너무 짧아요. 공백을 빼고 ' + PASTE_MIN + '자 이상 넣어 주세요. (지금 ' + body.length + '자)';
+    }
+    var han = 0, uniq = {}, uniqN = 0;
+    for (var i = 0; i < body.length; i++) {
+      if (isHangulChar(body[i])) han++;
+      if (!uniq[body[i]]) { uniq[body[i]] = 1; uniqN++; }
+    }
+    if (han < body.length / 2) {
+      return '한글로 된 글을 넣어 주세요. 숫자나 기호만으로는 연습이 되지 않아요.';
+    }
+    if (uniqN < PASTE_MIN_UNIQ) {
+      return '같은 글자만 되풀이되는 글이에요. 여러 글자가 나오는 글을 넣어 주세요.';
+    }
+    if (/(.)\1{3,}/.test(body)) {
+      return '같은 글자를 네 번 넘게 이어 붙인 곳이 있어요. 읽을 수 있는 글을 넣어 주세요.';
+    }
+    if (isChunkRepeat(body)) {
+      return '같은 토막이 되풀이되는 글이에요. 읽을 수 있는 글을 넣어 주세요.';
+    }
+    return null;
+  }
+
   function startLong(title, body) {
     var items = body.split('\n').map(function (l) { return l.trim(); })
       .filter(function (l) { return l.length; });
@@ -661,25 +758,40 @@ var APP = (function () {
     var acc = S.doneKeys + S.errors > 0
       ? Math.round(S.doneKeys / (S.doneKeys + S.errors) * 100) : 100;
 
-    var isNew = putBest(S.recKey, cpm, acc);
+    /* 너무 짧게 끝난 연습은 기록으로 세지 않는다.
+       한두 글자짜리 지문은 순간 타수가 몇만 타로 튀어 최고기록을 망가뜨린다. */
+    var tooSmall = S.doneKeys < MIN_KEYS || (S.activeMs || elapsed) < MIN_MS;
+    var counted = !tooSmall && cpm <= MAX_CPM;
+
+    var isNew = counted ? putBest(S.recKey, cpm, acc) : false;
     var best = bestOf(S.recKey);
 
-    logPractice({
-      mode: S.mode, level: S.levelNo, title: S.title,
-      cpm: cpm, acc: acc, keys: S.doneKeys, err: S.errors,
-      lines: S.items.length, sec: Math.round(elapsed / 1000),
-      at: Date.now()
-    });
+    if (counted) {
+      logPractice({
+        mode: S.mode, level: S.levelNo, title: S.title,
+        cpm: cpm, acc: acc, keys: S.doneKeys, err: S.errors,
+        lines: S.items.length, sec: Math.round(elapsed / 1000),
+        at: Date.now()
+      });
+    }
 
-    $('res-cpm').textContent = cpm;
+    /* 세지 않은 연습은 타수도 보여 주지 않는다.
+       화면에 뜬 몇만 타를 아이들이 서로 자랑하면 안 세는 뜻이 없다. */
+    $('res-cpm').textContent = counted ? cpm : '—';
     $('res-acc').textContent = acc + '%';
     $('res-err').textContent = '오타 ' + S.errors + '번';
     $('res-time').textContent = Math.round(elapsed / 1000) + '초';
     $('res-count').textContent = S.items.length + '줄 · ' + S.doneKeys + '타';
-    $('res-best').textContent = best ? best.cpm : cpm;
+    $('res-best').textContent = best ? best.cpm : (counted ? cpm : 0);
     $('res-newrec').style.display = isNew ? 'flex' : 'none';
+    var note = $('res-note');
+    if (note) {
+      note.hidden = counted;
+      note.textContent = counted ? ''
+        : '너무 짧은 연습이라 기록으로 남기지 않았어요. ' + MIN_KEYS + '타 넘게 쳐야 기록이 됩니다.';
+    }
 
-    $('res-title').textContent =
+    $('res-title').textContent = !counted ? '조금 더 길게 연습해 볼까요' :
       acc >= 98 ? '정확해요! 아주 좋아요' :
         acc >= 92 ? '잘했어요!' :
           acc >= 80 ? '조금만 더 천천히 정확하게' : '천천히 다시 해 볼까요';
@@ -709,6 +821,11 @@ var APP = (function () {
      이벤트 연결
      ========================================================= */
   function init() {
+    /* 예전 버전에서 새어 들어온 말도 안 되는 타수를 걷어낸다.
+       (한 글자 지문으로 60000타가 최고기록에 박히던 버그 — 2026-09-01) */
+    save();              // load() 에서 이미 훑은 내 기록을 저장에 반영
+    scrubProfiles();     // 이 컴퓨터에 보관된 다른 학생 기록도
+
     // 홈 모드 카드
     document.querySelectorAll('.mode-card').forEach(function (btn) {
       btn.onclick = function () {
@@ -750,10 +867,17 @@ var APP = (function () {
 
     $('btn-paste-go').onclick = function () {
       var v = $('paste-area').value.trim();
-      if (!v) { toast('먼저 글을 붙여넣어 주세요'); return; }
+      var warn = $('paste-warn');
+      var bad = !v ? '먼저 글을 붙여넣어 주세요' : checkPaste(v);
+      if (warn) { warn.hidden = !bad; warn.textContent = bad || ''; }
+      if (bad) { toast(bad); $('paste-area').focus(); return; }
       rec.paste = v; save();
       startLong('직접 넣은 글', v);
     };
+    $('paste-area').addEventListener('input', function () {
+      var warn = $('paste-warn');
+      if (warn && !warn.hidden) warn.hidden = true;
+    });
 
     $('btn-reset-rec').onclick = function () {
       if (!confirm('저장된 기록을 모두 지울까요?')) return;
@@ -834,6 +958,7 @@ var APP = (function () {
     for (var k2 in b) rec[k2] = b[k2];
     // blank 에 없는 칸(imported·student 등)도 잃어버리지 않게 전부 옮긴다
     if (next) for (var k3 in next) rec[k3] = next[k3];
+    scrub(rec);
     save();
   }
 

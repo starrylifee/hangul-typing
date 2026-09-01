@@ -17,6 +17,22 @@
   var students = [];         // 지금 보는 반의 학생들
   var selDate = null;        // 학생 현황에서 보는 날짜 (기본 오늘)
 
+  /* 서버에 남아 있는 말도 안 되는 타수는 화면에서 빼고 본다.
+     한 글자짜리 지문("1")을 붙여넣으면 60000타가 기록되던 버그가 있었고,
+     그 기록이 학생 기기에서 올라가 있다. 하나만 섞여도 반 그래프가
+     통째로 납작해진다. 백업 파일은 원본 그대로 받는다. (2026-09-01) */
+  var MAX_CPM = 1000;
+  function scrubStudent(d) {
+    var days = d.days || {};
+    for (var k in days) {
+      var day = days[k] || {};
+      if ((day.cpm | 0) > MAX_CPM) day.cpm = 0;
+      var bl = day.byLevel || {};
+      for (var lv in bl) if ((bl[lv].cpm | 0) > MAX_CPM) bl[lv].cpm = 0;
+    }
+    return d;
+  }
+
   function toast(msg) {
     var t = $('toast');
     t.textContent = msg;
@@ -262,7 +278,7 @@
       .then(function (snap) {
         students = [];
         snap.forEach(function (doc) {
-          var d = doc.data();
+          var d = scrubStudent(doc.data());
           d.nick = doc.id;
           students.push(d);
         });
@@ -754,7 +770,7 @@
       .onSnapshot(function (snap) {
         students = [];
         snap.forEach(function (doc) {
-          var d = doc.data();
+          var d = scrubStudent(doc.data());
           d.nick = doc.id;
           students.push(d);
         });
