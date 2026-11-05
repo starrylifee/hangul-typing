@@ -1,18 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#3ee0c0"/>
-      <stop offset="1" stop-color="#9d8bf7"/>
-    </linearGradient>
-  </defs>
-  <rect width="64" height="64" rx="14" fill="#0e141f"/>
-  <rect x="8" y="18" width="48" height="28" rx="6" fill="none" stroke="url(#g)" stroke-width="3"/>
-  <g fill="url(#g)">
-    <rect x="14" y="24" width="6" height="6" rx="1.5"/>
-    <rect x="23" y="24" width="6" height="6" rx="1.5"/>
-    <rect x="32" y="24" width="6" height="6" rx="1.5"/>
-    <rect x="41" y="24" width="9" height="6" rx="1.5"/>
-    <rect x="14" y="34" width="9" height="6" rx="1.5" opacity=".45"/>
-    <rect x="26" y="34" width="24" height="6" rx="3"/>
-  </g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512"><rect width="512" height="512" rx="96" fill="#3F7FC4"/><g data-slug="hangul-typing" transform="translate(56 56) scale(1.5625)" fill="#FFF6E0"><path d="M224,48H32A16,16,0,0,0,16,64V192a16,16,0,0,0,16,16H224a16,16,0,0,0,16-16V64A16,16,0,0,0,224,48ZM64,168H48a8,8,0,0,1,0-16H64a8,8,0,0,1,0,16Zm96,0H96a8,8,0,0,1,0-16h64a8,8,0,0,1,0,16Zm48,0H192a8,8,0,0,1,0-16h16a8,8,0,0,1,0,16Zm0-32H48a8,8,0,0,1,0-16H208a8,8,0,0,1,0,16Zm0-32H48a8,8,0,0,1,0-16H208a8,8,0,0,1,0,16Z"/></g></svg>
