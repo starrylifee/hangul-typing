@@ -110,6 +110,8 @@ input, textarea { font-family: inherit; }
 .btn.primary:hover { filter: brightness(1.08); }
 .btn.ghost { background: transparent; }
 .btn.sm { padding: 6px 12px; font-size: 13px; border-radius: 8px; }
+/* 반에 기록이 안 올라가는 중 — 다시 로그인할 때까지 눈에 띄게 */
+.btn.warn { background: #c62828; border-color: #c62828; color: #fff; font-weight: 700; }
 
 /* =========================================================
    홈

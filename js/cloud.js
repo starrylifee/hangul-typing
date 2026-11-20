@@ -295,6 +295,9 @@ var CLOUD = (function () {
          첫 화면에서 이름을 안 묻게 되면서, 다른 학생 서랍 위에 그대로
          로그인해 기록이 섞이는 일을 여기서 막는다. */
       if (APP.rec.name !== nick) APP.switchStudent(nick);
+      // 이 기기에 남아 있던 같은 학생 기록 (로그인 중이었거나, 연결을 끊기 직전 것)
+      var prev = APP.rec.cloud || APP.rec.cloudLast;
+      var mine = prev && prev.code === code && prev.nick === nick ? prev : null;
       APP.rec.cloud = {
         /* 번호는 서버 것을 우선한다 — 재로그인 때 번호를 잘못 적어도
            그라운드 전송이 엉뚱한 번호로 가지 않게 */
@@ -303,6 +306,25 @@ var CLOUD = (function () {
         // 마을(시즌)은 서버에도 두어서 다른 크롬북에서 로그인해도 이어진다
         season: d.season || null, past: d.past || null
       };
+      /* 이 기기 기록이 서버보다 앞서 있으면 버리지 않는다.
+         다른 크롬북에서 같은 별명으로 로그인하면 이 기기는 기록 주인 자격을
+         잃고, 그 뒤 쌓인 포인트·마을은 이 기기에만 남는다. 예전엔 다시
+         로그인하는 순간 서버 값으로 덮여 마을이 줄었다 (2026-11-20 15번 사고).
+         서버는 늘 줄어들지 않는 값이므로 큰 쪽을 살리면 된다. */
+      if (mine && (mine.points || 0) > (d.points || 0)) {
+        var c2 = APP.rec.cloud;
+        c2.points = mine.points;
+        c2.level = mine.level || c2.level;
+        c2.pt = mine.pt || null;
+        var ms = mine.season, ss = d.season;
+        if (ms && (!ss || (ms.key === ss.key && (ms.sp || 0) >= (ss.sp || 0)))) c2.season = ms;
+        if (mine.past) c2.past = Object.assign({}, mine.past, d.past || {});
+        setTimeout(function () {
+          APP.toast('💾 이 컴퓨터에 있던 더 앞선 기록(' + c2.points + 'P)을 이어서 반에 올려요');
+        }, 1500);
+      }
+      delete APP.rec.cloudLast;
+      blocked = false;
       if (!APP.rec.name) APP.rec.name = nick;
       APP.save();
       renderBadge();
@@ -314,6 +336,8 @@ var CLOUD = (function () {
 
   function leave() {
     if (!confirm('우리 반 연결을 끊을까요?\n서버에 쌓인 기록은 남고, 다시 로그인하면 이어집니다.')) return;
+    // 서버에 못 올린 포인트가 있을 수 있다 — 다시 로그인할 때 join() 이 대조한다
+    APP.rec.cloudLast = APP.rec.cloud;
     delete APP.rec.cloud;
     APP.save();
     renderBadge();
@@ -376,7 +400,8 @@ var CLOUD = (function () {
      서버로 올리기 — 오늘 요약 + 포인트. 몰아서 4초에 한 번.
      ========================================================= */
   var syncTm = null;
-  var warnedOwner = false;      // 주인이 아니라는 안내는 한 번만
+  var warnedOwner = false;      // 주인이 아니라는 알림 창은 한 번만
+  var blocked = false;          // 서버가 이 기기의 기록을 받지 않는 중 — 다시 로그인해야 풀린다
   function scheduleSync() {
     clearTimeout(syncTm);
     syncTm = setTimeout(sync, 4000);
@@ -426,14 +451,22 @@ var CLOUD = (function () {
         if (e.code === 'permission-denied') return ref.set(payload, { merge: true });
         throw e;
       });
+    }).then(function () {
+      if (blocked) { blocked = false; renderBadge(); }
     }).catch(function (e) {
       console.warn('반 기록 올리기 실패(다음에 다시 시도):', e && e.message);
       /* 이 기기가 더 이상 이 학생 문서의 주인이 아니다.
          (다른 기기에서 로그인했거나 브라우저 데이터가 지워졌다)
-         조용히 실패하면 아이는 기록이 쌓이는 줄 알고 계속 연습한다. */
-      if (e && e.code === 'permission-denied' && !warnedOwner) {
-        warnedOwner = true;
-        APP.toast('🔑 기록을 올리지 못했어요. 우리 반으로 다시 로그인해 주세요.');
+         조용히 실패하면 아이는 기록이 쌓이는 줄 알고 계속 연습한다.
+         한 번 뜨고 마는 알림은 아이가 놓친다 (15번이 9일 동안 몰랐다) —
+         위쪽 버튼을 경고로 바꿔 다시 로그인할 때까지 계속 보이게 한다. */
+      if (e && e.code === 'permission-denied') {
+        blocked = true;
+        renderBadge();
+        if (!warnedOwner) {
+          warnedOwner = true;
+          APP.toast('🔑 기록이 반에 올라가지 않고 있어요. 위쪽 빨간 버튼을 눌러 다시 로그인해 주세요.');
+        }
       }
     });
   }
@@ -472,7 +505,11 @@ var CLOUD = (function () {
     var btn = $('btn-login'), badge = $('cloud-badge');
     if (!btn || !badge) return;
     var c = sess();
-    if (c) {
+    btn.classList.toggle('warn', !!(c && blocked));
+    if (c && blocked) {
+      btn.textContent = '⚠️ 기록이 안 올라가요 · 다시 로그인';
+      badge.textContent = '⚠️ ' + c.nick + ' · 이 컴퓨터에만 ' + (c.points || 0) + 'P (반에 안 올라감)';
+    } else if (c) {
       btn.textContent = '🏫 ' + (c.className || '우리 반') + ' · ' + c.nick;
       badge.textContent = '🏫 ' + c.nick + ' · ' + (c.points || 0) + 'P · Lv.' + (c.level || 1);
     } else {
@@ -489,13 +526,19 @@ var CLOUD = (function () {
      연결
      ========================================================= */
   function openModal() {
-    $('cloud-code').value = '';
+    // 같은 반 학생이 다시 로그인할 때 학급코드를 또 묻지 않는다
+    var last = sess() || APP.rec.cloudLast;
+    $('cloud-code').value = (last && last.code) || '';
     $('cloud-nick').value = APP.rec.name || '';
     $('cloud-pin').value = '';
-    $('cloud-no').value = '';
+    $('cloud-no').value = (last && last.no) || '';
     $('cloud-msg').textContent = '';
     if (!$('cloud-modal').open) $('cloud-modal').showModal();
-    setTimeout(function () { $('cloud-code').focus(); }, 30);
+    setTimeout(function () {
+      // 비어 있는 첫 칸에 커서를 둔다
+      var first = ['cloud-code', 'cloud-nick', 'cloud-pin'].filter(function (id) { return !$(id).value; })[0];
+      $(first || 'cloud-pin').focus();
+    }, 30);
   }
 
   function submit() {
@@ -527,6 +570,8 @@ var CLOUD = (function () {
     if (!$('btn-login')) return;
     // 로그인 버튼: 연결 전에는 교사/학생 고르기, 연결 뒤에는 끊기
     $('btn-login').onclick = function () {
+      // 기록이 안 올라가는 중이면 끊지 말고 바로 다시 로그인 (join 이 이 기기 기록과 대조한다)
+      if (sess() && blocked) { openModal(); return; }
       if (sess()) { leave(); return; }
       openModal();
     };
