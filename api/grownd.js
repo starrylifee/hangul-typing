@@ -1,70 +1,27 @@
-/* =========================================================
-   /api/grownd — 그라운드(growndcard.com) 포인트 전송 중계
-   그라운드 API 키를 학생 화면에 노출하지 않으려고 서버를 거친다.
-   키는 교사 브라우저에서 요청마다 담겨 오고, 서버에는 저장하지 않는다.
-   ========================================================= */
+const { initializeApp, getApps } = require('firebase-admin/app');
+const { getAuth } = require('firebase-admin/auth');
+const { projectId } = require('../js/fb-config');
+const store = require('../server/reward-store');
+const { handleRequest, drainQueue, RequestError } = require('../server/reward-requests');
 
-const RATE_WINDOW_MS = 60 * 1000;
-const RATE_MAX = 40;                 // 한 반 전체 전송을 감안해 넉넉히
-const hits = new Map();
-
-function tooMany(ip) {
-  const now = Date.now();
-  const list = (hits.get(ip) || []).filter((t) => now - t < RATE_WINDOW_MS);
-  list.push(now);
-  hits.set(ip, list);
-  if (hits.size > 500) hits.clear();
-  return list.length > RATE_MAX;
-}
-
-function sameSite(req) {
-  const host = req.headers.host || '';
-  const src = req.headers.origin || req.headers.referer || '';
-  if (!src) return false;
+module.exports = async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
   try {
-    return new URL(src).host === host;
-  } catch (e) {
-    return false;
-  }
-}
-
-module.exports = async function handler(req, res) {
-  if (req.method !== 'POST') {
-    res.status(405).json({ error: 'POST 만 받습니다' });
-    return;
-  }
-  if (!sameSite(req)) {
-    res.status(403).json({ error: '이 주소에서 온 요청만 받습니다' });
-    return;
-  }
-  const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'unknown';
-  if (tooMany(ip)) {
-    res.status(429).json({ error: '조금 뒤에 다시 시도해 주세요' });
-    return;
-  }
-
-  const { apiKey, classId, studentCode, points, description } = req.body || {};
-  if (!apiKey || !classId || !studentCode || !points) {
-    res.status(400).json({ error: 'apiKey, classId, studentCode, points 가 필요합니다' });
-    return;
-  }
-
-  try {
-    const url = 'https://growndcard.com/api/v1/classes/' + encodeURIComponent(classId)
-      + '/students/' + encodeURIComponent(studentCode) + '/points';
-    const r = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-API-Key': apiKey },
-      body: JSON.stringify({
-        type: 'reward',
-        points: Number(points) | 0,
-        description: String(description || '타자 연습 목표 달성').slice(0, 100),
-        source: 'hangul-typing'
-      })
-    });
-    const data = await r.json().catch(() => ({}));
-    res.status(r.status).json(data);
-  } catch (e) {
-    res.status(502).json({ error: '그라운드에 연결하지 못했습니다' });
+    if (req.method === 'GET') {
+      if (!process.env.CRON_SECRET || req.headers.authorization !== 'Bearer ' + process.env.CRON_SECRET)
+        return res.status(401).json({ error: '인증이 필요합니다.' });
+      return res.json(await drainQueue(await store()));
+    }
+    if (req.method !== 'POST') return res.status(405).end();
+    const match = /^Bearer (\S+)$/.exec(req.headers.authorization || '');
+    if (!match) return res.status(401).json({ error: '로그인이 필요합니다.' });
+    if (!getApps().length) initializeApp({ projectId });
+    const token = await getAuth().verifyIdToken(match[1]).catch(() => null);
+    if (!token) return res.status(401).json({ error: '다시 로그인해 주세요.' });
+    return res.json(await handleRequest(await store(), req.body || {}, token.uid));
+  } catch (error) {
+    if (error instanceof RequestError) return res.status(error.status).json({ error: error.message });
+    console.error('Grownd request failed', error.code || error.name);
+    return res.status(503).json({ error: '지급 상태를 확인하지 못했어요. 잠시 후 다시 시도해 주세요.' });
   }
 };

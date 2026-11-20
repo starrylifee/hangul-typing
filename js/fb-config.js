@@ -10,3 +10,4 @@ var FB_CONFIG = {
   messagingSenderId: '993852895445',
   appId: '1:993852895445:web:75e890fa4895895741f25c'
 };
+if (typeof module !== 'undefined') module.exports = FB_CONFIG;

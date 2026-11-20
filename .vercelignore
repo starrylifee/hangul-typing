@@ -1,0 +1,8 @@
+.claude/
+.env*
+*.log
+tests/
+node_modules/
+firestore.rules
+.firebaserc
+firebase.json

@@ -99,7 +99,7 @@ var REPORT = (function () {
     var accOk = sum.acc >= g.acc;
     checks.push({
       label: '정확도 ' + g.acc + '% 이상',
-      got: sum.acc + '%', ok: accOk
+      got: sum.keys || sum.err ? sum.acc + '%' : '측정 전', ok: accOk
     });
 
     // 오늘 연습한 단계 중 목표 타수를 넘긴 게 있는가
@@ -221,7 +221,7 @@ var REPORT = (function () {
       card('연습 시간', fmtMin(sum.sec), '목표 ' + g.minutes + '분', sum.sec >= g.minutes * 60) +
       card('친 글자 수', sum.keys.toLocaleString() + '타', '오타 ' + sum.err + '번', true) +
       card('가장 빠른 타수', sum.cpm + '타', '분당', true) +
-      card('정확도', sum.acc + '%', '목표 ' + g.acc + '%', sum.acc >= g.acc) +
+      card('정확도', sum.keys || sum.err ? sum.acc + '%' : '측정 전', '목표 ' + g.acc + '%', sum.acc >= g.acc) +
       '</div>';
 
     /* --- 한 것 / 안 한 것 --- */

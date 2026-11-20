@@ -1,0 +1,4 @@
+{
+  "crons": [{ "path": "/api/grownd", "schedule": "15 13 * * *" }],
+  "functions": { "api/grownd.js": { "maxDuration": 60 } }
+}

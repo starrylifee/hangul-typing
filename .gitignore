@@ -27,3 +27,6 @@ desktop.ini
 
 .vercel
 .env*
+
+# 로그
+*.log

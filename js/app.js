@@ -212,6 +212,7 @@ var APP = (function () {
   }
 
   function show(name) {
+    document.querySelector('.account-menu').open = false;
     var list = document.querySelectorAll('.screen');
     for (var i = 0; i < list.length; i++) list[i].classList.remove('on');
     $('s-' + name).classList.add('on');
@@ -232,6 +233,25 @@ var APP = (function () {
      홈
      ========================================================= */
   function renderHome() {
+    var latest = null;
+    var dates = Object.keys(rec.days).sort().reverse();
+    for (var date of dates) {
+      var list = rec.days[date].practice || [];
+      if (list.length) { latest = list[list.length - 1]; break; }
+    }
+    var quick = $('practice-start');
+    var mode = latest && latest.mode, level = latest && Number(latest.level);
+    if (!['place','word','short'].includes(mode) || level < 1 || level > 7 || !Number.isInteger(level)) {
+      if (mode !== 'long') latest = null;
+    }
+    quick.textContent = !latest ? '1단계 자리 연습 시작' : mode === 'long' ? '긴 글 다시 연습' : level + '단계 ' + MODE_NAME[mode] + ' 이어하기';
+    quick.onclick = function () {
+      if (!latest) { startPractice('place', 1); return; }
+      if (mode !== 'long') { startPractice(mode, level); return; }
+      var text = DATA.LONG_TEXTS.find(t => t.title === latest.title);
+      var body = text ? text.body : latest.title === '직접 넣은 글' && rec.paste;
+      if (body) startLong(latest.title, body); else renderLongList();
+    };
     var sn = $('student-name');
     if (sn) sn.textContent = rec.name || '이름 넣기';
     if (window.CLOUD) CLOUD.renderBadge();
@@ -813,6 +833,10 @@ var APP = (function () {
   }
 
   function quitSession() {
+    if (S && S.startAt && !confirm('이번 연습을 끝내지 않고 나갈까요? 지금까지 친 내용은 이번 연습 기록에 남지 않아요.')) {
+      focusInput();
+      return;
+    }
     if (S) { clearInterval(S.timer); S = null; }
     show('home');
   }
@@ -851,7 +875,7 @@ var APP = (function () {
       setTimeout(onInput, 0);     // 조합이 끝났으니 완료됐는지 다시 본다
     });
     ti.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') { quitSession(); return; }
+      if (e.key === 'Escape' && !e.isComposing) { e.preventDefault(); quitSession(); return; }
       if (e.key === 'Enter') {
         e.preventDefault();
         // 조합 중이면 IME가 먼저 글자를 확정한다 → compositionend 에서 처리

@@ -26,6 +26,12 @@ service cloud.firestore {
        거기엔 별명·포인트·레벨만 있다 (실명은 저장하지 않는다).
        ========================================================= */
 
+    function rewardWorker() {
+      return request.auth != null && request.auth.uid == 'NHbXi98uUyRkZTFSIeJnXVbNvUT2';
+    }
+    match /{path=**}/rewardQueue/{date} {
+      allow list: if rewardWorker();
+    }
     match /classes/{code} {
       function isTeacher() {
         return request.auth != null
@@ -47,6 +53,16 @@ service cloud.firestore {
         && request.resource.data.teacherUid == request.auth.uid;
       allow update, delete: if request.auth != null
         && resource.data.teacherUid == request.auth.uid;
+
+      // 키는 학급 공개 문서와 분리한다. 원장은 지급 함수만 쓴다.
+      match /integrations/grownd {
+        allow get: if isTeacher() || rewardWorker();
+        allow write: if isTeacher();
+      }
+      match /growndRewards/{receipt} {
+        allow read: if isTeacher() || rewardWorker();
+        allow create, update: if rewardWorker();
+      }
 
       match /students/{nick} {
         function pinDoc() {
@@ -88,13 +104,27 @@ service cloud.firestore {
            문서(auth/pin)에만 있고 몸통에는 없다. */
         allow create: if request.auth != null
           && !('pinHash' in request.resource.data)
+          && !request.resource.data.keys().hasAny(['grSent', 'grSentDays'])
           && exists(/databases/$(database)/documents/classes/$(code));
 
         // 주인만 고칠 수 있다. 옛 구조 학생은 다음 로그인 때 옮겨질 때까지만 허용.
         // 어느 쪽이든 포인트를 되감는 쓰기는 낡은 기기이므로 거부한다.
-        allow update: if isTeacher() || ((isOwner() || isLegacy()) && noRollback());
+        allow update: if isTeacher() || ((isOwner() || isLegacy()) && noRollback()
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['grSent', 'grSentDays'])
+          && (resource.data.get('no', null) == null || request.resource.data.no == resource.data.no));
 
         allow delete: if isTeacher();
+
+        allow update: if rewardWorker() &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['grSentDays']);
+        match /rewardQueue/{date} {
+          allow get, delete: if rewardWorker();
+          allow create, update: if isOwner()
+            && date.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
+            && request.resource.data.keys().hasOnly(['uid','queuedAt'])
+            && request.resource.data.uid == request.auth.uid
+            && request.resource.data.queuedAt == request.time;
+        }
 
         /* ---------- 핀 (아무도 못 읽는다) ---------- */
         match /auth/pin {

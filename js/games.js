@@ -210,7 +210,7 @@ var GAMES = (function () {
         + '<button class="btn primary sm" data-guestlogin>🔑 로그인</button>';
       el.querySelector('[data-guestlogin]').onclick = function () {
         var lm = $('login-modal');
-        if (lm) lm.hidden = false;
+        if (lm && !lm.open) lm.showModal();
       };
     });
   }
@@ -220,7 +220,7 @@ var GAMES = (function () {
     APP.toast('⏱ 오늘 게임 체험 시간(' + GUEST.mmss(GUEST.DAILY) + ')을 다 썼어요. '
       + '우리 반으로 로그인하면 계속할 수 있어요!');
     var lm = $('login-modal');
-    if (lm) setTimeout(function () { lm.hidden = false; }, 400);
+    if (lm) setTimeout(function () { if (!lm.open) lm.showModal(); }, 400);
   }
 
   function openSelect() {
@@ -2251,7 +2251,7 @@ var GAMES = (function () {
         stop();
         APP.show('home');
         var lm = $('login-modal');
-        if (lm) lm.hidden = false;
+        if (lm && !lm.open) lm.showModal();
       };
     }
     if (window.GUEST && !GUEST.canPlay()) {

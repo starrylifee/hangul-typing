@@ -2003,3 +2003,34 @@ ul.notyet li {
   /* zoom 은 vh 단위를 못 줄이므로 앱 높이를 되채워 화면을 꽉 채운다 */
   #app { height: calc(100vh / 0.8); }
 }
+
+.account-menu { position: relative; z-index: 3; }
+.account-menu summary { cursor: pointer; }
+.account-menu > div {
+  position: absolute; right: 0; top: 100%; display: grid; gap: 4px;
+  padding: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+}
+.account-menu a { text-decoration: none; }
+dialog.modal:not([open]) { display: none; }
+dialog.modal[open] {
+  color: var(--text); width: 100%; height: 100%; max-width: none; max-height: none;
+  border: none; margin: 0;
+}
+@media (max-width: 760px) {
+  body { zoom: 1; }
+  #app { height: 100dvh; }
+  .home-wrap, .page { overflow-y: auto; justify-content: flex-start; }
+  .home-wrap { padding: 18px 16px; gap: 14px; }
+  .hero h1 { font-size: 24px; }
+  .topbar { height: auto; min-height: 52px; padding: 6px 12px; gap: 6px; flex-wrap: wrap; }
+  .topbar .brand { font-size: 16px; }
+  #s-home .brand small { display: none; }
+  #s-home .topbar .btn { white-space: normal; min-height: 40px; }
+  .mode-card { min-height: 110px; }
+  #s-gamesel .page > *, #s-level .page > * { flex: none; }
+  .play-head { flex-wrap: wrap; gap: 4px; }
+  #s-play .play { min-width: 0; grid-template-columns: minmax(0,1fr); overflow: auto; }
+  #s-play .kb-wrap { padding-inline: 4px; overflow-x: auto; }
+  #s-play .kb { max-width: 100%; }
+  #s-play .type-area { min-width: 0; }
+}

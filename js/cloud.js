@@ -368,7 +368,8 @@ var CLOUD = (function () {
     }
     if (p > 0) APP.toast('+' + p + ' 타자 포인트!  (모두 ' + c.points + 'P)');
     renderBadge();
-    scheduleSync();
+    clearTimeout(syncTm);
+    sync();
   }
 
   /* =========================================================
@@ -408,7 +409,23 @@ var CLOUD = (function () {
         acc: s.acc | 0, cpm: s.cpm | 0,
         modes: s.modes, byLevel: byLevel, miss: missTop
       };
-      return stuRef(c).set(payload, { merge: true });
+      var ref = stuRef(c), user = firebase.auth().currentUser;
+      if (!user || !(s.sec || s.keys || Object.keys(s.modes).length)) return ref.set(payload, { merge: true });
+      var job = ref.collection('rewardQueue').doc(today);
+      var batch = db.batch();
+      batch.set(ref, payload, { merge: true });
+      batch.set(job, { uid: user.uid, queuedAt: firebase.firestore.FieldValue.serverTimestamp() });
+      return batch.commit().then(function () {
+        return user.getIdToken().then(function (token) {
+          return fetch('/api/grownd', { method: 'POST', keepalive: true,
+            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+            body: JSON.stringify({ action: 'automatic', code: c.code, nick: c.nick, date: today }) });
+        }).catch(function () { /* 서버에 남은 요청은 일일 복구 작업이 이어받는다. */ });
+      }, function (e) {
+        // 옛 계정에 아직 핀 소유권 문서가 없어도 기존 학습 기록은 저장한다.
+        if (e.code === 'permission-denied') return ref.set(payload, { merge: true });
+        throw e;
+      });
     }).catch(function (e) {
       console.warn('반 기록 올리기 실패(다음에 다시 시도):', e && e.message);
       /* 이 기기가 더 이상 이 학생 문서의 주인이 아니다.
@@ -459,7 +476,7 @@ var CLOUD = (function () {
       btn.textContent = '🏫 ' + (c.className || '우리 반') + ' · ' + c.nick;
       badge.textContent = '🏫 ' + c.nick + ' · ' + (c.points || 0) + 'P · Lv.' + (c.level || 1);
     } else {
-      btn.textContent = '🔑 로그인';
+      btn.textContent = '우리 반으로 시작';
       badge.textContent = '';
     }
     if (window.VILLAGE) VILLAGE.updateButton();
@@ -477,7 +494,7 @@ var CLOUD = (function () {
     $('cloud-pin').value = '';
     $('cloud-no').value = '';
     $('cloud-msg').textContent = '';
-    $('cloud-modal').hidden = false;
+    if (!$('cloud-modal').open) $('cloud-modal').showModal();
     setTimeout(function () { $('cloud-code').focus(); }, 30);
   }
 
@@ -499,7 +516,7 @@ var CLOUD = (function () {
     msg.textContent = '연결하는 중…';
     join(code, nick, pin, no)
       .then(function (c) {
-        $('cloud-modal').hidden = true;
+        $('cloud-modal').close();
         APP.toast(c.className + ' 반에 ' + c.nick + '(으)로 연결됐습니다!');
       })
       .catch(function (e) { msg.textContent = e.message || '연결하지 못했습니다.'; })
@@ -511,16 +528,16 @@ var CLOUD = (function () {
     // 로그인 버튼: 연결 전에는 교사/학생 고르기, 연결 뒤에는 끊기
     $('btn-login').onclick = function () {
       if (sess()) { leave(); return; }
-      $('login-modal').hidden = false;
+      openModal();
     };
-    $('login-cancel').onclick = function () { $('login-modal').hidden = true; };
+    $('login-cancel').onclick = function () { $('login-modal').close(); };
     $('login-student').onclick = function () {
-      $('login-modal').hidden = true;
+      $('login-modal').close();
       openModal();
     };
     $('login-teacher').onclick = function () { location.href = 'teacher.html'; };
     $('cloud-ok').onclick = submit;
-    $('cloud-cancel').onclick = function () { $('cloud-modal').hidden = true; };
+    $('cloud-cancel').onclick = function () { $('cloud-modal').close(); };
     ['cloud-code', 'cloud-nick', 'cloud-pin', 'cloud-no'].forEach(function (id) {
       $(id).addEventListener('keydown', function (e) {
         if (e.key === 'Enter') { e.preventDefault(); submit(); }
